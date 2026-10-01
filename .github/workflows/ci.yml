@@ -58,7 +58,10 @@ jobs:
       - name: Boundaries (no framework or CMS in src)
         run: php bin/check-boundaries
 
+      # Style doesn't depend on the versions installed, and the oldest Pint
+      # allowed can't run with the oldest php-cs-fixer it resolves.
       - name: Code style
+        if: matrix.deps != 'lowest'
         run: vendor/bin/pint --test
 
       - name: Static analysis
