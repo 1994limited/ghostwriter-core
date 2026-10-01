@@ -3,6 +3,8 @@
 namespace NineteenNinetyFour\Ghostwriter\Core\Tests\Ai;
 
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\NotConfigured;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\Overloaded;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Http\RetryPolicy;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\ImageRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Ports\ArrayCredentials;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Ports\StaticProviderSettings;
@@ -11,6 +13,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers\Anthropic;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers\Gemini;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers\OpenAi;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Testing\FakeProvider;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Testing\RecordingSleeper;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
 
 /**
@@ -148,5 +151,92 @@ class ProvidersTest extends ProviderTestCase
         $this->providers->unfake();
         $this->assertFalse($this->providers->faked());
         $this->assertFalse($this->providers->configured());
+    }
+
+    public function test_an_unconfigured_fake_stands_for_missing_keys(): void
+    {
+        $this->keys->set('openai', 'o');
+        $fake = $this->providers->fake(FakeProvider::withoutKeys());
+
+        $this->assertTrue($this->providers->faked());
+        $this->assertFalse($this->providers->configured());
+        $this->assertNull($this->providers->imageHandle());
+        $this->assertNull($this->providers->image());
+        $this->assertNotContains(true, $this->providers->keyStatus());
+        $this->assertSame('fake', $this->providers->textHandle());
+
+        try {
+            $this->providers->text();
+            $this->fail('Expected NotConfigured.');
+        } catch (NotConfigured $exception) {
+            $this->assertSame('No API key is set for Anthropic. Add ANTHROPIC_API_KEY to your .env file.', $exception->getMessage());
+        }
+
+        // A text key but no image key.
+        $fake->unconfigured(text: false);
+        $this->assertTrue($this->providers->configured());
+        $this->assertSame($fake, $this->providers->text());
+        $this->assertNull($this->providers->image());
+        $this->assertNotContains(true, $this->providers->keyStatus());
+
+        // An image key but no text key.
+        $fake->unconfigured(image: false);
+        $this->assertFalse($this->providers->configured());
+        $this->assertSame([$fake, 'fake'], [$this->providers->image(), $this->providers->imageHandle()]);
+
+        // Both keys back: the real key status shows again.
+        $fake->unconfigured(false, false);
+        $this->assertTrue($this->providers->configured());
+        $this->assertSame([true, true], [$this->providers->keyStatus()['ANTHROPIC_API_KEY'], $this->providers->keyStatus()['OPENAI_API_KEY']]);
+        $fake->assertNothingSent();
+    }
+
+    public function test_an_unconfigured_fake_names_an_unknown_provider_plainly(): void
+    {
+        $this->settings->textProvider = 'mistral';
+        $this->providers->fake(FakeProvider::withoutKeys());
+
+        $this->expectException(NotConfigured::class);
+        $this->expectExceptionMessage('No API key is set for "mistral".');
+
+        $this->providers->text();
+    }
+
+    public function test_a_copy_can_have_its_own_sleeper(): void
+    {
+        $sleeper = new RecordingSleeper;
+        $copy = $this->providers->withSleeper($sleeper);
+
+        $this->assertNotSame($this->providers, $copy);
+
+        $this->http->queueJson(['error' => ['message' => 'Rate limited']], 429, ['retry-after' => '7']);
+        $this->http->queueJson(['content' => [['type' => 'text', 'text' => 'OK']]]);
+
+        $this->assertSame('OK', $copy->text()->text(new TextRequest('writer', 'I', 'P'))->text);
+        $this->assertSame([7.0], $sleeper->waits);
+        $this->assertSame([], $this->sleeper->waits);
+    }
+
+    public function test_a_copy_can_have_its_own_retry_policy(): void
+    {
+        $copy = $this->providers->withRetryPolicy(new RetryPolicy(attempts: 1));
+
+        $this->http->queueJson(['error' => ['type' => 'overloaded_error', 'message' => 'Overloaded']], 529);
+
+        try {
+            $copy->text()->text(new TextRequest('writer', 'I', 'P'));
+            $this->fail('Expected the single attempt to fail.');
+        } catch (Overloaded) {
+            $this->assertCount(1, $this->http->requests);
+            $this->assertSame([], $this->sleeper->waits);
+        }
+    }
+
+    public function test_a_fake_carries_over_to_a_copy(): void
+    {
+        $fake = $this->providers->fake();
+
+        $this->assertSame($fake, $this->providers->withSleeper(new RecordingSleeper)->text());
+        $this->assertSame($fake, $this->providers->withRetryPolicy(new RetryPolicy)->image());
     }
 }

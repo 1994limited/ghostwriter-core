@@ -25,6 +25,7 @@ final class Agents
         'imagery-analyst' => 6000,
         'photo-researcher' => 2000,
         'photo-picker' => 2000,
+        'photo-query' => 2000,
         'photo-scout' => 2000,
     ];
 
@@ -32,6 +33,7 @@ final class Agents
     public const EFFORT = [
         'photo-researcher' => 'low',
         'photo-picker' => 'low',
+        'photo-query' => 'low',
         'photo-scout' => 'low',
     ];
 

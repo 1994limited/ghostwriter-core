@@ -10,13 +10,27 @@ permissions:
 
 jobs:
   test:
-    name: PHP ${{ matrix.php }}
+    name: PHP ${{ matrix.php }} (${{ matrix.deps }})
     runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
       matrix:
         php: ['8.2', '8.3', '8.4']
+        deps: [highest]
+        include:
+          # The oldest versions composer.json allows (Guzzle 7, symfony/yaml 6.4, psr/log 1).
+          - php: '8.2'
+            deps: lowest
+          # Guzzle 7 at its newest; "highest" resolves to Guzzle 8.
+          - php: '8.2'
+            deps: guzzle7
+          # Guzzle 8, stated explicitly so a resolver change can't drop it.
+          - php: '8.3'
+            deps: guzzle8
+          # Without the PHP 8.2 platform pin: symfony/yaml 8 and whatever else needs PHP 8.4.
+          - php: '8.4'
+            deps: newest
 
     steps:
       - uses: actions/checkout@v4
@@ -28,12 +42,26 @@ jobs:
           coverage: none
 
       - name: Install dependencies
-        run: composer install --no-interaction --no-progress --prefer-dist
+        env:
+          DEPS: ${{ matrix.deps }}
+        run: |
+          flags="--no-interaction --no-progress --prefer-dist"
+          case "$DEPS" in
+            lowest)  composer update $flags --prefer-lowest --prefer-stable ;;
+            guzzle7) composer require --dev "guzzlehttp/guzzle:^7.8" --no-update && composer update $flags ;;
+            guzzle8) composer require --dev "guzzlehttp/guzzle:^8.0" --no-update && composer update $flags ;;
+            newest)  composer config --unset platform.php && composer update $flags ;;
+            *)       composer update $flags ;;
+          esac
+          composer show | grep -E '^(guzzlehttp/guzzle|symfony/yaml|psr/log|psr/http-message|league/commonmark) '
 
       - name: Boundaries (no framework or CMS in src)
         run: php bin/check-boundaries
 
+      # Style doesn't depend on the versions installed, and the oldest Pint
+      # allowed can't run with the oldest php-cs-fixer it resolves.
       - name: Code style
+        if: matrix.deps != 'lowest'
         run: vendor/bin/pint --test
 
       - name: Static analysis

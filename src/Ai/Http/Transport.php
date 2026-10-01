@@ -135,8 +135,6 @@ final class Transport
 
         for ($attempt = 1; ; $attempt++) {
             $this->attempts = $attempt;
-            $response = null;
-
             try {
                 $response = $client->sendRequest($build());
             } catch (ClientExceptionInterface $exception) {
@@ -161,7 +159,7 @@ final class Transport
             $status = $response->getStatusCode();
 
             if ($status >= 200 && $status < 300) {
-                break;
+                return $this->decode($response, $status, $agent);
             }
 
             $wait = null;
@@ -178,7 +176,15 @@ final class Transport
 
             $slept += $this->pause($agent, $status, $attempt, $wait);
         }
+    }
 
+    /**
+     * @return array<string, mixed>
+     *
+     * @throws BadResponse when the body is not a JSON object or list.
+     */
+    private function decode(ResponseInterface $response, int $status, string $agent): array
+    {
         $data = json_decode((string) $response->getBody(), true);
 
         if (! is_array($data)) {

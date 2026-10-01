@@ -11,14 +11,18 @@ use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 
 /**
- * HTTP clients built on Guzzle 7, which implements PSR-18 and, through
- * HttpFactory, PSR-17. Only usable when guzzlehttp/guzzle is installed;
- * core suggests it rather than requiring it.
+ * HTTP clients built on Guzzle 7 or 8, which implement PSR-18 and, through
+ * guzzlehttp/psr7's HttpFactory (psr7 2.x and 3.x), PSR-17. Only usable
+ * when guzzlehttp/guzzle is installed; core suggests it rather than
+ * requiring it.
  *
  *     new GuzzleHttpClients();                          // plain clients
  *     new GuzzleHttpClients(['handler' => $stack]);     // e.g. a mock handler in tests
  *
- * The timeouts always come from core; other Guzzle options are passed through.
+ * The timeouts always come from core; other Guzzle options are passed
+ * through. Guzzle 8 validates option types (timeouts must be int or float,
+ * header values strings) and rejects a per-request `handler`, so pass a
+ * handler here, at construction, as above.
  */
 final class GuzzleHttpClients implements HttpClients
 {

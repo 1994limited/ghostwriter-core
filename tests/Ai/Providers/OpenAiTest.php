@@ -6,6 +6,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\AuthenticationFailed;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\BadResponse;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\Refused;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\ImageRequest;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Limits;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers\OpenAi;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Shape;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\StopReason;
@@ -147,10 +148,10 @@ class OpenAiTest extends ProviderTestCase
     public function test_too_many_reference_images_are_refused_before_sending(): void
     {
         $this->expectException(BadResponse::class);
-        $this->expectExceptionMessage('The image request has 21 images');
+        $this->expectExceptionMessage('The image request has 25 images; at most 24');
 
         try {
-            $this->openai()->image(new ImageRequest('A lighthouse', array_fill(0, 21, $this->png())));
+            $this->openai()->image(new ImageRequest('A lighthouse', array_fill(0, Limits::MAX_IMAGES + 1, $this->png())));
         } finally {
             $this->assertSame([], $this->http->requests);
         }

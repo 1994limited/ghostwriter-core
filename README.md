@@ -12,7 +12,7 @@ Core depends on no framework or CMS. CI fails if `src/` names `Illuminate`, `Lar
 composer require 1994/ghostwriter-core
 ```
 
-PHP 8.2 or later, with `dom` and `mbstring`. Runtime dependencies are `symfony/yaml`, `league/commonmark` and the PSR HTTP and log interfaces. `guzzlehttp/guzzle` is suggested, not required: it's needed for `Http\GuzzleHttpClients`, the ready-made HTTP client, and for `Testing\MockHttpClient`'s default factories.
+PHP 8.2 or later, with `dom` and `mbstring`. Runtime dependencies are `symfony/yaml` (6.4, 7 or 8), `league/commonmark` 2 and the PSR HTTP and log interfaces (`psr/log` 1 to 3). `guzzlehttp/guzzle` (7.8+ or 8) is suggested, not required: it's needed for `Http\GuzzleHttpClients`, the ready-made HTTP client, and for `Testing\MockHttpClient`'s default factories. CI runs the lowest and highest versions allowed, and Guzzle 7 and 8 each.
 
 During the extraction core is `0.x`, and the addons should require an exact minor (`~0.1.0`).
 
@@ -35,7 +35,7 @@ Where the three addons' copies differed, the difference is a constructor option.
 
 ### Prompts: `NineteenNinetyFour\Ghostwriter\Core\Prompts`
 
-The eleven prompts live in `resources/prompts`. The CMS's own words (website or app, section or resource, entry or record) are `[[name]]` placeholders, filled from a `Vocabulary`:
+The twelve prompts live in `resources/prompts`. The CMS's own words (website or app, section or resource, entry or record) are `[[name]]` placeholders, filled from a `Vocabulary`:
 
 ```php
 use NineteenNinetyFour\Ghostwriter\Core\Prompts\PromptLibrary;
@@ -59,7 +59,7 @@ $instructions = strtr($prompts->get('planner'), [
 
 One way to call a model, used by all three addons, over any PSR-18 client. It covers Anthropic, OpenAI and Gemini for text, and OpenAI and Gemini for images.
 
-- **Requests and responses:** `TextRequest` (agent, instructions, prompt, history, images; max tokens, effort, model and timeout default sensibly) and `TextResponse` (text, `StopReason`, `Usage`, provider, model, `truncated()`). Images use `ImageRequest` and `Image`.
+- **Requests and responses:** `TextRequest` (agent, instructions, prompt, history, images; max tokens, effort, model and timeout default sensibly; `withMaxTokens()` and `withModel()` return a copy) and `TextResponse` (text, `StopReason`, `Usage`, provider, model, `truncated()`). Images use `ImageRequest` and `Image`.
 - **Defaults:** `Models` is the one table of default models and their capabilities. `Agents` gives each agent (prompt name) its max tokens and effort.
 - **Reliability:** busy and rate-limited calls are retried with backoff, following `retry-after`, up to 3 attempts. A response timeout is not retried.
 - **Errors:** every failure is a `ProviderException` with a message that can be shown to an editor. Its subclasses (`NotConfigured`, `AuthenticationFailed`, `RateLimited`, `Overloaded`, `Unreachable`, `Refused`, `BadResponse`, plus `Truncated` for callers) say what happened, and `retryable()` says whether trying again could help.
@@ -99,6 +99,16 @@ Logging is optional: pass any PSR-3 logger. A finished call is logged at `info`,
 
 Retries can make a call take up to `timeout × 3` plus the waits, so queue jobs should allow `timeout × 3 + 60` seconds.
 
+How the registry waits between retries, and how often it retries, are constructor arguments (`sleeper:`, `retry:`). To change them on a registry that's already built, `withSleeper(Sleeper)` and `withRetryPolicy(RetryPolicy)` return a configured copy; the registry is otherwise immutable, so rebind the copy wherever the original was shared. A fake standing in carries over to the copy.
+
+```php
+$providers = $providers->withSleeper(new RecordingSleeper)->withRetryPolicy(new RetryPolicy(attempts: 1));
+```
+
+### Request limits
+
+`Ai\Limits::MAX_IMAGES` (24) and `Ai\Limits::MAX_IMAGE_BYTES` (20 MB of raw image data) cap one request, and every provider refuses a request over them before sending it. `Limits::fits($images)` checks a list in advance. 24 leaves room for the photo picker's 3 references and 18 thumbnails. 20 MB of raw bytes is about 27 MB once base64-encoded, which is under Anthropic's 32 MB request limit.
+
 ## Testing with `FakeProvider`
 
 ```php
@@ -114,14 +124,38 @@ $fake->respondWithImage(Image::fromPath(__DIR__.'/fixtures/photo.jpg'));
 
 $fake->assertSent('photo-picker', fn (TextRequest $r) => count($r->images) === 9);
 $fake->assertNotSent('writer');
+$fake->assertImageSent(fn (ImageRequest $r) => $r->shape === Shape::Landscape);
+$fake->assertNoImageSent();
 $fake->assertNothingSent();
 $fake->prompted('writer')[0]->prompt;
 $fake->imageRequests;
+
+$fake->reset('writer');   // forget the writer's queued answers and requests
+$fake->reset();           // forget every answer and request, text and image
 ```
 
-The asserts throw `AssertionError`, which PHPUnit and Pest report as failures, so core needs no test framework at runtime.
+When PHPUnit is loaded (Pest included), the asserts go through `PHPUnit\Framework\Assert`, so each one counts as an assertion and a test that only asserts on the fake isn't marked risky. Without PHPUnit they throw `AssertionError`, so core needs no test framework at runtime.
 
-To test at the HTTP level, use `Testing\MockHttpClient`. It is both a PSR-18 client and an `HttpClients`, it records every request, and it can throw `Testing\NetworkError::connectFailed()` or `::timedOut()`. Pass `Testing\RecordingSleeper` to `Providers` so retries record their waits instead of sleeping.
+### Testing without keys
+
+A fake marked unconfigured makes the registry behave as if the keys were missing, so the no-key paths can be tested while nothing leaves the machine:
+
+```php
+$providers->fake(FakeProvider::withoutKeys());   // no text key, no image key
+
+$providers->configured();     // false
+$providers->text();           // throws NotConfigured, worded as for a real missing key
+$providers->image();          // null
+$providers->imageHandle();    // null
+$providers->keyStatus();      // every key false
+
+$providers->fake()->unconfigured(text: false);   // a text key, but no image key
+$providers->fake()->unconfigured(false, false);  // both keys back
+```
+
+`reset()` keeps whether the fake is unconfigured.
+
+To test at the HTTP level, use `Testing\MockHttpClient`. It is both a PSR-18 client and an `HttpClients`, it records every request, and it can throw `Testing\NetworkError::connectFailed()` or `::timedOut()`. Pass `Testing\RecordingSleeper` to `Providers` (or use `withSleeper()`) so retries record their waits instead of sleeping.
 
 ## Development
 

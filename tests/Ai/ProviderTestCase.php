@@ -13,7 +13,6 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\Testing\RecordingSleeper;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
-use Stringable;
 
 /**
  * The provider layer over a mocked network: what each provider is sent, and
@@ -53,8 +52,13 @@ abstract class ProviderTestCase extends TestCase
             /** @param array<int, mixed> $logs */
             public function __construct(private array &$logs) {}
 
-            /** @param array<string, mixed> $context */
-            public function log($level, string|Stringable $message, array $context = []): void
+            /**
+             * Untyped $message, so this fits psr/log 1 as well as 2 and 3.
+             *
+             * @param  string|\Stringable  $message
+             * @param  array<string, mixed>  $context
+             */
+            public function log($level, $message, array $context = []): void
             {
                 $this->logs[] = ['level' => (string) $level, 'message' => (string) $message, 'context' => $context];
             }

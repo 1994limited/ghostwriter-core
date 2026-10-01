@@ -13,6 +13,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\TextProvider;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextResponse;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Usage;
+use PHPUnit\Framework\Assert;
 
 /**
  * Stands in for every model in tests, so no call leaves the machine and no
@@ -25,10 +26,21 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\Usage;
  *     // ...
  *     $fake->assertSent('writer', fn (TextRequest $r) => str_contains($r->prompt, 'harbour'));
  *     $fake->assertNotSent('photo-picker');
+ *     $fake->assertImageSent(fn (ImageRequest $r) => $r->shape === Shape::Landscape);
  *     $fake->prompted('writer')[0]->prompt;
+ *     $fake->reset();                       // forget answers and requests, e.g. between steps
  *
- * The asserts throw AssertionError, which PHPUnit reports as a failure, so
- * core needs no test framework at runtime.
+ * When PHPUnit is loaded (Pest runs on it too), the asserts go through
+ * PHPUnit\Framework\Assert, so they count as assertions and a test that
+ * only asserts on the fake isn't marked risky. Without PHPUnit they throw
+ * AssertionError, so core needs no test framework at runtime.
+ *
+ * To test what happens without keys, mark the fake unconfigured: the
+ * Providers registry then reports configured() false, imageHandle() and
+ * image() null, keyStatus() all false, and text() throws NotConfigured.
+ *
+ *     $providers->fake(FakeProvider::withoutKeys());
+ *     $providers->fake()->unconfigured(text: false);   // a text key, but no image key
  */
 class FakeProvider implements ImageProvider, TextProvider
 {
@@ -45,6 +57,64 @@ class FakeProvider implements ImageProvider, TextProvider
     public array $imageRequests = [];
 
     private Image|Closure|null $image = null;
+
+    private bool $textConfigured = true;
+
+    private bool $imageConfigured = true;
+
+    /**
+     * A fake that stands for a site with no keys at all.
+     */
+    public static function withoutKeys(): self
+    {
+        return (new self)->unconfigured();
+    }
+
+    /**
+     * Stand for a site without the text key, the image key, or both (the
+     * default). unconfigured(false, false) gives the keys back.
+     */
+    public function unconfigured(bool $text = true, bool $image = true): static
+    {
+        $this->textConfigured = ! $text;
+        $this->imageConfigured = ! $image;
+
+        return $this;
+    }
+
+    /** Whether the registry should report a text key while this fake stands in. */
+    public function textConfigured(): bool
+    {
+        return $this->textConfigured;
+    }
+
+    /** Whether the registry should report an image key while this fake stands in. */
+    public function imageConfigured(): bool
+    {
+        return $this->imageConfigured;
+    }
+
+    /**
+     * Forget queued answers and recorded requests: one agent's, or, with no
+     * agent, everything, image requests and the image to make included.
+     * Whether the fake is unconfigured is kept.
+     */
+    public function reset(?string $agent = null): static
+    {
+        if ($agent !== null) {
+            unset($this->answers[$agent]);
+            $this->requests = array_values(array_filter($this->requests, fn (TextRequest $request) => $request->agent !== $agent));
+
+            return $this;
+        }
+
+        $this->answers = [];
+        $this->requests = [];
+        $this->imageRequests = [];
+        $this->image = null;
+
+        return $this;
+    }
 
     /**
      * Queue answers for one agent: text, a TextResponse, or a closure given
@@ -104,12 +174,15 @@ class FakeProvider implements ImageProvider, TextProvider
         $sent = $this->prompted($agent);
 
         if ($sent === []) {
-            throw new AssertionError("Expected a request to \"{$agent}\", but none was sent.".$this->summary());
+            $this->verify(false, "Expected a request to \"{$agent}\", but none was sent.".$this->summary());
+
+            return;
         }
 
-        if ($check !== null && array_filter($sent, fn (TextRequest $request) => (bool) $check($request)) === []) {
-            throw new AssertionError(sprintf('"%s" was sent %d request(s), but none passed the check.', $agent, count($sent)));
-        }
+        $this->verify(
+            $check === null || array_filter($sent, fn (TextRequest $request) => (bool) $check($request)) !== [],
+            sprintf('"%s" was sent %d request(s), but none passed the check.', $agent, count($sent)),
+        );
     }
 
     /**
@@ -122,9 +195,36 @@ class FakeProvider implements ImageProvider, TextProvider
         $sent = $this->prompted($agent);
         $matching = $check === null ? $sent : array_filter($sent, fn (TextRequest $request) => (bool) $check($request));
 
-        if ($matching !== []) {
-            throw new AssertionError(sprintf('Expected no %srequest to "%s", but %d were sent.', $check === null ? '' : 'matching ', $agent, count($matching)));
+        $this->verify($matching === [], sprintf('Expected no %srequest to "%s", but %d were sent.', $check === null ? '' : 'matching ', $agent, count($matching)));
+    }
+
+    /**
+     * @param  (callable(ImageRequest): bool)|null  $check  Must hold for at least one image request.
+     *
+     * @throws AssertionError
+     */
+    public function assertImageSent(?callable $check = null): void
+    {
+        if ($this->imageRequests === []) {
+            $this->verify(false, 'Expected an image request, but none was sent.');
+
+            return;
         }
+
+        $this->verify(
+            $check === null || array_filter($this->imageRequests, fn (ImageRequest $request) => (bool) $check($request)) !== [],
+            sprintf('%d image request(s) were sent, but none passed the check.', count($this->imageRequests)),
+        );
+    }
+
+    /**
+     * No image request was made.
+     *
+     * @throws AssertionError
+     */
+    public function assertNoImageSent(): void
+    {
+        $this->verify($this->imageRequests === [], sprintf('Expected no image request, but %d were sent.', count($this->imageRequests)));
     }
 
     /**
@@ -134,9 +234,10 @@ class FakeProvider implements ImageProvider, TextProvider
      */
     public function assertNothingSent(): void
     {
-        if ($this->requests !== [] || $this->imageRequests !== []) {
-            throw new AssertionError(sprintf('Expected no requests, but %d text and %d image request(s) were sent.', count($this->requests), count($this->imageRequests)).$this->summary());
-        }
+        $this->verify(
+            $this->requests === [] && $this->imageRequests === [],
+            sprintf('Expected no requests, but %d text and %d image request(s) were sent.', count($this->requests), count($this->imageRequests)).$this->summary(),
+        );
     }
 
     public function handle(): string
@@ -170,6 +271,31 @@ class FakeProvider implements ImageProvider, TextProvider
         $image = $this->image instanceof Closure ? ($this->image)($request) : $this->image;
 
         return $image instanceof Image ? $image : Image::fromString((string) base64_decode(self::PNG));
+    }
+
+    /**
+     * Whether the asserts go through PHPUnit. A subclass may say no, to
+     * throw AssertionError even with PHPUnit loaded.
+     */
+    protected function usesPhpUnit(): bool
+    {
+        return class_exists(Assert::class);
+    }
+
+    /**
+     * @throws AssertionError when $passed is false and PHPUnit isn't used.
+     */
+    private function verify(bool $passed, string $message): void
+    {
+        if ($this->usesPhpUnit()) {
+            Assert::assertTrue($passed, $message);
+
+            return;
+        }
+
+        if (! $passed) {
+            throw new AssertionError($message);
+        }
     }
 
     private function summary(): string

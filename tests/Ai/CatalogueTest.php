@@ -71,6 +71,7 @@ class CatalogueTest extends TestCase
         $this->assertSame(2000, Agents::maxTokens('photo-scout'));
         $this->assertSame(16000, Agents::maxTokens('something-new'));
         $this->assertSame(Effort::Low, Agents::effort('photo-picker'));
+        $this->assertSame([2000, Effort::Low], [Agents::maxTokens('photo-query'), Agents::effort('photo-query')]);
         $this->assertNull(Agents::effort('writer'));
 
         foreach (PromptLibrary::NAMES as $name) {
@@ -126,5 +127,22 @@ class CatalogueTest extends TestCase
         $this->assertInstanceOf(Client::class, $client);
         $this->assertSame([120, 15, '1'], [$client->getConfig('timeout'), $client->getConfig('connect_timeout'), $client->getConfig('headers')['x-test']]);
         $this->assertSame('POST', $clients->requestFactory()->createRequest('POST', 'https://example.com')->getMethod());
+    }
+
+    public function test_a_text_request_can_be_copied_with_a_new_limit_or_model(): void
+    {
+        $images = [new Image('x', 'image/png')];
+        $request = new TextRequest('writer', 'Be brief.', 'Go.', [new Message('user', 'Hi')], $images, model: 'claude-opus-5-5', timeout: 60, effort: 'high');
+
+        $more = $request->withMaxTokens(32000);
+        $this->assertNotSame($request, $more);
+        $this->assertSame([32000, 16000], [$more->resolvedMaxTokens(), $request->resolvedMaxTokens()]);
+        $this->assertSame(['writer', 'Be brief.', 'Go.', $images, 'claude-opus-5-5', 60, Effort::High], [$more->agent, $more->instructions, $more->prompt, $more->images, $more->model, $more->timeout, $more->effort]);
+        $this->assertEquals($request->history, $more->history);
+
+        $other = $more->withModel('claude-sonnet-5');
+        $this->assertSame(['claude-sonnet-5', 32000, 'claude-opus-5-5'], [$other->model, $other->maxTokens, $more->model]);
+        $this->assertNull($other->withModel(null)->model);
+        $this->assertSame(32000, $other->withModel(null)->maxTokens);
     }
 }

@@ -7,6 +7,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\NotConfigured;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Http\BaseUrl;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Http\Transport;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Image;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Limits;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Models;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextResponse;
@@ -17,11 +18,11 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\TextResponse;
  */
 abstract class HttpProvider
 {
-    /** The most images one request may carry. */
-    public const MAX_IMAGES = 20;
+    /** @deprecated Use Limits::MAX_IMAGES. */
+    public const MAX_IMAGES = Limits::MAX_IMAGES;
 
-    /** The most image data one request may carry, in bytes. */
-    public const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
+    /** @deprecated Use Limits::MAX_IMAGE_BYTES. */
+    public const MAX_IMAGE_BYTES = Limits::MAX_IMAGE_BYTES;
 
     protected readonly ?string $baseUrl;
 
@@ -63,7 +64,7 @@ abstract class HttpProvider
 
     /**
      * Providers cap the size of a request, and the photo picker sends many
-     * images. Callers already shrink them; this is a guard.
+     * images. Callers already shrink them; this is a guard (see Limits).
      *
      * @param  array<int, Image>  $images
      *
@@ -71,14 +72,14 @@ abstract class HttpProvider
      */
     protected function guard(string $agent, array $images): void
     {
-        $bytes = array_sum(array_map(fn (Image $image) => $image->bytes(), $images));
+        $bytes = Limits::bytes($images);
 
-        if (count($images) > self::MAX_IMAGES) {
-            throw new BadResponse(sprintf('The %s request has %d images; at most %d can be sent at once.', $agent ?: 'model', count($images), self::MAX_IMAGES), $this->handle());
+        if (count($images) > Limits::MAX_IMAGES) {
+            throw new BadResponse(sprintf('The %s request has %d images; at most %d can be sent at once.', $agent ?: 'model', count($images), Limits::MAX_IMAGES), $this->handle());
         }
 
-        if ($bytes > self::MAX_IMAGE_BYTES) {
-            throw new BadResponse(sprintf('The %s request has %.1f MB of images; at most %d MB can be sent at once.', $agent ?: 'model', $bytes / 1048576, self::MAX_IMAGE_BYTES / 1048576), $this->handle());
+        if ($bytes > Limits::MAX_IMAGE_BYTES) {
+            throw new BadResponse(sprintf('The %s request has %.1f MB of images; at most %d MB can be sent at once.', $agent ?: 'model', $bytes / 1048576, Limits::MAX_IMAGE_BYTES / 1048576), $this->handle());
         }
     }
 
