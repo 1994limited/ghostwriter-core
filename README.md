@@ -59,7 +59,7 @@ $instructions = strtr($prompts->get('planner'), [
 
 One way to call a model, used by all three addons, over any PSR-18 client. It covers Anthropic, OpenAI and Gemini for text, and OpenAI and Gemini for images.
 
-- **Requests and responses:** `TextRequest` (agent, instructions, prompt, history, images; max tokens, effort, model and timeout default sensibly) and `TextResponse` (text, `StopReason`, `Usage`, provider, model, `truncated()`). Images use `ImageRequest` and `Image`.
+- **Requests and responses:** `TextRequest` (agent, instructions, prompt, history, images; max tokens, effort, model and timeout default sensibly; `withMaxTokens()` and `withModel()` return a copy) and `TextResponse` (text, `StopReason`, `Usage`, provider, model, `truncated()`). Images use `ImageRequest` and `Image`.
 - **Defaults:** `Models` is the one table of default models and their capabilities. `Agents` gives each agent (prompt name) its max tokens and effort.
 - **Reliability:** busy and rate-limited calls are retried with backoff, following `retry-after`, up to 3 attempts. A response timeout is not retried.
 - **Errors:** every failure is a `ProviderException` with a message that can be shown to an editor. Its subclasses (`NotConfigured`, `AuthenticationFailed`, `RateLimited`, `Overloaded`, `Unreachable`, `Refused`, `BadResponse`, plus `Truncated` for callers) say what happened, and `retryable()` says whether trying again could help.

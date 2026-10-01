@@ -15,6 +15,7 @@ The first version: the parts the Statamic, Filament and Craft addons had copied 
   - The `Providers` registry, and the `Credentials`, `HttpClients` and `ProviderSettings` ports.
   - `Models`, one table of default models: `claude-opus-5-5`, `gpt-6.1-sol`, `gemini-3.8-flash`, `gpt-image-2.5-sunburst` and `gemini-3.1-flash-image`.
   - `Agents`, which sets max tokens and effort per agent.
+  - `TextRequest::withMaxTokens(int)` and `withModel(?string)`, which return a copy (to retry a cut-off reply with more room, or on another model).
 - **Retries:** 408, 409, 429, 5xx and 529 responses, and connection failures, are retried with backoff and jitter. `retry-after` and `retry-after-ms` are followed, with waits capped at 30 s. A response timeout is not retried.
 - **Stop reasons:** `TextResponse::$stopReason` (`end`, `max_tokens`, `refusal`, `safety`, `other`) and `truncated()`. Providers report a cut-off reply and never throw for it.
 - **Usage:** `Usage` counts Anthropic's cache-creation tokens and Gemini's thinking tokens.

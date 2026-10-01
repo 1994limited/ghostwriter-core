@@ -36,6 +36,23 @@ final class TextRequest
         $this->effort = is_string($effort) ? Effort::tryFrom($effort) : $effort;
     }
 
+    /**
+     * A copy with its own token limit, e.g. to retry a cut-off reply with
+     * more room.
+     */
+    public function withMaxTokens(int $maxTokens): self
+    {
+        return new self($this->agent, $this->instructions, $this->prompt, $this->history, $this->images, $maxTokens, $this->model, $this->timeout, $this->effort);
+    }
+
+    /**
+     * A copy sent to another model; null goes back to the settings' model.
+     */
+    public function withModel(?string $model): self
+    {
+        return new self($this->agent, $this->instructions, $this->prompt, $this->history, $this->images, $this->maxTokens, $model, $this->timeout, $this->effort);
+    }
+
     /** The token limit to send: the request's own, or the agent's default. */
     public function resolvedMaxTokens(): int
     {
