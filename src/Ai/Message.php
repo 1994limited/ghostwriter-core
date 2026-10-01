@@ -1,0 +1,23 @@
+<?php
+
+namespace NineteenNinetyFour\Ghostwriter\Core\Ai;
+
+/**
+ * One earlier turn of a conversation: "user" or "assistant".
+ */
+final class Message
+{
+    public function __construct(
+        public readonly string $role,
+        public readonly string $content,
+    ) {}
+
+    /**
+     * @param  array<int|string, array{role: string, content: string}>  $history
+     * @return array<int, Message>
+     */
+    public static function list(array $history): array
+    {
+        return array_map(fn (array $message) => new self((string) $message['role'], (string) $message['content']), array_values($history));
+    }
+}
