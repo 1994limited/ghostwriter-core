@@ -1,0 +1,82 @@
+#!/usr/bin/env php
+<?php
+
+/*
+ * Core must not depend on any framework or CMS. This fails when code under
+ * src/ names a forbidden namespace: in a use statement, a qualified name, a
+ * global framework class (Craft::, new Yii) or a class name in a string.
+ * Comments are ignored, so a docblock may still mention a CMS.
+ *
+ *     bin/check-boundaries [directory]
+ */
+
+$root = $argv[1] ?? dirname(__DIR__).'/src';
+
+/** First namespace segments that are not allowed, compared case-insensitively. */
+$namespaces = ['illuminate', 'craft', 'yii', 'statamic', 'filament', 'livewire', 'laravel'];
+
+/** Global framework classes, which have no namespace to spot. */
+$globals = ['Craft', 'Yii'];
+
+$found = [];
+
+if (! is_dir($root)) {
+    fwrite(STDERR, "No such directory: {$root}\n");
+
+    exit(2);
+}
+
+$files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS));
+
+foreach ($files as $file) {
+    if ($file->getExtension() !== 'php') {
+        continue;
+    }
+
+    $tokens = array_values(array_filter(
+        token_get_all((string) file_get_contents($file->getPathname())),
+        fn ($token) => ! is_array($token) || ! in_array($token[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true),
+    ));
+
+    foreach ($tokens as $i => $token) {
+        if (! is_array($token)) {
+            continue;
+        }
+
+        [$type, $text, $line] = $token;
+        $name = null;
+
+        if (in_array($type, [T_NAME_QUALIFIED, T_NAME_FULLY_QUALIFIED], true)) {
+            $name = ltrim($text, '\\');
+        } elseif ($type === T_CONSTANT_ENCAPSED_STRING && preg_match('/^[\'"]\\\\{0,2}([A-Za-z_]+)\\\\{1,2}[A-Za-z_]/', $text, $m)) {
+            $name = $m[1].'\\';
+        } elseif ($type === T_STRING && in_array($text, $globals, true)) {
+            $next = $tokens[$i + 1] ?? null;
+            $previous = $tokens[$i - 1] ?? null;
+            $usedAsClass = (is_array($next) && $next[0] === T_DOUBLE_COLON)
+                || (is_array($previous) && in_array($previous[0], [T_USE, T_NEW, T_INSTANCEOF, T_EXTENDS, T_IMPLEMENTS], true));
+
+            if ($usedAsClass) {
+                $name = $text.'\\';
+            }
+        }
+
+        if ($name === null) {
+            continue;
+        }
+
+        $first = strtolower(explode('\\', $name)[0]);
+
+        if (in_array($first, $namespaces, true)) {
+            $found[] = sprintf('%s:%d: %s', $file->getPathname(), $line, $text);
+        }
+    }
+}
+
+if ($found !== []) {
+    fwrite(STDERR, "Core must not depend on a framework or CMS. Forbidden names found:\n\n".implode("\n", $found)."\n");
+
+    exit(1);
+}
+
+fwrite(STDOUT, "No forbidden namespaces in {$root}.\n");

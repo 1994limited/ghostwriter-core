@@ -1,0 +1,31 @@
+Ghostwriter Core
+Copyright (c) 2026 1994 Limited. All rights reserved.
+
+This software is proprietary. It is licensed, not sold.
+
+Ghostwriter Core is distributed as a dependency of the Ghostwriter addons
+for Statamic, Filament and Craft CMS, and your use of it is governed by the
+marketplace terms and the licence you bought for the addon it came with.
+Where this file and those terms differ, those terms apply.
+
+In short, you may:
+
+- install and use Ghostwriter Core as part of a Ghostwriter addon, on the
+  sites your licence covers;
+- modify it for use on those sites;
+- keep it in your own version control alongside those sites.
+
+You may not:
+
+- redistribute, sell, sublicense or publish Ghostwriter Core or any part of
+  it, modified or not, other than as part of a site it is licensed for;
+- remove or alter this notice or the copyright notices in the source.
+
+Ghostwriter Core is provided "as is", without warranty of any kind, express
+or implied, including the warranties of merchantability, fitness for a
+particular purpose and non-infringement. In no event shall 1994 Limited be
+liable for any claim, damages or other liability arising from or in
+connection with the software or its use.
+
+Third-party packages Ghostwriter Core depends on are under their own
+licences; see the vendor directory of the installed package.
