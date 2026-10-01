@@ -24,7 +24,7 @@ The first version: the parts the Statamic, Filament and Craft addons had copied 
   - A refusal that names a `recommended_model` is retried once on that model.
 - **Effort:** sent to OpenAI (`reasoning_effort`) and Gemini (`thinkingLevel`) as well as Anthropic, for the models that take it.
 - **Base URLs:** an optional `base_url` per provider, for gateways that speak the same API. It must be `https://`, except for localhost.
-- **Request size:** a request with more than 20 images, or more than 20 MB of image data, is refused before it is sent.
+- **Request size:** a request with more than 24 images, or more than 20 MB of image data, is refused before it is sent. The limits are public on `Ai\Limits` (`MAX_IMAGES`, `MAX_IMAGE_BYTES`, `fits()`), so addons can size their requests. 24 leaves room for the photo picker's 3 references and 18 thumbnails; 20 MB of raw bytes is about 27 MB once base64-encoded, under Anthropic's 32 MB request limit.
 - **Exceptions:** a hierarchy under `ProviderException`, with `retryable()`, `status()` and `provider()`. Keys never appear in messages or logs.
 - **Testing:**
   - `Testing\FakeProvider`, with Craft's API plus `assertSent`, `assertNotSent`, `assertNothingSent` and `failWith`.

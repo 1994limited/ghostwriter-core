@@ -8,7 +8,9 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\Overloaded;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\ProviderException;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\Refused;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Image;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Limits;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers\Anthropic;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers\HttpProvider;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\StopReason;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Tests\Ai\ProviderTestCase;
@@ -290,9 +292,23 @@ class AnthropicTest extends ProviderTestCase
         $this->claude()->text($this->request());
     }
 
+    public function test_the_photo_pickers_full_request_fits(): void
+    {
+        $this->http->queueJson(['content' => [['type' => 'text', 'text' => '1, 2']]]);
+
+        // 3 references and 18 thumbnails.
+        $images = array_fill(0, 21, $this->png());
+        $this->assertTrue(Limits::fits($images));
+        $this->assertSame('1, 2', $this->claude()->text($this->request(images: $images, agent: 'photo-picker'))->text);
+        $this->assertCount(1, $this->http->requests);
+        $this->assertSame(24, HttpProvider::MAX_IMAGES);
+    }
+
     public function test_too_many_or_too_large_images_are_refused_before_sending(): void
     {
-        foreach ([array_fill(0, 21, $this->png()), [new Image(str_repeat('x', 21 * 1024 * 1024), 'image/png')]] as $images) {
+        $this->assertFalse(Limits::fits(array_fill(0, Limits::MAX_IMAGES + 1, $this->png())));
+
+        foreach ([array_fill(0, Limits::MAX_IMAGES + 1, $this->png()), [new Image(str_repeat('x', 21 * 1024 * 1024), 'image/png')]] as $images) {
             try {
                 $this->claude()->text($this->request(images: $images, agent: 'photo-picker'));
                 $this->fail('Expected the request to be refused.');
