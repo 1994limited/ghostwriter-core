@@ -2,6 +2,12 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. While the version is `0.x`, a minor release may contain breaking changes.
 
+## 0.1.1 - Unreleased
+
+### Changed
+- The writer prompt no longer lets the model promise or require anything on the organisation's behalf (conditions, requirements, prices, offers, guarantees, deadlines, policies) that the brief or conversation didn't give it. It leaves them out and says what is missing. Found in testing, where a job advert gained "you'll need to be local".
+- The writer may also take facts about the organisation from the existing entries it is shown, which it already did in practice.
+
 ## 0.1.0 - 2026-10-01
 
 The first version: the parts the Statamic, Filament and Craft addons had copied by hand, in one framework-free package.
