@@ -30,6 +30,7 @@ The first version: the parts the Statamic, Filament and Craft addons had copied 
   - `Testing\FakeProvider`, with Craft's API plus `assertSent`, `assertNotSent`, `assertNothingSent` and `failWith`.
   - `Testing\MockHttpClient`, `NetworkError` and `RecordingSleeper`.
 - **Boundaries:** `bin/check-boundaries`, which fails if `src/` names a framework or CMS.
+- **Dependencies:** `symfony/yaml` `^6.4|^7.0|^8.0`, `psr/http-factory` `^1.1`, and Guzzle `^7.8|^8.0` for `GuzzleHttpClients`. CI also runs `--prefer-lowest`, Guzzle 7, Guzzle 8, and the newest versions without the PHP 8.2 platform pin.
 
 ### Deprecated
 

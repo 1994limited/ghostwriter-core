@@ -12,7 +12,7 @@ Core depends on no framework or CMS. CI fails if `src/` names `Illuminate`, `Lar
 composer require 1994/ghostwriter-core
 ```
 
-PHP 8.2 or later, with `dom` and `mbstring`. Runtime dependencies are `symfony/yaml`, `league/commonmark` and the PSR HTTP and log interfaces. `guzzlehttp/guzzle` is suggested, not required: it's needed for `Http\GuzzleHttpClients`, the ready-made HTTP client, and for `Testing\MockHttpClient`'s default factories.
+PHP 8.2 or later, with `dom` and `mbstring`. Runtime dependencies are `symfony/yaml` (6.4, 7 or 8), `league/commonmark` 2 and the PSR HTTP and log interfaces (`psr/log` 1 to 3). `guzzlehttp/guzzle` (7.8+ or 8) is suggested, not required: it's needed for `Http\GuzzleHttpClients`, the ready-made HTTP client, and for `Testing\MockHttpClient`'s default factories. CI runs the lowest and highest versions allowed, and Guzzle 7 and 8 each.
 
 During the extraction core is `0.x`, and the addons should require an exact minor (`~0.1.0`).
 
