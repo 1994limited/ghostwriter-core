@@ -114,12 +114,36 @@ $fake->respondWithImage(Image::fromPath(__DIR__.'/fixtures/photo.jpg'));
 
 $fake->assertSent('photo-picker', fn (TextRequest $r) => count($r->images) === 9);
 $fake->assertNotSent('writer');
+$fake->assertImageSent(fn (ImageRequest $r) => $r->shape === Shape::Landscape);
+$fake->assertNoImageSent();
 $fake->assertNothingSent();
 $fake->prompted('writer')[0]->prompt;
 $fake->imageRequests;
+
+$fake->reset('writer');   // forget the writer's queued answers and requests
+$fake->reset();           // forget every answer and request, text and image
 ```
 
-The asserts throw `AssertionError`, which PHPUnit and Pest report as failures, so core needs no test framework at runtime.
+When PHPUnit is loaded (Pest included), the asserts go through `PHPUnit\Framework\Assert`, so each one counts as an assertion and a test that only asserts on the fake isn't marked risky. Without PHPUnit they throw `AssertionError`, so core needs no test framework at runtime.
+
+### Testing without keys
+
+A fake marked unconfigured makes the registry behave as if the keys were missing, so the no-key paths can be tested while nothing leaves the machine:
+
+```php
+$providers->fake(FakeProvider::withoutKeys());   // no text key, no image key
+
+$providers->configured();     // false
+$providers->text();           // throws NotConfigured, worded as for a real missing key
+$providers->image();          // null
+$providers->imageHandle();    // null
+$providers->keyStatus();      // every key false
+
+$providers->fake()->unconfigured(text: false);   // a text key, but no image key
+$providers->fake()->unconfigured(false, false);  // both keys back
+```
+
+`reset()` keeps whether the fake is unconfigured.
 
 To test at the HTTP level, use `Testing\MockHttpClient`. It is both a PSR-18 client and an `HttpClients`, it records every request, and it can throw `Testing\NetworkError::connectFailed()` or `::timedOut()`. Pass `Testing\RecordingSleeper` to `Providers` so retries record their waits instead of sleeping.
 

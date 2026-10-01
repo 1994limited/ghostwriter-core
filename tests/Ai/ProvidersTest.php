@@ -149,4 +149,53 @@ class ProvidersTest extends ProviderTestCase
         $this->assertFalse($this->providers->faked());
         $this->assertFalse($this->providers->configured());
     }
+
+    public function test_an_unconfigured_fake_stands_for_missing_keys(): void
+    {
+        $this->keys->set('openai', 'o');
+        $fake = $this->providers->fake(FakeProvider::withoutKeys());
+
+        $this->assertTrue($this->providers->faked());
+        $this->assertFalse($this->providers->configured());
+        $this->assertNull($this->providers->imageHandle());
+        $this->assertNull($this->providers->image());
+        $this->assertNotContains(true, $this->providers->keyStatus());
+        $this->assertSame('fake', $this->providers->textHandle());
+
+        try {
+            $this->providers->text();
+            $this->fail('Expected NotConfigured.');
+        } catch (NotConfigured $exception) {
+            $this->assertSame('No API key is set for Anthropic. Add ANTHROPIC_API_KEY to your .env file.', $exception->getMessage());
+        }
+
+        // A text key but no image key.
+        $fake->unconfigured(text: false);
+        $this->assertTrue($this->providers->configured());
+        $this->assertSame($fake, $this->providers->text());
+        $this->assertNull($this->providers->image());
+        $this->assertNotContains(true, $this->providers->keyStatus());
+
+        // An image key but no text key.
+        $fake->unconfigured(image: false);
+        $this->assertFalse($this->providers->configured());
+        $this->assertSame([$fake, 'fake'], [$this->providers->image(), $this->providers->imageHandle()]);
+
+        // Both keys back: the real key status shows again.
+        $fake->unconfigured(false, false);
+        $this->assertTrue($this->providers->configured());
+        $this->assertSame([true, true], [$this->providers->keyStatus()['ANTHROPIC_API_KEY'], $this->providers->keyStatus()['OPENAI_API_KEY']]);
+        $fake->assertNothingSent();
+    }
+
+    public function test_an_unconfigured_fake_names_an_unknown_provider_plainly(): void
+    {
+        $this->settings->textProvider = 'mistral';
+        $this->providers->fake(FakeProvider::withoutKeys());
+
+        $this->expectException(NotConfigured::class);
+        $this->expectExceptionMessage('No API key is set for "mistral".');
+
+        $this->providers->text();
+    }
 }

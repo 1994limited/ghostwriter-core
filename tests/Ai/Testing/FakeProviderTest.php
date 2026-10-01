@@ -12,6 +12,8 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\Testing\FakeProvider;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextResponse;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Usage;
+use PHPUnit\Framework\Assert;
+use PHPUnit\Framework\AssertionFailedError;
 use PHPUnit\Framework\TestCase;
 
 class FakeProviderTest extends TestCase
@@ -87,14 +89,15 @@ class FakeProviderTest extends TestCase
             try {
                 $failure();
                 $this->fail("Assertion {$i} should have failed.");
-            } catch (AssertionError $error) {
+            } catch (AssertionFailedError $error) {
                 $this->assertNotSame('', $error->getMessage());
             }
         }
 
         try {
             $fake->assertSent('writer');
-        } catch (AssertionError $error) {
+            $this->fail('Expected the assertion to fail.');
+        } catch (AssertionFailedError $error) {
             $this->assertStringContainsString('Sent: photo-picker ×1.', $error->getMessage());
         }
     }
@@ -111,7 +114,109 @@ class FakeProviderTest extends TestCase
         $this->assertSame($mine, $fake->image(new ImageRequest('Mine', shape: 'portrait')));
         $this->assertSame(['A lighthouse', 'Mine'], array_map(fn (ImageRequest $request) => $request->prompt, $fake->imageRequests));
 
-        $this->expectException(AssertionError::class);
+        $this->expectException(AssertionFailedError::class);
         $fake->assertNothingSent();
+    }
+
+    public function test_image_asserts(): void
+    {
+        $fake = new FakeProvider;
+        $fake->assertNoImageSent();
+
+        $fake->image(new ImageRequest('A lighthouse', shape: 'landscape'));
+
+        $fake->assertImageSent();
+        $fake->assertImageSent(fn (ImageRequest $request) => $request->prompt === 'A lighthouse');
+
+        foreach ([fn () => $fake->assertNoImageSent(), fn () => $fake->assertImageSent(fn (ImageRequest $request) => $request->prompt === 'A harbour'), fn () => (new FakeProvider)->assertImageSent()] as $i => $failure) {
+            try {
+                $failure();
+                $this->fail("Image assertion {$i} should have failed.");
+            } catch (AssertionFailedError $error) {
+                $this->assertMatchesRegularExpression('/image request/', $error->getMessage());
+            }
+        }
+    }
+
+    public function test_the_asserts_count_with_phpunit(): void
+    {
+        $fake = (new FakeProvider)->respond('writer', 'Hi.');
+        $before = Assert::getCount();
+
+        $this->ask($fake, 'writer');
+        $fake->assertSent('writer');
+        $fake->assertNotSent('planner');
+        $fake->assertNoImageSent();
+
+        $this->assertSame($before + 3, Assert::getCount());
+    }
+
+    public function test_a_test_that_only_asserts_on_the_fake_is_not_risky(): void
+    {
+        // failOnRisky is on: this would fail if the assert weren't counted.
+        (new FakeProvider)->assertNothingSent();
+    }
+
+    public function test_without_phpunit_the_asserts_throw_assertion_error(): void
+    {
+        $fake = new class extends FakeProvider
+        {
+            protected function usesPhpUnit(): bool
+            {
+                return false;
+            }
+        };
+
+        $fake->assertNothingSent();
+        $fake->image(new ImageRequest('A lighthouse'));
+
+        foreach ([fn () => $fake->assertSent('writer'), fn () => $fake->assertNothingSent(), fn () => $fake->assertNoImageSent()] as $i => $failure) {
+            try {
+                $failure();
+                $this->fail("Assertion {$i} should have failed.");
+            } catch (AssertionError $error) {
+                $this->assertNotSame('', $error->getMessage());
+            }
+        }
+    }
+
+    public function test_reset_forgets_one_agent_or_everything(): void
+    {
+        $fake = (new FakeProvider)->respond('writer', 'Draft.')->respond('planner', 'Plan.')->respondWithImage(new Image('bytes', 'image/webp'));
+        $this->ask($fake, 'writer');
+        $this->ask($fake, 'planner');
+        $fake->image(new ImageRequest('A lighthouse'));
+
+        $this->assertSame($fake, $fake->reset('writer'));
+        $fake->assertNotSent('writer');
+        $fake->assertSent('planner');
+        $this->assertCount(1, $fake->imageRequests);
+        $this->assertSame('Plan.', $this->ask($fake, 'planner')->text);
+
+        try {
+            $this->ask($fake, 'writer');
+            $this->fail('Expected the writer\'s answers to be gone.');
+        } catch (ProviderException $exception) {
+            $this->assertStringContainsString('no answer queued for "writer"', $exception->getMessage());
+        }
+
+        $fake->unconfigured(image: false);
+        $fake->reset();
+        $fake->assertNothingSent();
+        $this->assertSame('image/png', $fake->image(new ImageRequest('Again'))->mime);
+        $this->assertFalse($fake->textConfigured(), 'reset() keeps the fake unconfigured.');
+
+        $this->expectException(ProviderException::class);
+        $this->ask($fake, 'planner');
+    }
+
+    public function test_without_keys(): void
+    {
+        $fake = FakeProvider::withoutKeys();
+        $this->assertSame([false, false], [$fake->textConfigured(), $fake->imageConfigured()]);
+        $this->assertSame([true, true], [(new FakeProvider)->textConfigured(), (new FakeProvider)->imageConfigured()]);
+
+        $fake->unconfigured(text: false);
+        $this->assertSame([true, false], [$fake->textConfigured(), $fake->imageConfigured()]);
     }
 }

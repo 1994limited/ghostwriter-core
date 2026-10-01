@@ -26,7 +26,8 @@ use Psr\Log\LoggerInterface;
  *     $providers->text()->text(new TextRequest('writer', $instructions, $prompt));
  *     $providers->image()?->image(new ImageRequest('A lighthouse'));
  *
- * In tests, fake() stands a FakeProvider in for every model.
+ * In tests, fake() stands a FakeProvider in for every model; a fake marked
+ * unconfigured() makes the registry behave as if the keys were missing.
  */
 final class Providers
 {
@@ -59,7 +60,7 @@ final class Providers
     public function text(): TextProvider
     {
         if ($this->fake !== null) {
-            return $this->fake;
+            return $this->fake->textConfigured() ? $this->fake : throw $this->noKey($this->settings->textProvider());
         }
 
         $handle = $this->textHandle();
@@ -68,10 +69,7 @@ final class Providers
             throw new NotConfigured("\"{$handle}\" is not a provider Ghostwriter can write with. Choose anthropic, openai or gemini.", $handle);
         }
 
-        $key = $this->credentials->key($handle) ?? throw new NotConfigured(
-            'No API key is set for '.self::LABELS[$handle].'. Add '.Credentials::ENV[$handle].' to your .env file.',
-            $handle,
-        );
+        $key = $this->credentials->key($handle) ?? throw $this->noKey($handle);
 
         return $this->build($handle, $key);
     }
@@ -84,7 +82,7 @@ final class Providers
     public function image(): ?ImageProvider
     {
         if ($this->fake !== null) {
-            return $this->fake;
+            return $this->fake->imageConfigured() ? $this->fake : null;
         }
 
         $handle = $this->imageHandle();
@@ -113,7 +111,7 @@ final class Providers
     public function imageHandle(): ?string
     {
         if ($this->fake !== null) {
-            return 'fake';
+            return $this->fake->imageConfigured() ? 'fake' : null;
         }
 
         $chosen = $this->settings->imageProvider();
@@ -131,7 +129,7 @@ final class Providers
     public function configured(): bool
     {
         if ($this->fake !== null) {
-            return true;
+            return $this->fake->textConfigured();
         }
 
         $handle = $this->settings->textProvider();
@@ -141,16 +139,18 @@ final class Providers
 
     /**
      * Which keys are set, by environment variable, for a settings screen.
-     * Never the keys themselves.
+     * Never the keys themselves. While an unconfigured fake stands in,
+     * every key is reported missing.
      *
      * @return array<string, bool>
      */
     public function keyStatus(): array
     {
         $status = [];
+        $unconfigured = $this->fake !== null && (! $this->fake->textConfigured() || ! $this->fake->imageConfigured());
 
         foreach (Credentials::ENV as $provider => $variable) {
-            $status[$variable] = $this->credentials->key($provider) !== null;
+            $status[$variable] = ! $unconfigured && $this->credentials->key($provider) !== null;
         }
 
         return $status;
@@ -173,6 +173,15 @@ final class Providers
     public function faked(): bool
     {
         return $this->fake !== null;
+    }
+
+    private function noKey(string $handle): NotConfigured
+    {
+        if (! isset(self::LABELS[$handle], Credentials::ENV[$handle])) {
+            return new NotConfigured("No API key is set for \"{$handle}\".", $handle);
+        }
+
+        return new NotConfigured('No API key is set for '.self::LABELS[$handle].'. Add '.Credentials::ENV[$handle].' to your .env file.', $handle);
     }
 
     private function build(string $handle, string $key): TextProvider

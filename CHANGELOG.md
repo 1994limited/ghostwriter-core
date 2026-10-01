@@ -27,7 +27,8 @@ The first version: the parts the Statamic, Filament and Craft addons had copied 
 - **Request size:** a request with more than 24 images, or more than 20 MB of image data, is refused before it is sent. The limits are public on `Ai\Limits` (`MAX_IMAGES`, `MAX_IMAGE_BYTES`, `fits()`), so addons can size their requests. 24 leaves room for the photo picker's 3 references and 18 thumbnails; 20 MB of raw bytes is about 27 MB once base64-encoded, under Anthropic's 32 MB request limit.
 - **Exceptions:** a hierarchy under `ProviderException`, with `retryable()`, `status()` and `provider()`. Keys never appear in messages or logs.
 - **Testing:**
-  - `Testing\FakeProvider`, with Craft's API plus `assertSent`, `assertNotSent`, `assertNothingSent` and `failWith`.
+  - `Testing\FakeProvider`, with Craft's API plus `assertSent`, `assertNotSent`, `assertImageSent`, `assertNoImageSent`, `assertNothingSent`, `failWith` and `reset(?string $agent)`. Under PHPUnit (or Pest) the asserts go through `PHPUnit\Framework\Assert`, so they count and tests aren't marked risky; without it they throw `AssertionError`.
+  - `FakeProvider::withoutKeys()` and `->unconfigured(bool $text = true, bool $image = true)`, which make the faked `Providers` report missing keys: `configured()` false, `image()` and `imageHandle()` null, `keyStatus()` all false, and `text()` throws `NotConfigured`.
   - `Testing\MockHttpClient`, `NetworkError` and `RecordingSleeper`.
 - **Boundaries:** `bin/check-boundaries`, which fails if `src/` names a framework or CMS.
 - **Dependencies:** `symfony/yaml` `^6.4|^7.0|^8.0`, `psr/http-factory` `^1.1`, and Guzzle `^7.8|^8.0` for `GuzzleHttpClients`. CI also runs `--prefer-lowest`, Guzzle 7, Guzzle 8, and the newest versions without the PHP 8.2 platform pin.
