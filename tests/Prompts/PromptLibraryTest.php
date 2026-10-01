@@ -12,7 +12,8 @@ use PHPUnit\Framework\TestCase;
  * Golden tests: with each addon's vocabulary, every prompt that addon ships
  * must come out exactly as its own file had it before core. The files under
  * tests/Fixtures/prompts are copies of each addon's prompts as of the
- * extraction (Statamic's photo-picker was inline in its PhotoPicker agent).
+ * extraction (Statamic's photo-picker was inline in its PhotoPicker agent,
+ * and its photo-query is Studio::PHOTO_QUERY, first PhotoResearcher's).
  */
 class PromptLibraryTest extends TestCase
 {
@@ -41,7 +42,8 @@ class PromptLibraryTest extends TestCase
     public function test_every_addon_prompt_is_covered(): void
     {
         $this->assertCount(11, glob(dirname(__DIR__).'/Fixtures/prompts/craft/*.md') ?: []);
-        $this->assertCount(11, glob(dirname(__DIR__).'/Fixtures/prompts/statamic/*.md') ?: []);
+        $this->assertCount(12, glob(dirname(__DIR__).'/Fixtures/prompts/statamic/*.md') ?: []);
+        $this->assertCount(12, PromptLibrary::NAMES);
         $this->assertCount(11, glob(dirname(__DIR__).'/Fixtures/prompts/filament/*.md') ?: []);
 
         foreach (PromptLibrary::NAMES as $name) {

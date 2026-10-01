@@ -35,7 +35,7 @@ Where the three addons' copies differed, the difference is a constructor option.
 
 ### Prompts: `NineteenNinetyFour\Ghostwriter\Core\Prompts`
 
-The eleven prompts live in `resources/prompts`. The CMS's own words (website or app, section or resource, entry or record) are `[[name]]` placeholders, filled from a `Vocabulary`:
+The twelve prompts live in `resources/prompts`. The CMS's own words (website or app, section or resource, entry or record) are `[[name]]` placeholders, filled from a `Vocabulary`:
 
 ```php
 use NineteenNinetyFour\Ghostwriter\Core\Prompts\PromptLibrary;

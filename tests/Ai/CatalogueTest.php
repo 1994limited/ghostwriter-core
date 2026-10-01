@@ -71,6 +71,7 @@ class CatalogueTest extends TestCase
         $this->assertSame(2000, Agents::maxTokens('photo-scout'));
         $this->assertSame(16000, Agents::maxTokens('something-new'));
         $this->assertSame(Effort::Low, Agents::effort('photo-picker'));
+        $this->assertSame([2000, Effort::Low], [Agents::maxTokens('photo-query'), Agents::effort('photo-query')]);
         $this->assertNull(Agents::effort('writer'));
 
         foreach (PromptLibrary::NAMES as $name) {

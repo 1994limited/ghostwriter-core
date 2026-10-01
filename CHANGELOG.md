@@ -9,7 +9,7 @@ The first version: the parts the Statamic, Filament and Craft addons had copied 
 ### Added
 
 - **Text:** `Draft`, `LenientYaml`, `TaggedResponse`, `HtmlToMarkdown`, `DraftPreview`, `EntryMerger`, `EntrySimplifier` and `Utf8`. They are unified from the three addons' copies. Where the copies differed, the difference is a constructor option ([docs/text-unification.md](docs/text-unification.md)).
-- **Prompts:** all eleven prompts, plus `Vocabulary` (with `statamic()`, `craft()` and `filament()`) and `PromptLibrary`, which supports per-site overrides. Golden tests check that each addon gets its current prompts byte for byte.
+- **Prompts:** all twelve prompts (including `photo-query`, the single-search photo prompt behind Statamic's `Studio::photoQuery`), plus `Vocabulary` (with `statamic()`, `craft()` and `filament()`) and `PromptLibrary`, which supports per-site overrides. Golden tests check that each addon gets its current prompts byte for byte.
 - **AI layer,** ported from the Craft addon:
   - Value objects, the `TextProvider` and `ImageProvider` contracts, and the Anthropic, OpenAI and Gemini providers over PSR-18.
   - The `Providers` registry, and the `Credentials`, `HttpClients` and `ProviderSettings` ports.
