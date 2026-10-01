@@ -2,7 +2,7 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. While the version is `0.x`, a minor release may contain breaking changes.
 
-## 0.1.0 - Unreleased
+## 0.1.0 - 2026-10-01
 
 The first version: the parts the Statamic, Filament and Craft addons had copied by hand, in one framework-free package.
 
