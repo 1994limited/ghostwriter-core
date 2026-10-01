@@ -1,0 +1,152 @@
+<?php
+
+namespace NineteenNinetyFour\Ghostwriter\Core\Tests\Ai;
+
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\NotConfigured;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\ImageRequest;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Ports\ArrayCredentials;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Ports\StaticProviderSettings;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers\Anthropic;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers\Gemini;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers\OpenAi;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Testing\FakeProvider;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
+
+/**
+ * The registry: which provider is used, from the settings and the keys.
+ */
+class ProvidersTest extends ProviderTestCase
+{
+    private ArrayCredentials $keys;
+
+    private StaticProviderSettings $settings;
+
+    private Providers $providers;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->keys = new ArrayCredentials(['anthropic' => '  a-key  ']);
+        $this->settings = new StaticProviderSettings;
+        $this->providers = new Providers($this->keys, $this->http, $this->settings, sleeper: $this->sleeper);
+    }
+
+    public function test_the_provider_is_chosen_from_the_settings_and_the_keys(): void
+    {
+        $this->assertInstanceOf(Anthropic::class, $this->providers->text());
+        $this->assertTrue($this->providers->configured());
+        $this->assertNull($this->providers->image(), 'Claude does not make images.');
+        $this->assertNull($this->providers->imageHandle());
+
+        $this->settings->textProvider = 'openai';
+        $this->assertFalse($this->providers->configured());
+
+        try {
+            $this->providers->text();
+            $this->fail('Expected NotConfigured.');
+        } catch (NotConfigured $exception) {
+            $this->assertSame('No API key is set for OpenAI. Add OPENAI_API_KEY to your .env file.', $exception->getMessage());
+        }
+
+        // Images go to whichever image provider has a key, unless one is chosen.
+        $this->keys->set('gemini', 'g');
+        $this->assertInstanceOf(Gemini::class, $this->providers->image());
+
+        $this->keys->set('openai', 'o');
+        $this->assertInstanceOf(OpenAi::class, $this->providers->image());
+        $this->assertInstanceOf(OpenAi::class, $this->providers->text());
+
+        $this->settings->imageProvider = 'gemini';
+        $this->assertInstanceOf(Gemini::class, $this->providers->image());
+
+        $this->keys->set('gemini', ' ');
+        $this->assertNull($this->providers->image(), 'The chosen provider has no key.');
+
+        $this->settings->imageProvider = 'anthropic';
+        $this->assertNull($this->providers->imageHandle(), 'Claude does not make images.');
+    }
+
+    public function test_an_unknown_provider_is_not_configured(): void
+    {
+        $this->settings->textProvider = 'xai';
+
+        $this->assertFalse($this->providers->configured());
+        $this->expectException(NotConfigured::class);
+        $this->expectExceptionMessage('"xai" is not a provider Ghostwriter can write with.');
+
+        $this->providers->text();
+    }
+
+    public function test_the_settings_reach_the_provider(): void
+    {
+        $this->settings->textModel = 'claude-sonnet-5-5';
+        $this->settings->timeout = 180;
+        $this->settings->anthropicFallbacks = false;
+        $this->http->queueJson(['content' => [['type' => 'text', 'text' => 'OK']]]);
+
+        $this->providers->text()->text(new TextRequest('writer', 'Be brief.', 'Hi.'));
+
+        $this->assertSame('a-key', $this->http->requests[0]->getHeaderLine('x-api-key'), 'Trimmed.');
+        $this->assertSame('claude-sonnet-5-5', $this->http->body(0)['model']);
+        $this->assertArrayNotHasKey('fallbacks', $this->http->body(0));
+        $this->assertSame([180], $this->http->timeouts);
+    }
+
+    public function test_the_image_model_and_base_url_reach_the_image_provider(): void
+    {
+        $this->keys->set('openai', 'o');
+        $this->settings->imageModel = 'gpt-image-2.5-flare';
+        $this->settings->baseUrls = ['openai' => 'https://gateway.example.com/v1'];
+        $this->http->queueJson(['data' => [['b64_json' => self::PNG]]]);
+
+        $this->providers->image()?->image(new ImageRequest('A lighthouse'));
+
+        $this->assertSame('https://gateway.example.com/v1/images/generations', (string) $this->http->requests[0]->getUri());
+        $this->assertSame('gpt-image-2.5-flare', $this->http->body(0)['model']);
+    }
+
+    public function test_a_bad_base_url_is_refused_when_the_provider_is_built(): void
+    {
+        $this->settings->baseUrls = ['anthropic' => 'http://gateway.example.com'];
+
+        $this->expectException(NotConfigured::class);
+
+        $this->providers->text();
+    }
+
+    public function test_the_settings_screen_is_told_which_keys_exist_never_what_they_are(): void
+    {
+        $this->keys->set('gemini', 'g')->set('pexels', '');
+
+        $status = $this->providers->keyStatus();
+
+        $this->assertSame([
+            'ANTHROPIC_API_KEY' => true,
+            'OPENAI_API_KEY' => false,
+            'GEMINI_API_KEY' => true,
+            'UNSPLASH_ACCESS_KEY' => false,
+            'PIXABAY_API_KEY' => false,
+            'PEXELS_API_KEY' => false,
+        ], $status);
+    }
+
+    public function test_a_fake_stands_in_for_every_model(): void
+    {
+        $this->keys->set('anthropic', null);
+        $fake = $this->providers->fake();
+
+        $this->assertTrue($this->providers->configured());
+        $this->assertSame($fake, $this->providers->text());
+        $this->assertSame($fake, $this->providers->image());
+        $this->assertSame(['fake', 'fake'], [$this->providers->textHandle(), $this->providers->imageHandle()]);
+
+        $mine = new FakeProvider;
+        $this->assertSame($mine, $this->providers->fake($mine));
+
+        $this->providers->unfake();
+        $this->assertFalse($this->providers->faked());
+        $this->assertFalse($this->providers->configured());
+    }
+}
