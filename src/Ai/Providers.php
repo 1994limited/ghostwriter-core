@@ -53,6 +53,26 @@ final class Providers
     ) {}
 
     /**
+     * A copy that waits between retries with this sleeper. The registry is
+     * immutable apart from faking, so rebind the copy where the original
+     * was shared (a container singleton, a plugin component). A fake
+     * standing in carries over.
+     */
+    public function withSleeper(Sleeper $sleeper): self
+    {
+        return $this->copy($sleeper, $this->retry);
+    }
+
+    /**
+     * A copy that retries by this policy: how many attempts and the
+     * longest wait. A fake standing in carries over.
+     */
+    public function withRetryPolicy(RetryPolicy $retry): self
+    {
+        return $this->copy($this->sleeper, $retry);
+    }
+
+    /**
      * The provider chosen to write with.
      *
      * @throws NotConfigured when it is unknown, has no key, or has a base URL core won't use.
@@ -173,6 +193,14 @@ final class Providers
     public function faked(): bool
     {
         return $this->fake !== null;
+    }
+
+    private function copy(?Sleeper $sleeper, ?RetryPolicy $retry): self
+    {
+        $copy = new self($this->credentials, $this->http, $this->settings, $this->logger, $sleeper, $retry);
+        $copy->fake = $this->fake;
+
+        return $copy;
     }
 
     private function noKey(string $handle): NotConfigured

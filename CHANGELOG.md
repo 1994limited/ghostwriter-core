@@ -12,7 +12,7 @@ The first version: the parts the Statamic, Filament and Craft addons had copied 
 - **Prompts:** all twelve prompts (including `photo-query`, the single-search photo prompt behind Statamic's `Studio::photoQuery`), plus `Vocabulary` (with `statamic()`, `craft()` and `filament()`) and `PromptLibrary`, which supports per-site overrides. Golden tests check that each addon gets its current prompts byte for byte.
 - **AI layer,** ported from the Craft addon:
   - Value objects, the `TextProvider` and `ImageProvider` contracts, and the Anthropic, OpenAI and Gemini providers over PSR-18.
-  - The `Providers` registry, and the `Credentials`, `HttpClients` and `ProviderSettings` ports.
+  - The `Providers` registry, and the `Credentials`, `HttpClients` and `ProviderSettings` ports. `Providers::withSleeper()` and `withRetryPolicy()` return a configured copy.
   - `Models`, one table of default models: `claude-opus-5-5`, `gpt-6.1-sol`, `gemini-3.8-flash`, `gpt-image-2.5-sunburst` and `gemini-3.1-flash-image`.
   - `Agents`, which sets max tokens and effort per agent.
   - `TextRequest::withMaxTokens(int)` and `withModel(?string)`, which return a copy (to retry a cut-off reply with more room, or on another model).

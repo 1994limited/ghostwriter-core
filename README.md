@@ -99,6 +99,16 @@ Logging is optional: pass any PSR-3 logger. A finished call is logged at `info`,
 
 Retries can make a call take up to `timeout × 3` plus the waits, so queue jobs should allow `timeout × 3 + 60` seconds.
 
+How the registry waits between retries, and how often it retries, are constructor arguments (`sleeper:`, `retry:`). To change them on a registry that's already built, `withSleeper(Sleeper)` and `withRetryPolicy(RetryPolicy)` return a configured copy; the registry is otherwise immutable, so rebind the copy wherever the original was shared. A fake standing in carries over to the copy.
+
+```php
+$providers = $providers->withSleeper(new RecordingSleeper)->withRetryPolicy(new RetryPolicy(attempts: 1));
+```
+
+### Request limits
+
+`Ai\Limits::MAX_IMAGES` (24) and `Ai\Limits::MAX_IMAGE_BYTES` (20 MB of raw image data) cap one request, and every provider refuses a request over them before sending it. `Limits::fits($images)` checks a list in advance. 24 leaves room for the photo picker's 3 references and 18 thumbnails. 20 MB of raw bytes is about 27 MB once base64-encoded, which is under Anthropic's 32 MB request limit.
+
 ## Testing with `FakeProvider`
 
 ```php
@@ -145,7 +155,7 @@ $providers->fake()->unconfigured(false, false);  // both keys back
 
 `reset()` keeps whether the fake is unconfigured.
 
-To test at the HTTP level, use `Testing\MockHttpClient`. It is both a PSR-18 client and an `HttpClients`, it records every request, and it can throw `Testing\NetworkError::connectFailed()` or `::timedOut()`. Pass `Testing\RecordingSleeper` to `Providers` so retries record their waits instead of sleeping.
+To test at the HTTP level, use `Testing\MockHttpClient`. It is both a PSR-18 client and an `HttpClients`, it records every request, and it can throw `Testing\NetworkError::connectFailed()` or `::timedOut()`. Pass `Testing\RecordingSleeper` to `Providers` (or use `withSleeper()`) so retries record their waits instead of sleeping.
 
 ## Development
 

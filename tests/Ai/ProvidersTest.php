@@ -3,6 +3,8 @@
 namespace NineteenNinetyFour\Ghostwriter\Core\Tests\Ai;
 
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\NotConfigured;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\Overloaded;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Http\RetryPolicy;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\ImageRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Ports\ArrayCredentials;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Ports\StaticProviderSettings;
@@ -11,6 +13,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers\Anthropic;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers\Gemini;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers\OpenAi;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Testing\FakeProvider;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Testing\RecordingSleeper;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
 
 /**
@@ -197,5 +200,43 @@ class ProvidersTest extends ProviderTestCase
         $this->expectExceptionMessage('No API key is set for "mistral".');
 
         $this->providers->text();
+    }
+
+    public function test_a_copy_can_have_its_own_sleeper(): void
+    {
+        $sleeper = new RecordingSleeper;
+        $copy = $this->providers->withSleeper($sleeper);
+
+        $this->assertNotSame($this->providers, $copy);
+
+        $this->http->queueJson(['error' => ['message' => 'Rate limited']], 429, ['retry-after' => '7']);
+        $this->http->queueJson(['content' => [['type' => 'text', 'text' => 'OK']]]);
+
+        $this->assertSame('OK', $copy->text()->text(new TextRequest('writer', 'I', 'P'))->text);
+        $this->assertSame([7.0], $sleeper->waits);
+        $this->assertSame([], $this->sleeper->waits);
+    }
+
+    public function test_a_copy_can_have_its_own_retry_policy(): void
+    {
+        $copy = $this->providers->withRetryPolicy(new RetryPolicy(attempts: 1));
+
+        $this->http->queueJson(['error' => ['type' => 'overloaded_error', 'message' => 'Overloaded']], 529);
+
+        try {
+            $copy->text()->text(new TextRequest('writer', 'I', 'P'));
+            $this->fail('Expected the single attempt to fail.');
+        } catch (Overloaded) {
+            $this->assertCount(1, $this->http->requests);
+            $this->assertSame([], $this->sleeper->waits);
+        }
+    }
+
+    public function test_a_fake_carries_over_to_a_copy(): void
+    {
+        $fake = $this->providers->fake();
+
+        $this->assertSame($fake, $this->providers->withSleeper(new RecordingSleeper)->text());
+        $this->assertSame($fake, $this->providers->withRetryPolicy(new RetryPolicy)->image());
     }
 }
