@@ -1,0 +1,45 @@
+title: 'Winter garden care'
+page_builder:
+  -
+    type: hero
+    heading: 'A garden that comes through winter well'
+    subheading: 'Four visits between November and February, so your garden is tidy where it matters, wild where it helps, and ready for spring.'
+    button_text: 'Book a winter visit'
+    button_link: /contact
+  -
+    type: text
+    text: |-
+      ## What winter care is for
+
+      Most of the work that makes a garden look good in May happens when nobody wants to be outside. We prune what needs pruning, protect what needs protecting, and leave the rest standing (the seedheads feed the birds, and the hollow stems shelter the insects your borders depend on).
+
+      It isn't a tidy-up. A tidy garden in winter is usually an empty one.
+
+      ## What we do on each visit
+
+      - Prune apples, pears and wisteria while they're dormant
+      - Cut back only what has collapsed or turned to mush
+      - Mulch beds once the ground is wet and before it freezes
+      - Check stakes, ties and young trees after the gales
+      - Lift and divide perennials that have outgrown their spot
+  -
+    type: image
+    caption: 'Seedheads left standing in a border near Hexham, January.'
+  -
+    type: quote
+    quote: 'We used to clear everything in October. Now the garden has something to look at all winter, and the spring comes up stronger.'
+    attribution: 'Client, Tyne Valley'
+  -
+    type: text
+    text: |-
+      ## Who it suits
+
+      Gardens we've designed and built, in their first few winters while they settle in. And any established garden in Northumberland, Durham or the Tyne Valley where the owner would rather spend January indoors.
+
+      Each visit ends with a short note: what we did, what we noticed, and anything worth doing before we're next out.
+  -
+    type: cta
+    heading: 'Not sure your garden needs it?'
+    text: "Tell us what you've got and we'll say honestly whether it's worth it. Some gardens are best left alone until March."
+    link_text: 'Get in touch'
+    link: /contact

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500&family=Public+Sans:wght@400;500&display=block">
+<style>
+    html, body { margin: 0; width: 1600px; height: 900px; overflow: hidden; background: #f1ece2; }
+    body { position: relative; font-family: "Public Sans", system-ui, -apple-system, sans-serif; color: #1d1b18; }
+    .logo { position: absolute; left: 117px; top: 71px; height: 36px; }
+    .cms { position: absolute; right: 120px; top: 81px; font-size: 22px; font-weight: 500; color: #5d5850; }
+    h1 { position: absolute; left: 120px; top: 166px; margin: 0; font-family: "Newsreader", Georgia, serif; font-weight: 500; font-size: 64px; line-height: 1.1; letter-spacing: -0.01em; white-space: nowrap; }
+    p { position: absolute; left: 121px; top: 248px; margin: 0; font-size: 27px; color: #6a655c; white-space: nowrap; }
+    .shot { position: absolute; left: 120px; top: 320px; width: 1360px; border-radius: 12px 12px 0 0; box-shadow: 0 0 0 1px rgba(29, 27, 24, 0.10), 0 24px 60px -20px rgba(29, 27, 24, 0.35); }
+</style>
+</head>
+<body>
+    <img class="logo" src="{{ logo }}" alt="">
+    <div class="cms">For {{ cms }}</div>
+    <h1>{{ headline }}</h1>
+    <p>{{ line }}</p>
+    <img class="shot" src="{{ shot }}" alt="">
+</body>
+</html>
