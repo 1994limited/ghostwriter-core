@@ -31,7 +31,9 @@ use NineteenNinetyFour\Ghostwriter\Core\Schema\Schema;
  *
  * A link the pages usually have, or that is required, but that nothing
  * settles, points at https://example.com so the page works and the gap is
- * plain to see; it is listed with the places still to fill.
+ * plain to see; it is listed with the places still to fill. With
+ * LayoutOptions::$linkSentinels on it is marked with the `#gw-link:`
+ * sentinel instead (LinkPlaceholders), with the field's label as the hint.
  *
  * How rich text and links are stored is the dialects' to say.
  */
@@ -224,7 +226,7 @@ final class HouseStyle
                     // A link the block should have that nothing settles goes
                     // to example.com for now, so the page works and the gap shows.
                     $expected = $field->required || ($style->links["{$shapeBase}/{$type}.{$handleHere}"] ?? 0) >= self::MAJORITY;
-                    $placeholder = $expected ? $this->links->placeholder($field, $set->fields) : null;
+                    $placeholder = $expected ? $this->placeholder($field, $set->fields) : null;
 
                     if ($placeholder !== null) {
                         foreach ($placeholder as $key => $stand) {
@@ -235,7 +237,7 @@ final class HouseStyle
                             }
                         }
 
-                        $toFill[] = "{$name} (links to example.com for now)";
+                        $toFill[] = $this->sentinels() ? "{$name} (link still to choose)" : "{$name} (links to example.com for now)";
                     } elseif ($this->options->unsettled === LayoutOptions::NAME_LINKS) {
                         // Entries to pick cannot be stood in for; name the gap.
                         if ($expected && $this->links->holdsLinks($field)) {
@@ -424,6 +426,27 @@ final class HouseStyle
         }
 
         return $agreed;
+    }
+
+    /**
+     * What a link still to choose holds: the sentinel where the options ask
+     * for it and the dialect can, else example.com.
+     *
+     * @param  array<int, Field>  $siblings
+     * @return array<string, mixed>|null
+     */
+    private function placeholder(Field $field, array $siblings): ?array
+    {
+        if ($this->sentinels() && $this->links instanceof LinkPlaceholders) {
+            return $this->links->placeholderFor($field, $siblings, $field->label !== '' ? $field->label : $field->handle);
+        }
+
+        return $this->links->placeholder($field, $siblings);
+    }
+
+    private function sentinels(): bool
+    {
+        return $this->options->linkSentinels && $this->links instanceof LinkPlaceholders;
     }
 
     /**

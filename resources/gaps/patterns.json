@@ -1,0 +1,41 @@
+{
+    "ask": {
+        "source": "\\[\\[\\s*ask\\s*:\\s*([^\\[\\]\\s][^\\[\\]\\n]{0,199}?)\\s*\\]\\]",
+        "flags": "giu"
+    },
+    "link": {
+        "source": "\\[([^\\[\\]\\n]*)\\]\\(\\s*<?(?:https?://example\\.com/?)?#gw-link:([^\\s)>]*)>?(?:\\s+\"[^\"\\n]*\")?\\s*\\)",
+        "flags": "giu"
+    },
+    "sentinel": {
+        "source": "#gw-link:([A-Za-z0-9._~%-]*)",
+        "flags": "gu"
+    },
+    "leftover": {
+        "source": "\\[\\[([a-z_]{2,30})\\]\\]",
+        "flags": "g"
+    },
+    "placeholderText": {
+        "ellipsis": {
+            "source": "\\[(?:\\.\\.\\.|…)\\]",
+            "flags": "gu"
+        },
+        "lorem": {
+            "source": "\\blorem ipsum\\b",
+            "flags": "giu"
+        },
+        "initials": {
+            "source": "\\b(?:TBC|TBD|TBA|TODO|XXX+)\\b",
+            "flags": "gu"
+        },
+        "questions": {
+            "source": "\\?{3,}",
+            "flags": "gu"
+        },
+        "bracketed": {
+            "source": "\\[(?:insert|add|check|tk)\\b[^\\[\\]\\n]{0,160}\\](?!\\()",
+            "flags": "giu"
+        }
+    },
+    "linkPrefix": "#gw-link:"
+}

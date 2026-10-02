@@ -3,15 +3,19 @@
 namespace NineteenNinetyFour\Ghostwriter\Core\Layout\Links;
 
 use NineteenNinetyFour\Ghostwriter\Core\Layout\LinkDialect;
+use NineteenNinetyFour\Ghostwriter\Core\Layout\LinkPlaceholders;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Field;
 
 /**
  * For a CMS with no link fields core knows: Filament, whose URLs are plain
  * text inputs the writer fills. Nothing is a link, so nothing is pointed at
- * example.com, and no value is read as a link to the entry itself.
+ * example.com, and no value is read as a link to the entry itself. Rich
+ * text and markdown still take a link still to choose inline.
  */
-final class NoLinks implements LinkDialect
+final class NoLinks implements LinkDialect, LinkPlaceholders
 {
+    use MarksLinks;
+
     public function holdsLinks(Field $field): bool
     {
         return false;
@@ -41,6 +45,11 @@ final class NoLinks implements LinkDialect
     }
 
     public function placeholder(Field $field, array $siblings): ?array
+    {
+        return null;
+    }
+
+    public function placeholderFor(Field $field, array $siblings, string $hint): ?array
     {
         return null;
     }

@@ -2,6 +2,7 @@
 
 namespace NineteenNinetyFour\Ghostwriter\Core\Text;
 
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\Markers;
 use Transliterator;
 
 /**
@@ -25,12 +26,12 @@ final class Slug
      * Lower-case ASCII words joined by hyphens, at most $max characters,
      * cut between words where it can be. Accented letters lose their
      * accents; scripts with no Latin form are transliterated when the intl
-     * extension is there, and dropped when it isn't. Empty when nothing is
-     * left.
+     * extension is there, and dropped when it isn't. A fact still to add
+     * (`[[ask: …]]`) is left out. Empty when nothing is left.
      */
     public static function make(string $text, int $max = 60): string
     {
-        $text = strtr(self::clean($text), self::LETTERS);
+        $text = strtr(self::clean(Markers::withoutAsks($text)), self::LETTERS);
         $text = self::ascii($text);
         $slug = trim((string) preg_replace('/[^a-z0-9]+/', '-', strtolower($text)), '-');
 
