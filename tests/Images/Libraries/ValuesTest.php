@@ -26,6 +26,9 @@ final class ValuesTest extends TestCase
         $this->assertNull($free->previewKeepDays);
         $this->assertFalse($paid->free);
         $this->assertFalse($paid->mayRank);
+        $this->assertTrue($paid->noModelInput, 'No asset from a paid library goes to any model.');
+        $this->assertFalse($free->noModelInput);
+        $this->assertFalse(Capabilities::free(mayRank: false)->mayRank);
         $this->assertSame(30, $paid->previewKeepDays);
         $this->assertSame(Capabilities::STORAGE_PRIVATE, $paid->previewStorage);
         $this->assertSame('credits', $paid->toArray()['quotes']);

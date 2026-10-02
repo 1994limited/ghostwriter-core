@@ -14,8 +14,8 @@ use NineteenNinetyFour\Ghostwriter\Core\Text\Slug;
 /**
  * What the free libraries share: a photo is looked up again by ID before
  * its file is downloaded, https only, at most MAX_BYTES, and only a JPEG,
- * PNG or WebP (Downloader). Their photos are free to use and may be judged
- * by a model.
+ * PNG or WebP (Downloader). Their photos are free to use, and may be
+ * judged by a model unless the library's terms say otherwise (mayRank()).
  */
 abstract class FreeLibrary implements PhotoLibrary
 {
@@ -34,7 +34,7 @@ abstract class FreeLibrary implements PhotoLibrary
 
     public function capabilities(): Capabilities
     {
-        return Capabilities::free(self::TERMS_CHECKED_AT, $this->creditRequired());
+        return Capabilities::free(self::TERMS_CHECKED_AT, $this->creditRequired(), $this->mayRank());
     }
 
     public function photo(string $id): Photo
@@ -88,6 +88,12 @@ abstract class FreeLibrary implements PhotoLibrary
     protected function creditRequired(): bool
     {
         return false;
+    }
+
+    /** Whether a model may judge its photos (Capabilities::$mayRank). */
+    protected function mayRank(): bool
+    {
+        return true;
     }
 
     /**

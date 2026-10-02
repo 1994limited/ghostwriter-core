@@ -8,7 +8,7 @@ Multi-source stock photos, from the stock images design: phase 1, the library ab
 
 ### Added
 
-- **Photo libraries (`Images\Libraries`), phase 1:** `PhotoLibrary`, the interface every library implements (`id()`, `label()`, `capabilities()`, `available()`, `search(SearchQuery)`, `photo($id)`, `fetch($id)`), with `Capabilities` (`free`, `mayRank`, `needsOAuth`, `quotes`, `previewKeepDays`, `previewStorage`, `termsCheckedAt`, `editorial`, `creditRequired`, `sandbox`), `SearchQuery`, `Offer`, `Cost` (minor units or units of an allowance, never a float) and `Preview` (a paid library's comp: bytes kept privately until `keepUntil`, or only the provider's address).
+- **Photo libraries (`Images\Libraries`), phase 1:** `PhotoLibrary`, the interface every library implements (`id()`, `label()`, `capabilities()`, `available()`, `search(SearchQuery)`, `photo($id)`, `fetch($id)`), with `Capabilities` (`free`, `mayRank`, `noModelInput`, `needsOAuth`, `quotes`, `previewKeepDays`, `previewStorage`, `termsCheckedAt`, `editorial`, `creditRequired`, `sandbox`), `SearchQuery`, `Offer`, `Cost` (minor units or units of an allowance, never a float) and `Preview` (a paid library's comp: bytes kept privately until `keepUntil`, or only the provider's address).
 - **The four free libraries as classes:** `Libraries\Free\Unsplash`, `Pexels`, `Pixabay` and `Openverse`, moved out of `StockSearch` unchanged.
 - **`StockSearch` is a set of libraries.** A new optional `libraries:` argument adds more after the free ones (one with a free library's ID replaces it). New: `libraries()`, `library($id)`, `label($id)`, `mayRank(Photo)`, and `search(..., sources:)` to keep a search to some libraries.
 - **`Photo` gains `offer`, `editorial`, `restrictions` and `collection`** (appended to the constructor with defaults), `offer()` and `isFree()`. `toArray()` adds the new keys only when set, so a free photo's array is as before; `fromArray()` reads them.
@@ -16,7 +16,7 @@ Multi-source stock photos, from the stock images design: phase 1, the library ab
 
 ### Changed
 
-- **A model never sees a photo whose library doesn't allow it** (`Capabilities::$mayRank`). `PhotoRanker` sends only those photos' thumbnails and descriptions to the `photo-picker` agent; the rest follow the judged ones in their library's order, unjudged. Every free library allows it, so nothing changes for them.
+- **A model never sees a photo whose library doesn't allow it** (`Capabilities::$mayRank`). `PhotoRanker` sends only those photos' thumbnails and descriptions to the `photo-picker` agent; the rest follow the judged ones in their library's order, unjudged and never picked. Every free library allows it, so nothing changes for them yet. (The terms check says Unsplash shouldn't be judged; that change is a separate pull request, as it changes what the addons show.)
 - The branch alias is `1.x-dev` (it still said `0.5.x-dev`).
 
 ## 1.0.0 - 2026-10-02

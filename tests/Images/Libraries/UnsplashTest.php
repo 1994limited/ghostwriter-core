@@ -21,7 +21,7 @@ final class UnsplashTest extends ImagesTestCase
     {
         $this->assertTrue($this->library()->available());
         $this->assertTrue($this->library()->capabilities()->creditRequired);
-        $this->assertTrue($this->library()->capabilities()->mayRank);
+        $this->assertFalse($this->library()->capabilities()->noModelInput);
 
         $this->credentials->set('unsplash', ' ');
         $this->assertFalse($this->library()->available());

@@ -23,9 +23,13 @@ use InvalidArgumentException;
  *   provider's preview address is shown; nothing is stored). Null for a
  *   free library.
  * - `mayRank`: thumbnails and metadata may be shown to a model (the
- *   `photo-picker` agent). True for the free libraries; false for paid
- *   ones, whose licences forbid using content or its metadata for AI.
- *   PhotoRanker never shows a model a photo from a library without it.
+ *   `photo-picker` agent). False for paid libraries, whose licences forbid
+ *   using content or its metadata for AI. PhotoRanker never shows a model
+ *   a photo from a library without it.
+ * - `noModelInput`: no asset from this library (a comp, a stand-in or the
+ *   licensed file) may be sent to any model, for any feature: not as a
+ *   reference image, not as a sample to describe. True for paid
+ *   libraries. Stricter than `mayRank`, which is about search results.
  * - `termsCheckedAt`: when the adapter's reading of the provider's terms
  *   was last checked, as Y-m-d.
  * - `editorial`: search can return editorial-only images, so results
@@ -59,6 +63,7 @@ final class Capabilities
         public readonly bool $editorial = false,
         public readonly bool $creditRequired = false,
         public readonly bool $sandbox = false,
+        public readonly bool $noModelInput = false,
     ) {
         if (! in_array($quotes, [self::QUOTES_EXACT, self::QUOTES_BALANCE, self::QUOTES_CREDITS, self::QUOTES_NONE], true)) {
             throw new InvalidArgumentException("Unknown quotes capability \"{$quotes}\".");
@@ -74,17 +79,18 @@ final class Capabilities
     }
 
     /**
-     * A free library: nothing to buy, nothing to preview, and its photos
-     * may be judged by a model.
+     * A free library: nothing to buy and nothing to preview. Its photos
+     * may be judged by a model unless its terms say otherwise ($mayRank).
      */
-    public static function free(?string $termsCheckedAt = null, bool $creditRequired = false): self
+    public static function free(?string $termsCheckedAt = null, bool $creditRequired = false, bool $mayRank = true): self
     {
-        return new self(free: true, mayRank: true, termsCheckedAt: $termsCheckedAt, creditRequired: $creditRequired);
+        return new self(free: true, mayRank: $mayRank, termsCheckedAt: $termsCheckedAt, creditRequired: $creditRequired);
     }
 
     /**
      * A library that sells licences. Its photos are never judged by a
-     * model unless $mayRank says its terms allow it.
+     * model unless $mayRank says its terms allow it, and its assets never
+     * go to a model at all unless $noModelInput is turned off.
      */
     public static function paid(
         string $quotes,
@@ -96,14 +102,15 @@ final class Capabilities
         bool $editorial = false,
         bool $creditRequired = false,
         bool $sandbox = false,
+        bool $noModelInput = true,
     ): self {
-        return new self(false, $mayRank, $needsOAuth, $quotes, $previewKeepDays, $previewStorage, $termsCheckedAt, $editorial, $creditRequired, $sandbox);
+        return new self(false, $mayRank, $needsOAuth, $quotes, $previewKeepDays, $previewStorage, $termsCheckedAt, $editorial, $creditRequired, $sandbox, $noModelInput);
     }
 
     /**
      * For JSON, such as the image dialog's list of libraries.
      *
-     * @return array{free: bool, may_rank: bool, needs_oauth: bool, quotes: string, preview_keep_days: ?int, preview_storage: ?string, terms_checked_at: ?string, editorial: bool, credit_required: bool, sandbox: bool}
+     * @return array{free: bool, may_rank: bool, needs_oauth: bool, quotes: string, preview_keep_days: ?int, preview_storage: ?string, terms_checked_at: ?string, editorial: bool, credit_required: bool, sandbox: bool, no_model_input: bool}
      */
     public function toArray(): array
     {
@@ -118,6 +125,7 @@ final class Capabilities
             'editorial' => $this->editorial,
             'credit_required' => $this->creditRequired,
             'sandbox' => $this->sandbox,
+            'no_model_input' => $this->noModelInput,
         ];
     }
 }

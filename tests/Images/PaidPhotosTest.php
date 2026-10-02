@@ -92,6 +92,16 @@ final class PaidPhotosTest extends ImagesTestCase
         $this->assertTrue($stock->mayRank(self::photo('a', source: 'nowhere')));
     }
 
+    public function test_the_free_libraries_are_judged_as_before(): void
+    {
+        $stock = $this->stock();
+
+        foreach (['unsplash', 'pexels', 'pixabay', 'openverse'] as $source) {
+            $this->assertTrue($stock->mayRank(self::photo('a', source: $source)), $source);
+            $this->assertFalse($stock->library($source)?->capabilities()->noModelInput);
+        }
+    }
+
     public function test_the_model_never_sees_a_paid_photo_which_follows_the_judged_ones_in_its_own_order(): void
     {
         $this->fake->respond('photo-picker', "2: a hand-thrown bowl\n1: close enough");
