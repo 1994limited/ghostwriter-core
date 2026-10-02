@@ -1,6 +1,6 @@
 # Ghostwriter Core
 
-The framework-free core shared by the Ghostwriter addons for [Statamic](https://github.com/1994limited/ghostwriter-statamic), [Filament](https://github.com/1994limited/ghostwriter-filament) and [Craft CMS](https://github.com/1994limited/ghostwriter-craft). It holds the parts that used to be copied by hand between the three: draft text handling, the prompts, and the connection to the AI providers.
+The framework-free core shared by the Ghostwriter addons for [Statamic](https://github.com/1994limited/ghostwriter-statamic), [Filament](https://github.com/1994limited/ghostwriter-filament) and [Craft CMS](https://github.com/1994limited/ghostwriter-craft). It holds the parts that used to be copied by hand between the three: draft text handling, the prompts, the connection to the AI providers, and photo search with ranking.
 
 Each addon stays a thin adapter. It reads the CMS's schema and entries, stores state, runs queue jobs, checks permissions and draws the UI, and calls core for everything else.
 
@@ -206,6 +206,8 @@ vendor/bin/pint --test      # code style (Laravel preset)
 vendor/bin/phpstan analyse  # level 8
 bin/check-boundaries        # no framework or CMS in src/
 ```
+
+The addons' documentation screenshots come from one re-runnable tool in `tools/screenshots/`. It drives each addon's local test site, sets up each scene without model calls, and restores the site afterwards. See its [README](tools/screenshots/README.md). The `tools/` folder isn't included in the Composer package.
 
 To work on core and an addon together, point the addon at a sibling checkout with a Composer `path` repository in a gitignored `composer.local.json`, so it never reaches a release.
 
