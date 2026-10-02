@@ -97,7 +97,7 @@ $ideas->value[0]->toArray('collection', 'type');
 
 Every request a test suite sends goes through `FakeProvider`, which keeps it. `Studio\Testing\RequestLog` writes them down so two runs can be compared: the addon on its own Studio, then on core's. The only differences allowed are the deliberate ones in [studio-unification.md](studio-unification.md).
 
-1. **Before.** In the addon, on `main`, require core `~0.3.0` and change nothing else (0.3.0 only adds). Add a recorder to the base `TestCase::tearDown()`:
+1. **Before.** In the addon, on `main`, require core `^1.0` and change nothing else. Add a recorder to the base `TestCase::tearDown()`:
 
    ```php
    if ($path = getenv('GHOSTWRITER_RECORD_REQUESTS')) {

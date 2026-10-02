@@ -184,7 +184,7 @@ The in-memory stores, `InMemoryLock` (which can be told a key is held elsewhere)
 
 **All three**
 
-- Require `~0.5.0`.
+- Require `^1.0`.
 - Implement the stores, the lock and the asset sink above, and run the contract tests.
 - Replace the session, plan, kind, guide and image request classes' rules with core's: ownership checks with `SessionAccess`, "is it working" checks and claims with `SessionGuard`, `finished`/`stage` with `Progress`, the plan's accept/dismiss/reopen with `Plan`, `KindSuggestions` and the generic kind with core's, `Placeholders` with core's.
 - Show a stale run as failed (new for Statamic and Filament), a new batch of suggestions joining the one waiting, and "Put back" only on dismissed ideas.
