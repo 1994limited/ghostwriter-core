@@ -1,0 +1,47 @@
+<?php
+
+namespace NineteenNinetyFour\Ghostwriter\Core\Layout\Links;
+
+use NineteenNinetyFour\Ghostwriter\Core\Layout\LinkDialect;
+use NineteenNinetyFour\Ghostwriter\Core\Schema\Field;
+
+/**
+ * For a CMS with no link fields core knows: Filament, whose URLs are plain
+ * text inputs the writer fills. Nothing is a link, so nothing is pointed at
+ * example.com, and no value is read as a link to the entry itself.
+ */
+final class NoLinks implements LinkDialect
+{
+    public function holdsLinks(Field $field): bool
+    {
+        return false;
+    }
+
+    public function hasLink(mixed $value): bool
+    {
+        return false;
+    }
+
+    public function looksLikeLink(mixed $value): bool
+    {
+        return false;
+    }
+
+    public function generalise(array $values, int|string $id, string $title): array
+    {
+        return $values;
+    }
+
+    /**
+     * @return array<int, int|string>
+     */
+    public function toSelf(int|string $id): array
+    {
+        return [$id];
+    }
+
+    public function placeholder(Field $field, array $siblings): ?array
+    {
+        return null;
+    }
+}
