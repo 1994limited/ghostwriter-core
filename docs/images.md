@@ -148,6 +148,8 @@ All the licensing errors extend `PhotoUnavailable`, so existing catches still wo
 
 `Downloader::post()` sends token and licence calls exactly once, never retried or redirected; with `purchase: true`, anything that leaves the outcome unknown is `LicensingUncertain`. `LibraryTokens` is the port for a site's cached and user tokens (`OAuth\TokenSet`, masked in dumps); the addon encrypts them. `StandIn::jpeg($width, $height, $label)` draws the public-safe stand-in at the photo's aspect ratio.
 
+A library that needs the customer's own signed-in account (`Capabilities::$needsOAuth`) also implements `Libraries\ConnectsAccount`: `authorizationUrl($state, $redirectUri)`, `connect($code, $redirectUri, $state)`, `refresh($tokens)`, `connected()` and `disconnect()`, keeping its tokens through `LibraryTokens`. The addons' "Connect account" routes and their rules are in [connecting-accounts.md](connecting-accounts.md).
+
 `Libraries\Testing\FakeLibrary` is a scripted paid library: photos, quotes and licence outcomes (`SUCCEED`, `UNCERTAIN_CHARGED`, `UNCERTAIN_NOT_CHARGED`, or an exception), GD-drawn comps, and a record of every call (`licenceCalls($id)`). It is also the addons' demo library. `Domain\Testing\MemoryAssetReplacer` and `Libraries\Testing\InMemoryLibraryTokens` go with it.
 
 ## Testing

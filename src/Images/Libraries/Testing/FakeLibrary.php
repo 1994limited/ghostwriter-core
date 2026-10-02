@@ -6,12 +6,17 @@ use Closure;
 use DateTimeImmutable;
 use NineteenNinetyFour\Ghostwriter\Core\Images\Exceptions\LicenceRefused;
 use NineteenNinetyFour\Ghostwriter\Core\Images\Exceptions\LicensingUncertain;
+use NineteenNinetyFour\Ghostwriter\Core\Images\Exceptions\NotConnected;
 use NineteenNinetyFour\Ghostwriter\Core\Images\Libraries\Account;
 use NineteenNinetyFour\Ghostwriter\Core\Images\Libraries\Capabilities;
+use NineteenNinetyFour\Ghostwriter\Core\Images\Libraries\ConnectsAccount;
 use NineteenNinetyFour\Ghostwriter\Core\Images\Libraries\Cost;
 use NineteenNinetyFour\Ghostwriter\Core\Images\Libraries\Licence;
 use NineteenNinetyFour\Ghostwriter\Core\Images\Libraries\LicensableLibrary;
+use NineteenNinetyFour\Ghostwriter\Core\Images\Libraries\OAuth\Pkce;
+use NineteenNinetyFour\Ghostwriter\Core\Images\Libraries\OAuth\TokenSet;
 use NineteenNinetyFour\Ghostwriter\Core\Images\Libraries\Offer;
+use NineteenNinetyFour\Ghostwriter\Core\Images\Libraries\Ports\LibraryTokens;
 use NineteenNinetyFour\Ghostwriter\Core\Images\Libraries\Preview;
 use NineteenNinetyFour\Ghostwriter\Core\Images\Libraries\Quote;
 use NineteenNinetyFour\Ghostwriter\Core\Images\Libraries\SearchQuery;
@@ -34,8 +39,19 @@ use Throwable;
  *
  * Every call is recorded (`calls`), so a test can say a photo was
  * licensed exactly once (licenceCalls()).
+ *
+ * It is also a ConnectsAccount, so an addon's "Connect account" routes can
+ * be tested against it, and run in a browser with the demo library: its
+ * authorizationUrl() sends the person straight back to the callback with
+ * a code, as a provider would once they allowed access. The code is bound
+ * to the state and the callback address through PKCE (OAuth\Pkce), so
+ * connect() refuses one used with another state or address. Tokens are
+ * kept in the LibraryTokens given (in memory without one) and expire
+ * after an hour; refresh() renews them unless `refusesRefresh`. Built
+ * with Capabilities whose `needsOAuth` is true, account(), quotes() and
+ * license() throw NotConnected until it is connected.
  */
-final class FakeLibrary implements LicensableLibrary
+final class FakeLibrary implements ConnectsAccount, LicensableLibrary
 {
     /** The licence is bought. */
     public const SUCCEED = 'succeed';
@@ -70,6 +86,22 @@ final class FakeLibrary implements LicensableLibrary
 
     private int $orders = 0;
 
+    /** The fake's own "client secret", for PKCE. */
+    private const SECRET = 'demo-client-secret';
+
+    /** How long its access tokens last. */
+    public const TOKEN_SECONDS = 3600;
+
+    /** Whether refresh() refuses, as for an access revoked at the provider. */
+    public bool $refusesRefresh = false;
+
+    /** Whether the next connect() is refused, as for a code the provider won't take. */
+    public bool $refusesConnect = false;
+
+    private readonly LibraryTokens $tokens;
+
+    private int $issued = 0;
+
     /**
      * @param  (Closure(): DateTimeImmutable)|null  $clock
      */
@@ -79,9 +111,11 @@ final class FakeLibrary implements LicensableLibrary
         ?Capabilities $capabilities = null,
         ?Closure $clock = null,
         private readonly ?Account $account = null,
+        ?LibraryTokens $tokens = null,
     ) {
         $this->capabilities = $capabilities ?? Capabilities::paid(Capabilities::QUOTES_BALANCE, 30, termsCheckedAt: '2026-10-02', editorial: true);
         $this->clock = $clock ?? fn () => new DateTimeImmutable;
+        $this->tokens = $tokens ?? new InMemoryLibraryTokens;
     }
 
     /**
@@ -201,6 +235,7 @@ final class FakeLibrary implements LicensableLibrary
     public function account(): Account
     {
         $this->calls[] = ['account', []];
+        $this->needConnection();
 
         return $this->account ?? new Account($this->id, 'Demo account', [[
             'id' => 'demo-pack', 'type' => 'demo', 'name' => 'Demo pack', 'remaining' => Cost::units(100, Cost::DOWNLOAD), 'resetsAt' => null, 'termEndsAt' => null,
@@ -210,6 +245,7 @@ final class FakeLibrary implements LicensableLibrary
     public function quotes(string $id): array
     {
         $this->calls[] = ['quotes', [$id]];
+        $this->needConnection();
         $this->known($id);
 
         return $this->quotes[$id] ?? [new Quote($id, 'demo-pack', 'Demo licence', Cost::units(1, Cost::DOWNLOAD), 'demo', '2400')];
@@ -218,6 +254,7 @@ final class FakeLibrary implements LicensableLibrary
     public function license(string $id, Quote $quote, string $key, string $licensedBy): Licence
     {
         $this->calls[] = ['license', [$id, $quote, $key, $licensedBy]];
+        $this->needConnection();
         $this->known($id);
         $outcome = array_shift($this->outcomes) ?? self::SUCCEED;
 
@@ -254,6 +291,84 @@ final class FakeLibrary implements LicensableLibrary
         $this->calls[] = ['findLicences', [$id]];
 
         return $this->bought[$id] ?? [];
+    }
+
+    public function authorizationUrl(string $state, string $redirectUri): string
+    {
+        $this->calls[] = ['authorizationUrl', [$state, $redirectUri]];
+
+        return $redirectUri.(str_contains($redirectUri, '?') ? '&' : '?').http_build_query(['code' => $this->code($state, $redirectUri), 'state' => $state], '', '&', PHP_QUERY_RFC3986);
+    }
+
+    public function connect(string $code, string $redirectUri, string $state = ''): TokenSet
+    {
+        $this->calls[] = ['connect', [$redirectUri, $state]];
+
+        if ($this->refusesConnect || trim($state) === '' || ! hash_equals($this->code($state, $redirectUri), $code)) {
+            $this->refusesConnect = false;
+
+            throw new NotConnected("{$this->label} didn't accept the sign-in. Try connecting again.");
+        }
+
+        return $this->issue();
+    }
+
+    public function refresh(TokenSet $tokens): TokenSet
+    {
+        $this->calls[] = ['refresh', []];
+
+        if (! $tokens->canRefresh() || $this->refusesRefresh) {
+            $this->tokens->forget($this->id);
+
+            throw new NotConnected("The {$this->label} account needs connecting again.");
+        }
+
+        return $this->issue();
+    }
+
+    public function connected(): bool
+    {
+        return $this->tokens->get($this->id) !== null;
+    }
+
+    public function disconnect(): void
+    {
+        $this->calls[] = ['disconnect', []];
+        $this->tokens->forget($this->id);
+    }
+
+    /**
+     * The code a provider would hand back for this state and address: bound
+     * to them by the PKCE challenge, as a real provider binds its code.
+     */
+    private function code(string $state, string $redirectUri): string
+    {
+        return 'demo-'.substr(hash('sha256', Pkce::challenge(Pkce::verifier($state === '' ? '-' : $state, self::SECRET)).'|'.$redirectUri), 0, 24);
+    }
+
+    private function issue(): TokenSet
+    {
+        $n = ++$this->issued;
+        $tokens = new TokenSet("demo-access-{$n}", ($this->clock)()->modify('+'.self::TOKEN_SECONDS.' seconds'), "demo-refresh-{$n}", ['licenses.create']);
+        $this->tokens->put($this->id, $tokens);
+
+        return $tokens;
+    }
+
+    /**
+     * @throws NotConnected
+     */
+    private function needConnection(): void
+    {
+        if (! $this->capabilities->needsOAuth) {
+            return;
+        }
+
+        $tokens = $this->tokens->get($this->id) ?? throw new NotConnected("Connect the {$this->label} account in the settings first.");
+
+        if ($tokens->isExpired(($this->clock)())) {
+            $this->refresh($tokens);
+        }
     }
 
     /**
