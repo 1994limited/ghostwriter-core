@@ -1,6 +1,12 @@
 # Changelog
 
-All notable changes to `1994/ghostwriter-core` are documented here. While the version is `0.x`, a minor release may contain breaking changes.
+All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 it follows semantic versioning: a minor or patch release doesn't break the public API.
+
+## 1.0.0 - 2026-10-02
+
+The first stable release. The extraction from the Statamic, Filament and Craft addons is complete: text handling and prompts, the provider layer, photo search, `Studio`, the schema model and layout algorithms, and the domain model with its stores and rules all live here. All three addons run on it. From here the public API is stable within 1.x, and the addons require `^1.0`.
+
+No code changes since 0.5.2.
 
 ## 0.5.2 - 2026-10-02
 

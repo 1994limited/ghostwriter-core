@@ -187,7 +187,7 @@ Core's fixtures pin the algorithms. The adapter's own part (reading entries into
 
 ## Stage 2, per addon
 
-1. Require `~0.4.0`.
+1. Require `^1.0`.
 2. Build one `Layouts` with the addon's options and dialects (above). Statamic: move `tests/Layout/Support/BardDialect.php` into the adapter.
 3. Convert the reader's arrays with `Schema::fromSpecs()` (or have the reader build `Field`s), and read entries into `EntryData`.
 4. Replace the five classes' bodies with calls to core (the table above); keep the queries, `FieldValues` (Craft), `FormState` (Filament), `SchemaEntryWriter`/`HouseFinish` (Statamic) and the placeholders. Delete the old copies, and in Filament the Hyper and Link constants (FIL-9).
