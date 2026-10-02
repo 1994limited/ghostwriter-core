@@ -14,7 +14,7 @@ composer require 1994/ghostwriter-core
 
 PHP 8.2 or later, with `dom` and `mbstring`. Runtime dependencies are `symfony/yaml` (6.4, 7 or 8), `league/commonmark` 2 and the PSR HTTP and log interfaces (`psr/log` 1 to 3). `guzzlehttp/guzzle` (7.8+ or 8) is suggested, not required: it's needed for `Http\GuzzleHttpClients`, the ready-made HTTP client, and for `Testing\MockHttpClient`'s default factories. CI runs the lowest and highest versions allowed, and Guzzle 7 and 8 each.
 
-During the extraction core is `0.x`, and the addons should require an exact minor (`~0.1.0`).
+During the extraction core is `0.x`, and the addons should require an exact minor (`~0.2.0`).
 
 ## What's in it
 
@@ -30,6 +30,7 @@ During the extraction core is `0.x`, and the addons should require an exact mino
 | `EntryMerger` | Lays a rewritten draft over the entry it came from, keeping block IDs and everything that isn't writing. |
 | `EntrySimplifier` | Reduces a stored entry to draft form, for showing real entries to the model as examples. |
 | `Utf8` | `Utf8::scrub()` makes every string in a value valid UTF-8 before it's encoded as JSON. |
+| `Slug` | `Slug::make()` for file names (ASCII, accents taken off, cut between words) and `Slug::clip()` for one-line titles and alt text. |
 
 Where the three addons' copies differed, the difference is a constructor option. See [docs/text-unification.md](docs/text-unification.md) for what each addon passes.
 
@@ -66,6 +67,43 @@ One way to call a model, used by all three addons, over any PSR-18 client. It co
 - **Cut-off replies:** providers report `StopReason::MaxTokens` and never throw for it. The caller decides whether to retry or throw `Truncated`.
 - **Gateways:** a `base_url` per provider, for gateways that speak the same API. It must be `https://`, except for localhost.
 
+### Images: `NineteenNinetyFour\Ghostwriter\Core\Images`
+
+Photo search for an image field: free photo libraries searched, the results judged by a model against the page, and the chosen file downloaded safely. Each addon supplies the words around the field, the images already in that place (if any) and storage for the photo that's chosen. See [docs/images.md](docs/images.md) for the wiring.
+
+| Class | What it does |
+|---|---|
+| `StockSearch` | Searches Unsplash, Pexels and Pixabay (with a key from `Credentials`: `unsplash`, `pexels`, `pixabay`) and Openverse (no key; CC0 and public domain only; can be switched off). `search($term, $shape)` gives `Photo`s; `fetch($source, $id)` looks the photo up again and downloads it as a `PhotoFile`. |
+| `PhotoFinder` | The whole job: `find(PhotoContext, $references, ?$terms)` chooses searches (the `photo-researcher` agent, or the person's own), runs them, has the results judged, and runs a second round when nothing fits. Returns `PhotoResults`. |
+| `PhotoRanker` | The judging, through the `photo-picker` agent. With reference images it matches style and subject; without, subject alone. Clear misses are left out. Without a model, results come back unranked and nothing is picked. |
+| `Photo` | One result: source, id, thumbnail, credit, licence, the library's own `title`, `description` and `tags`, size, the search that found it, and `picked`/`reason` when a model judged it. `alt()`, `assetTitle()` and `filenameBase()` turn the library's words into alt text, an asset title and a file name, falling back to the search term. |
+| `PhotoContext` | The words around the field: page title and summary, field label, block text, page text, shape, and the site's imagery guide. |
+| `PhotoResults` | The photos in order, with `judged`, `withReferences`, `noneFit`, `retried` and the `terms` searched. `picked()` is the shortlist; it is empty unless a model judged, so a "Best match" badge can follow `picked` alone. |
+
+```php
+use NineteenNinetyFour\Ghostwriter\Core\Images\PhotoContext;
+use NineteenNinetyFour\Ghostwriter\Core\Images\PhotoFinder;
+use NineteenNinetyFour\Ghostwriter\Core\Images\StockSearch;
+
+$stock = new StockSearch($http, $credentials, openverse: fn () => $settings->openverse, logger: $logger);
+$finder = new PhotoFinder($stock, $providers, $prompts, $logger);
+
+$results = $finder->find(
+    PhotoContext::make($title, $label, $blockText, $pageText, $summary, shape: 'landscape', style: $imageryGuide),
+    $referenceBytes,              // the images already in that place; [] is fine
+    $typedSearches ?: null,       // null: the model chooses the searches
+);
+
+$json = $results->toArray();      // photos (with alt, asset_title, picked, reason), terms, judged, none_fit...
+
+// When the person chooses one:
+$file = $stock->fetch($source, $id);                    // looked up again by ID; https only; at most 15 MB
+$name = $file->photo->filenameBase().'.'.$file->extension;
+$alt = $file->photo->alt();
+```
+
+Downloads are https only, redirects included (core follows them itself, at most three, and never to a private address), read no further than their cap (15 MB for a photo, 2 MB for a thumbnail) and checked to be a JPEG, PNG or WebP. Openverse results are kept only when Openverse's own thumbnail loads; originals are never fetched to check them.
+
 ## Wiring it into an addon
 
 The adapter implements three ports and builds one `Providers`, shared for the whole request or process:
@@ -75,6 +113,8 @@ The adapter implements three ports and builds one `Providers`, shared for the wh
 | `Ports\Credentials` | `key(provider)`: the trimmed key, or null. Env names are in `Credentials::ENV`. | `config("ghostwriter.keys.{$provider}")` | `App::env(Credentials::ENV[$provider])` |
 | `Ports\HttpClients` | A PSR-18 client for a timeout, plus PSR-17 factories | `new GuzzleHttpClients()` | `Craft::createGuzzleClient([...])` wrapped in a small class, or `new GuzzleHttpClients(['handler' => $stack])` |
 | `Ports\ProviderSettings` | Text and image provider and model, timeout, base URLs, Anthropic fallbacks on or off | from `config('ghostwriter.*')` or the settings model | the plugin's `Settings` |
+
+Photo search uses the same `HttpClients`. An `HttpClients` of your own (Craft's wrapper) should also implement `Ports\DownloadClients`, a client that hands redirects back instead of following them, so core can check each hop is https. `GuzzleHttpClients` and `MockHttpClient` already do.
 
 ```php
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Http\GuzzleHttpClients;

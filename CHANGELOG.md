@@ -2,6 +2,26 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. While the version is `0.x`, a minor release may contain breaking changes.
 
+## 0.2.0 - Unreleased
+
+Photo search, unified from the three addons' copies, with model ranking and the photo libraries' own descriptions. See [docs/images.md](docs/images.md) for how an addon wires it.
+
+### Added
+
+- **`Images\StockSearch`:** Unsplash, Pexels, Pixabay and Openverse over PSR-18, with keys from `Credentials` (`unsplash`, `pexels`, `pixabay`) and Openverse switched by a constructor argument (a bool or a callable). It is the union of the three addons' versions: orientation per shape, nine results per library, a two-word retry for long searches, one library failing without hiding the others, and Openverse results kept only when Openverse's own thumbnail loads (originals are never fetched to check them). `fetch($source, $id)` looks the photo up again by ID, reports Unsplash downloads, and returns a `PhotoFile` (bytes, MIME type, extension and the `Photo`).
+- **Hardened downloads:** https only on every hop, with redirects followed by core (at most three, never to localhost, a private or reserved IP address, or a `.local`/`.internal` name) and API keys dropped when a redirect leaves the host. Bodies are read no further than their cap (15 MB for a photo, 2 MB for a thumbnail), and a declared length over the cap is refused before reading. Files must say they are images and be a JPEG, PNG or WebP that PHP can read; the extension comes from the bytes. Failures are `Images\PhotoUnavailable` (an `InvalidArgumentException`, as the addons threw) with a message that never carries a key.
+- **`Images\Photo`:** source, ID, thumbnail, credit, credit URL, licence, the library's own `title`, `description` and `tags`, width and height, the full-size address, the search that found it, and `picked` and `reason` when a model judged it. `alt()`, `assetTitle()` and `filenameBase()` turn the library's words into alt text (at most 125 characters), an asset title and a file name, falling back to the search term (decision D4). `toArray()` keeps the keys the addons' UIs already read; `fromArray()` reads them back, older arrays included.
+- **`Images\PhotoRanker`:** judges candidates through the `photo-picker` agent. With reference images it matches style and subject, as before; without, it now judges the subject alone against the block's and page's words and each photo's library description, instead of skipping (decision D2). Clear misses are left out. `picked` is set only when the model judged, so "Best match" can no longer land on unranked photos. Requests stay within `Ai\Limits`, and images are made small first (Imagick, then GD).
+- **`Images\PhotoFinder`:** the whole flow. Searches are chosen by the `photo-researcher` agent (or typed), run, and judged. When nothing fits, the model's own searches are run and judged once more, with or without references (Statamic's retry, now in all three). Returns `Images\PhotoResults` with `judged`, `withReferences`, `noneFit`, `retried` and the `terms` searched.
+- **`Images\PhotoContext`:** the words around a field (title, summary, label, block text, page text, shape, imagery guide).
+- **`Text\Slug`:** `make()` for ASCII file names (accents taken off, other scripts transliterated with intl, cut between words) and `clip()` for one-line text cut at a word.
+- **`Ai\Ports\DownloadClients`:** an optional extra on `HttpClients`, for clients that hand redirects back instead of following them, and can stream. `GuzzleHttpClients` and `MockHttpClient` implement it; an addon's own `HttpClients` should too.
+
+### Changed
+
+- **The `photo-picker` prompt** handles both modes (with and without references), asks for one line per photo that fits with a reason, and lets the model answer `none: search; search; search`. A plain list of numbers, as a site's older override asks for, is still read. Its golden fixtures are now core's text for all three addons.
+- The branch alias is `0.2.x-dev`; addons should require `~0.2.0`.
+
 ## 0.1.1 - 2026-10-02
 
 ### Changed
