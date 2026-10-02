@@ -75,4 +75,29 @@ return [
     'guide.skipped' => 'That\'s everything I could help with. :count still need you; they stay highlighted until they\'re filled in.',
     'guide.skipped-one' => 'That\'s everything I could help with. 1 still needs you; it stays highlighted until it\'s filled in.',
     'guide.reason.draft' => 'I didn\'t want to guess.',
+
+    // The publish guard: one message for the page...
+    'publish.ready' => 'Ready to publish.',
+    'publish.blocked' => ':count things to finish before this page goes live: :items.',
+    'publish.blocked-one' => '1 thing to finish before this page goes live: :items.',
+    'publish.warned' => 'Published with :count things still to finish: :items.',
+    'publish.warned-one' => 'Published with 1 thing still to finish: :items.',
+
+    // ...each thing in its list...
+    'publish.item.ask' => ':label (:hint)',
+    'publish.item.ask-value' => ':label (:hint)',
+    'publish.item.link' => ':label (a link to choose)',
+    'publish.item.link-broken' => ':label (a link to a deleted page)',
+    'publish.item.image-placeholder' => ':label (the image placeholder)',
+    'publish.item.stock-preview' => ':label (a :library preview, not licensed)',
+    'publish.item.leftover-token' => ':label (template text “:hint”)',
+
+    // ...and what each field says.
+    'publish.field.ask' => 'Add :hint before publishing.',
+    'publish.field.ask-value' => 'Add :hint before publishing.',
+    'publish.field.link' => 'Choose where this link goes before publishing.',
+    'publish.field.link-broken' => 'This links to a page that\'s been deleted. Choose another before publishing.',
+    'publish.field.image-placeholder' => 'Replace the image placeholder before publishing.',
+    'publish.field.stock-preview' => 'This is a :library preview, not licensed yet. License it, or choose another image, before publishing.',
+    'publish.field.leftover-token' => 'Remove the template text “:hint” before publishing.',
 ];
