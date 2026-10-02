@@ -2,6 +2,14 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 it follows semantic versioning: a minor or patch release doesn't break the public API.
 
+## Unreleased
+
+### Added
+
+- **`Images\Libraries\ConnectsAccount`**, the "Connect account" port for libraries that license through the customer's own signed-in account (`needsOAuth`): `authorizationUrl($state, $redirectUri)`, `connect($code, $redirectUri, $state = '')`, `refresh(TokenSet)`, `connected()` and `disconnect()`. Tokens are kept through the library's `LibraryTokens`. The addons' three control panel routes and their rules are in [docs/connecting-accounts.md](docs/connecting-accounts.md).
+- **`Images\Libraries\OAuth\Pkce`**: RFC 7636 S256, with the verifier derived from the addon's single-use `state` and the library's secret, so nothing is kept between the connect and callback requests.
+- **`FakeLibrary` is a `ConnectsAccount`**, so the addons can test "Connect account" against it and run it in a browser with the demo library: its authorization address goes straight back to the callback with a code bound to the state and address. It takes an optional `tokens:` (`LibraryTokens`); its tokens last an hour and refresh; `refusesConnect` and `refusesRefresh` script failures. Built with `needsOAuth`, it refuses `account()`, `quotes()` and `license()` with `NotConnected` until connected. Without `needsOAuth` (the default) it behaves as before.
+
 ## 1.1.0 - 2026-10-02
 
 Multi-source stock photos, from the stock images design: phase 1, the library abstraction; phase 2, the ledger domain and the model-input guard; and phase 4, the licensing framework and its fakes. Nothing in the 1.0 API changes; the addons' calls work as they are.
