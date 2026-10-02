@@ -1,6 +1,6 @@
 # Ghostwriter Core
 
-The framework-free core shared by the Ghostwriter addons for [Statamic](https://github.com/1994limited/ghostwriter-statamic), [Filament](https://github.com/1994limited/ghostwriter-filament) and [Craft CMS](https://github.com/1994limited/ghostwriter-craft). It holds the parts that used to be copied by hand between the three: draft text handling, the prompts, the connection to the AI providers, and photo search with ranking.
+The framework-free core shared by the Ghostwriter addons for [Statamic](https://github.com/1994limited/ghostwriter-statamic), [Filament](https://github.com/1994limited/ghostwriter-filament) and [Craft CMS](https://github.com/1994limited/ghostwriter-craft). It holds the parts that used to be copied by hand between the three: draft text handling, the prompts, the connection to the AI providers, the schema model and the layout algorithms, and photo search with ranking.
 
 Each addon stays a thin adapter. It reads the CMS's schema and entries, stores state, runs queue jobs, checks permissions and draws the UI, and calls core for everything else.
 
@@ -14,7 +14,7 @@ composer require 1994/ghostwriter-core
 
 PHP 8.2 or later, with `dom` and `mbstring`. Runtime dependencies are `symfony/yaml` (6.4, 7 or 8), `league/commonmark` 2 and the PSR HTTP and log interfaces (`psr/log` 1 to 3). `guzzlehttp/guzzle` (7.8+ or 8) is suggested, not required: it's needed for `Http\GuzzleHttpClients`, the ready-made HTTP client, and for `Testing\MockHttpClient`'s default factories. CI runs the lowest and highest versions allowed, and Guzzle 7 and 8 each.
 
-During the extraction core is `0.x`, and the addons should require an exact minor (`~0.3.0`).
+During the extraction core is `0.x`, and the addons should require an exact minor (`~0.4.0`).
 
 ## What's in it
 
@@ -76,6 +76,21 @@ $studio = new Studio($providers, $prompts, $logger, StudioOptions::statamic());
 $ideas = $studio->suggestIdeas(new PlanContext($groups, $plan, $voice, $steer));
 $ideas->value;          // SuggestedIdea[]
 $ideas->usage->output;  // tokens, retries included
+```
+
+### Schema and layouts: `NineteenNinetyFour\Ghostwriter\Core\Schema` and `…\Core\Layout`
+
+What a kind of entry is made of (`Schema`, `Field`, `Kind`, `Set`) and an entry's content in one shape whatever the CMS (`EntryData`), and the algorithms that work on them: `SchemaDescriber` (the fields as the model's brief), `PatternFinder` (how a group's entries are really built: block order and usage, house defaults, examples, fill rates), `KindFinder` (kinds of entry, from how entries are built, with no model call), `HouseStyle` (settings, links, nested items and rich text dressing agreed place by place) and `EntryBuilder` (a draft into entry data). How a CMS stores rich text and links is a dialect: `HtmlDialect` for HTML, a Bard dialect in the Statamic adapter, and `StatamicLinks`, `CraftLinks` and `NoLinks`. See [docs/layout.md](docs/layout.md) for the wiring and the parity check, and [docs/layout-unification.md](docs/layout-unification.md) for what each addon passes.
+
+```php
+$layouts = new Layouts(LayoutOptions::craft(), new HtmlDialect, new CraftLinks(hyper: [$hyper], link: [$link]));
+
+$schema = Schema::fromSpecs($reader->read($entryType));
+$pattern = $layouts->patterns()->find($schema, PatternFinder::choose($entries, $type->where));
+$built = $layouts->builder()->build($draft->data, $schema, $pattern, $type->defaults);
+$house = $layouts->houseStyle()->apply($built->data, $schema, $pattern->house, $entryId, $title);
+
+$studioLayout = Layout::fromSchema($schema, $pattern, $layouts->describer());   // for the Studio
 ```
 
 ### Images: `NineteenNinetyFour\Ghostwriter\Core\Images`
