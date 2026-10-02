@@ -1,0 +1,46 @@
+{
+    "addon": "craft",
+    "job": "analyseVoice",
+    "inputs": [
+        [
+            {
+                "@": "VoiceSample",
+                "title": "Harbour Trust & the \"tides\"",
+                "group": "news",
+                "text": "We made a site.\n\nIt works."
+            },
+            {
+                "@": "VoiceSample",
+                "title": "About us",
+                "group": "pages",
+                "text": "We are small <and> proud."
+            }
+        ]
+    ],
+    "replies": {
+        "voice-analyst": [
+            "# Voice\n\nWarm."
+        ]
+    },
+    "requests": [
+        {
+            "agent": "voice-analyst",
+            "instructions": "You are an editor who writes house style guides. You are given samples of writing already published on one organisation's website. Read them closely and write the tone of voice guide a new writer would need in order to produce work that could sit beside these samples without anyone noticing the join.\n\nWork only from the evidence in the samples. Do not describe a voice you think the organisation ought to have, and do not pad the guide with generic writing advice. If the samples disagree with each other, say so and say which pattern is more common.\n\nQuote the samples. Every rule should be backed by at least one short phrase lifted from them, in quotation marks, so the reader can hear the rule rather than just read it.\n\nWrite the guide in markdown with these sections, in this order:\n\n# Tone of voice\n\n## Who is talking, to whom\nWho the writer speaks as (we, the company name, I) and how often. Who the reader is assumed to be and how they are addressed. The attitude: formal or relaxed, confident or cautious, warm or cool, playful or straight.\n\n## How a piece is shaped\nHow pieces open. How they move from the general to the specific. How they end. What sections or headings recur across the samples.\n\n## Sentences and words\nSentence length and rhythm. Signature moves: questions, asides, punchlines, lists, colons. Vocabulary the writers reach for. Spelling convention (UK or US). Tense. How numbers, prices and technical terms are handled.\n\n## Titles, summaries and headings\nThe patterns for titles, standfirsts or summaries, and section headings, with examples.\n\n## What this voice never does\nWords, phrases and habits that are absent from the samples and would sound wrong here, including the tells of machine-written copy.\n\n## Examples to imitate\nFive to eight short passages quoted from the samples that best carry the voice, each with one line on what it shows.\n\nKeep the guide under 900 words. Address the writer directly. Output only the guide, with no preamble and no closing remarks.",
+            "prompt": "Here are 2 samples of published writing from the website.\n\n<sample number=\"1\" collection=\"news\" title=\"Harbour Trust &amp; the &quot;tides&quot;\">\nWe made a site.\n\nIt works.\n</sample>\n\n<sample number=\"2\" collection=\"pages\" title=\"About us\">\nWe are small <and> proud.\n</sample>\n\nWrite the tone of voice guide.",
+            "history": [],
+            "images": [],
+            "maxTokens": 16000,
+            "effort": null,
+            "model": null,
+            "timeout": null
+        }
+    ],
+    "result": {
+        "@": "TaggedResponse",
+        "reply": "",
+        "document": "# Voice\n\nWarm.",
+        "inputTokens": 100,
+        "outputTokens": 50,
+        "images": null
+    }
+}

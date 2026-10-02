@@ -1,0 +1,51 @@
+#!/usr/bin/env php
+<?php
+
+/*
+ * Compares two request logs written by Studio\Testing\RequestLog::append(),
+ * e.g. an addon's suite before and after it switched to core's Studio.
+ * Exits 1 when they differ.
+ *
+ *     bin/compare-requests before.jsonl after.jsonl [--ignore=maxTokens,effort]
+ */
+
+use NineteenNinetyFour\Ghostwriter\Core\Studio\Testing\RequestLog;
+
+foreach ([dirname(__DIR__).'/vendor/autoload.php', dirname(__DIR__, 3).'/autoload.php'] as $autoload) {
+    if (is_file($autoload)) {
+        require $autoload;
+
+        break;
+    }
+}
+
+$paths = array_values(array_filter(array_slice($argv, 1), fn (string $arg) => ! str_starts_with($arg, '--')));
+$ignore = [];
+
+foreach (array_slice($argv, 1) as $arg) {
+    if (str_starts_with($arg, '--ignore=')) {
+        $ignore = array_filter(explode(',', substr($arg, 9)));
+    }
+}
+
+if (count($paths) !== 2) {
+    fwrite(STDERR, "Usage: compare-requests before.jsonl after.jsonl [--ignore=field,field]\n");
+
+    exit(2);
+}
+
+try {
+    $differences = RequestLog::compare(RequestLog::read($paths[0]), RequestLog::read($paths[1]), $ignore);
+} catch (RuntimeException $exception) {
+    fwrite(STDERR, $exception->getMessage()."\n");
+
+    exit(2);
+}
+
+foreach ($differences as $line) {
+    echo $line, "\n";
+}
+
+echo $differences === [] ? "The requests are the same.\n" : count($differences)." difference(s).\n";
+
+exit($differences === [] ? 0 : 1);

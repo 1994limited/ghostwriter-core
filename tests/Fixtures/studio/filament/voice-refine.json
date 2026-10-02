@@ -1,0 +1,53 @@
+{
+    "addon": "filament",
+    "job": "refineVoice",
+    "inputs": [
+        "# Voice\n\nWarm.",
+        [
+            {
+                "role": "user",
+                "content": "Make it warmer."
+            },
+            {
+                "role": "assistant",
+                "content": "Done."
+            }
+        ],
+        "Now shorter."
+    ],
+    "replies": {
+        "voice-editor": [
+            "<reply>Shorter.</reply>\n<document>\n# Voice\n</document>"
+        ]
+    },
+    "requests": [
+        {
+            "agent": "voice-editor",
+            "instructions": "You maintain an organisation's tone of voice guide. The current guide is given to you, along with a request from someone at the organisation who wants it changed: a rule added, a rule removed, an example swapped, a section tightened.\n\nMake the change they ask for and nothing else. Keep the guide's headings and order. Keep it in markdown. If the request is unclear or would contradict another part of the guide, ask one short question instead of guessing, and leave the guide as it is.\n\nAnswer in exactly this format:\n\n<reply>\nOne to three sentences to the person: what you changed, or the question you need answered.\n</reply>\n<document>\nThe complete updated guide. Leave this block out entirely if you changed nothing.\n</document>",
+            "prompt": "<current_guide>\n# Voice\n\nWarm.\n</current_guide>\n\nRequest: Now shorter.",
+            "history": [
+                {
+                    "role": "user",
+                    "content": "Make it warmer."
+                },
+                {
+                    "role": "assistant",
+                    "content": "Done."
+                }
+            ],
+            "images": [],
+            "maxTokens": 16000,
+            "effort": null,
+            "model": null,
+            "timeout": null
+        }
+    ],
+    "result": {
+        "@": "TaggedResponse",
+        "reply": "Shorter.",
+        "document": "# Voice",
+        "inputTokens": 100,
+        "outputTokens": 50,
+        "images": null
+    }
+}

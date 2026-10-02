@@ -1,0 +1,35 @@
+{
+    "addon": "filament",
+    "job": "photoQuery",
+    "inputs": [
+        "Kiln opening",
+        "A new kiln for the pottery."
+    ],
+    "replies": {
+        "photo-query": [
+            "Pottery kiln\n"
+        ]
+    },
+    "requests": [
+        {
+            "agent": "photo-query",
+            "instructions": "You choose search terms for stock photo libraries. Given a web page's title and summary, reply with two to four plain words naming a concrete, photographable subject that would suit the page: objects, places or scenes, never brand names, abstract ideas or the word \"website\". Reply with the words only, lower case, no punctuation.",
+            "prompt": "Title: Kiln opening\nSummary: A new kiln for the pottery.",
+            "history": [],
+            "images": [],
+            "maxTokens": 2000,
+            "effort": "low",
+            "model": null,
+            "timeout": null
+        }
+    ],
+    "result": {
+        "@": "Result",
+        "value": "pottery kiln",
+        "usage": {
+            "@": "Usage",
+            "input": 100,
+            "output": 50
+        }
+    }
+}
