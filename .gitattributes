@@ -1,7 +1,7 @@
 * text=auto eol=lf
 
 /.github            export-ignore
-/bin                export-ignore
+/bin/check-boundaries export-ignore
 /docs               export-ignore
 /tests              export-ignore
 /tools              export-ignore
