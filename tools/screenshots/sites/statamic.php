@@ -65,7 +65,7 @@ class StatamicSite extends Site
     /**
      * Ghostwriter's endpoints that change something are refused in the
      * page, except "Use this draft", which only fills the form. The image
-     * dialog's "Find photos" and "Make image" become reads of the seeded
+     * dialog's "Find photos" and "Make the picture" become reads of the seeded
      * requests, so the dialog shows them as it would a finished search.
      */
     private function guard(): string
@@ -375,7 +375,7 @@ class StatamicSite extends Site
                     $this->openImageDialog($b);
                     $b->waitForText('Make one');
                     $b->click('Make one', 'button');
-                    $b->click('Make image');
+                    $b->click('Make the picture');
                     $b->waitForText('Make another');
                     $b->until('[...document.querySelectorAll("[role=dialog] img")].every(i => i.complete && i.naturalWidth)', 20, 'the made picture');
                     $b->js('[...document.querySelectorAll("button")].find(e => e.textContent.trim() === "Make another").scrollIntoView({block: "end"})');
@@ -428,9 +428,8 @@ class StatamicSite extends Site
                     $b->waitForText('Use this draft');
                     $b->click('Use this draft');
                     $b->waitForText('Draft added to the form');
-                    // The CP's toasts are a fixed 45px high, which a notice
-                    // with a list of notes overflows.
-                    $b->js('document.head.insertAdjacentHTML("beforeend", "<style>.toasted { height: auto !important; padding-top: 12px !important; padding-bottom: 12px !important; }</style>")');
+                    // The notes are a notice above the form (F7), not a toast.
+                    $b->until('!!document.querySelector("[data-ghostwriter-notes]")', 10, 'the notes notice');
                 },
                 'wait' => 1.2,
             ],
@@ -451,7 +450,7 @@ class StatamicSite extends Site
                 (field || document).querySelector('button[aria-label="Ghostwriter"], button[title="Ghostwriter"]').click();
             })()
         JS);
-        $browser->waitForText('An image for Hero image');
+        $browser->waitForText('Image for Hero image');
     }
 
     public function store(): array

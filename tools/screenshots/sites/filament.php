@@ -168,7 +168,7 @@ class FilamentSite extends Site
             'writing-questions' => [
                 'url' => $panel('posts', 'questions'),
                 'steps' => $openPanel,
-                'ready' => 'Your turn: answer above to carry on.',
+                'ready' => 'Your turn: answer the questions above and the draft follows.',
             ],
             'writing-draft' => [
                 'url' => $panel('pages', 'draft'),
