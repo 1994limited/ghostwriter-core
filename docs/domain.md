@@ -11,7 +11,7 @@ All under `NineteenNinetyFour\Ghostwriter\Core\Domain`, apart from the placehold
 | Type | What it is | Rules on it |
 |---|---|---|
 | `Format` | How the addon stores records today: `Statamic`, `Craft`, `Filament`. Makes IDs (`newId()`), stamps dates (`stamp()`), reads them (`Format::parse()`). | |
-| `DomainOptions` | The settings (`shared`, `jobTimeout`) and the real per-addon differences, as `statamic()`, `craft()`, `filament()`. | `staleAfter()`: (timeout + 120) × 2 seconds. |
+| `DomainOptions` | The settings (`shared`, `jobTimeout`) and the real per-addon differences, as `statamic()`, `craft()`, `filament()`. | `staleAfter()`: the job limit (timeout × 3 + 60) plus 120 seconds, so work is never marked stopped while its job may still run. |
 | `Viewer` | The person asking: user ID, `manager` (the settings permission), `admin` (a Statamic super user). | |
 | `Sessions\Session` | A piece: brief, conversation, draft, status, usage, examples, images, the record it is for, who started, touched and ran it. | `claim()`, `isStale()`, `recoverIfStale()`, `answer()`, `fail()`, `markApplied()`, `canRetry()`, `waitingOn()`, `title()`. |
 | `Sessions\SessionAccess` | Who may see, resume and delete (E7, Q1). | `canSee()`, `canResume()`, `canDelete()`, `visible()`. |

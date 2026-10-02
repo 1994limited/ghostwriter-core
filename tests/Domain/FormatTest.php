@@ -53,7 +53,7 @@ final class FormatTest extends TestCase
         $this->assertTrue(DomainOptions::craft()->editFinishedOnApply);
         $this->assertSame(['working' => 'writing', 'draft' => 'ready', 'interview' => 'asking'], DomainOptions::filament()->stageNames);
         $this->assertFalse(DomainOptions::craft(shared: false)->shared);
-        $this->assertSame(1080, DomainOptions::statamic(jobTimeout: 420)->staleAfter());
+        $this->assertSame(1440, DomainOptions::statamic(jobTimeout: 420)->staleAfter());
         $this->assertSame(DomainOptions::filament()->stageNames, DomainOptions::filament()->with(shared: false)->stageNames);
 
         $this->expectException(InvalidArgumentException::class);

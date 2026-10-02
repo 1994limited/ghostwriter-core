@@ -65,11 +65,11 @@ final class SessionTest extends TestCase
         $session = Session::start(Format::Filament, 'any:posts', [], 1, now: self::now());
         $session->claim(1, $options, self::now());
 
-        // (300 + 120) × 2 = 840 seconds.
-        $this->assertSame(840, $options->staleAfter());
-        $this->assertFalse($session->isStale($options, self::now('+839 seconds')));
-        $this->assertTrue($session->isStale($options, self::now('+841 seconds')));
-        $this->assertTrue($session->claim(2, $options, self::now('+841 seconds')), 'A stale run is claimed again.');
+        // The job limit (300 × 3 + 60) plus 120 seconds' margin.
+        $this->assertSame(1080, $options->staleAfter());
+        $this->assertFalse($session->isStale($options, self::now('+1079 seconds')));
+        $this->assertTrue($session->isStale($options, self::now('+1081 seconds')));
+        $this->assertTrue($session->claim(2, $options, self::now('+1081 seconds')), 'A stale run is claimed again.');
         $this->assertSame(2, $session->runBy);
     }
 
@@ -80,8 +80,8 @@ final class SessionTest extends TestCase
         $session->status = Session::WORKING;
         $session->updatedAt = self::now()->format(DATE_ATOM);
 
-        $this->assertFalse($session->recoverIfStale($options, self::now('+10 minutes')));
-        $this->assertTrue($session->recoverIfStale($options, self::now('+15 minutes')));
+        $this->assertFalse($session->recoverIfStale($options, self::now('+17 minutes')));
+        $this->assertTrue($session->recoverIfStale($options, self::now('+19 minutes')));
         $this->assertSame(Session::FAILED, $session->status);
         $this->assertSame(DomainOptions::STOPPED, $session->error);
         $this->assertFalse($session->recoverIfStale($options, self::now('+1 day')), 'Only once.');
