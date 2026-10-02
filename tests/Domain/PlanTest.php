@@ -118,7 +118,7 @@ final class PlanTest extends TestCase
         $this->assertSame(1, $plan->receive([['title' => 'One', 'collection' => 'journal']]));
     }
 
-    public function test_only_a_dismissed_idea_is_put_back(): void
+    public function test_a_dismissed_idea_or_an_unfinished_piece_is_put_back(): void
     {
         $plan = $this->plan(Format::Filament);
         $idea = $plan->add(['title' => 'One', 'resource' => 'posts']);
@@ -128,17 +128,43 @@ final class PlanTest extends TestCase
         $back = $plan->putBack($idea->id);
         $this->assertSame(Idea::OPEN, $back->status);
 
+        // Started and not finished: "Back to ideas" gives up on the piece.
+        $plan->start($idea->id, 4);
+        $back = $plan->putBack($idea->id, fn (Idea $idea) => false);
+        $this->assertSame(Idea::OPEN, $back->status);
+        $this->assertNull($back->session);
+    }
+
+    public function test_a_finished_piece_is_not_put_back(): void
+    {
+        $plan = $this->plan(Format::Filament);
+        $idea = $plan->add(['title' => 'One', 'resource' => 'posts']);
+        $this->assertNotNull($idea->id);
         $plan->start($idea->id, 4);
 
         try {
-            $plan->putBack($idea->id);
+            $plan->putBack($idea->id, fn (Idea $idea) => true);
             $this->fail('Conflict');
         } catch (Conflict $conflict) {
-            $this->assertSame('Only a dismissed idea can be put back.', $conflict->getMessage());
+            $this->assertSame('A finished piece can\'t be put back on the plan.', $conflict->getMessage());
         }
 
+        // Without the host saying it isn't finished, a started piece stays put.
+        try {
+            $plan->putBack($idea->id);
+            $this->fail('Conflict');
+        } catch (Conflict) {
+        }
+
+        $this->assertSame(Idea::DRAFTED, $plan->ideas(fn () => true)[0]->status);
+    }
+
+    public function test_an_open_idea_is_not_put_back(): void
+    {
+        $plan = $this->plan(Format::Filament);
+
         $this->expectException(Conflict::class);
-        $plan->putBack($plan->add(['title' => 'Open', 'resource' => 'posts'])->id ?? 0);
+        $plan->putBack($plan->add(['title' => 'Open', 'resource' => 'posts'])->id ?? 0, fn () => false);
     }
 
     public function test_starting_a_piece_puts_the_idea_in_hand(): void

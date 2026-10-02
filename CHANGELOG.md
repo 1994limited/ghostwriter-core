@@ -2,6 +2,11 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. While the version is `0.x`, a minor release may contain breaking changes.
 
+## 0.5.1 - 2026-10-02
+
+### Fixed
+- `Plan::putBack()` refused started pieces, which removed **Back to ideas** (E5) from started-but-unfinished pieces. It now also takes a started piece when the host says it isn't finished (`putBack($id, fn (Idea $idea) => …)`), and still refuses finished pieces and open ideas. Without the callable a started piece is refused, as before.
+
 ## 0.5.0 - 2026-10-02
 
 The domain model, its rules and the store contracts, unified from the three addons: Phase 4, stage 1 of the core extraction. The addons switch over in stage 2. See [docs/domain.md](docs/domain.md) for how an addon wires it, and [docs/domain-unification.md](docs/domain-unification.md) for what differed and what core does.
