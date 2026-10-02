@@ -257,20 +257,27 @@ final class EntryBuilder
      */
     private function renamePaths(int $asks, int $places, FieldPath $before, FieldPath $after): void
     {
+        $renamed = [];
+
+        foreach ($this->asks as $i => $ask) {
+            $renamed[] = ['path' => $i >= $asks ? self::renamed($ask['path'], $before, $after) : $ask['path']] + $ask;
+        }
+
+        $this->asks = $renamed;
+        $renamed = [];
+
+        foreach ($this->places as $i => $place) {
+            $renamed[] = ['path' => $i >= $places ? self::renamed($place['path'], $before, $after) : $place['path']] + $place;
+        }
+
+        $this->places = $renamed;
+    }
+
+    private static function renamed(string $path, FieldPath $before, FieldPath $after): string
+    {
         $old = $before->toString().'/';
-        $new = $after->toString().'/';
 
-        for ($i = $asks; $i < count($this->asks); $i++) {
-            if (str_starts_with($this->asks[$i]['path'], $old)) {
-                $this->asks[$i]['path'] = $new.substr($this->asks[$i]['path'], strlen($old));
-            }
-        }
-
-        for ($i = $places; $i < count($this->places); $i++) {
-            if (str_starts_with($this->places[$i]['path'], $old)) {
-                $this->places[$i]['path'] = $new.substr($this->places[$i]['path'], strlen($old));
-            }
-        }
+        return str_starts_with($path, $old) ? $after->toString().'/'.substr($path, strlen($old)) : $path;
     }
 
     /**
