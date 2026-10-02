@@ -55,13 +55,17 @@ final class Downloader
     /**
      * A library's JSON answer.
      *
+     * With $account (a call made with a connected account's token), a
+     * refusal (401, 403) is NotConnected, so the editor is asked to
+     * connect again.
+     *
      * @param  array<string, scalar>  $query
      * @param  array<string, string>  $headers
      * @return array<mixed>
      *
      * @throws PhotoUnavailable
      */
-    public function json(string $url, array $query = [], array $headers = [], int $timeout = 20, string $label = 'The photo library'): array
+    public function json(string $url, array $query = [], array $headers = [], int $timeout = 20, string $label = 'The photo library', bool $account = false): array
     {
         $url .= $query === [] ? '' : (str_contains($url, '?') ? '&' : '?').http_build_query($query, '', '&', PHP_QUERY_RFC3986);
         $response = $this->get($this->client($timeout, false), $url, $headers + ['Accept' => 'application/json']);
@@ -69,6 +73,10 @@ final class Downloader
 
         if ($status < 200 || $status >= 300) {
             $this->discard($response);
+
+            if ($account && ($status === 401 || $status === 403)) {
+                throw new NotConnected("{$label} refused the connected account. Connect it again in the settings.");
+            }
 
             throw new PhotoUnavailable(match (true) {
                 $status === 401 || $status === 403 => "{$label} refused the key. Check it in the settings.",
