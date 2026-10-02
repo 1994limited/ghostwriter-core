@@ -6,6 +6,10 @@ use GuzzleHttp\ClientInterface as GuzzleClient;
 use GuzzleHttp\Promise\Utils as Promises;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Ports\DownloadClients;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Ports\HttpClients;
+use NineteenNinetyFour\Ghostwriter\Core\Images\Exceptions\InsufficientBalance;
+use NineteenNinetyFour\Ghostwriter\Core\Images\Exceptions\LicenceRefused;
+use NineteenNinetyFour\Ghostwriter\Core\Images\Exceptions\LicensingUncertain;
+use NineteenNinetyFour\Ghostwriter\Core\Images\Exceptions\NotConnected;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -28,6 +32,9 @@ use Throwable;
  *
  * Thumbnails are fetched side by side when the client is Guzzle, one after
  * another otherwise.
+ *
+ * post() is for token and licence calls: sent exactly once, never retried
+ * and never redirected, so a purchase can't be replayed.
  *
  * @internal Used by StockSearch; not part of core's public API.
  */
@@ -74,6 +81,84 @@ final class Downloader
         $data = json_decode($this->read($response, self::MAX_JSON_BYTES), true);
 
         return is_array($data) ? $data : [];
+    }
+
+    /**
+     * A POST to a library, with a JSON body (or a form, $form), sent
+     * exactly once: never retried, never redirected. For token calls and
+     * licence purchases.
+     *
+     * With $purchase, anything after the request may have been sent says
+     * the outcome is unknown (LicensingUncertain): the connection failing,
+     * a timeout, a redirect, a server error or an unreadable answer.
+     * Otherwise (or for a purchase the provider plainly refused) the
+     * failure is a PhotoUnavailable: NotConnected for a refused key,
+     * InsufficientBalance for 402, LicenceRefused for other refusals of a
+     * purchase. Messages name the host at most.
+     *
+     * @param  array<string, mixed>  $body
+     * @param  array<string, string>  $headers
+     * @return array<mixed> The decoded answer.
+     *
+     * @throws PhotoUnavailable
+     * @throws LicensingUncertain
+     */
+    public function post(string $url, array $body = [], array $headers = [], bool $form = false, int $timeout = 60, string $label = 'The photo library', bool $purchase = false): array
+    {
+        if (! $this->secure($url)) {
+            throw new PhotoUnavailable("{$label} has no secure address.");
+        }
+
+        $factory = $this->http->requestFactory();
+        $request = $factory->createRequest('POST', $url)
+            ->withHeader('Accept', 'application/json')
+            ->withHeader('Content-Type', $form ? 'application/x-www-form-urlencoded' : 'application/json')
+            ->withBody($this->http->streamFactory()->createStream($form ? http_build_query($body, '', '&', PHP_QUERY_RFC3986) : (string) json_encode($body === [] ? new \stdClass : $body)));
+
+        foreach ($headers as $name => $value) {
+            $request = $request->withHeader($name, $value);
+        }
+
+        try {
+            // Where the clients allow (DownloadClients), one that hands redirects back, so none is followed.
+            $response = $this->client($timeout, false)->sendRequest($request);
+        } catch (ClientExceptionInterface) {
+            throw $purchase ? new LicensingUncertain : new PhotoUnavailable("Could not reach {$this->host($url)}. Try again in a moment.");
+        }
+
+        $status = $response->getStatusCode();
+
+        if ($status >= 200 && $status < 300) {
+            try {
+                $data = json_decode($this->read($response, self::MAX_JSON_BYTES), true);
+            } catch (PhotoUnavailable) {
+                $data = null;
+            }
+
+            if (is_array($data)) {
+                return $data;
+            }
+
+            if ($purchase) {
+                throw new LicensingUncertain;
+            }
+
+            return [];
+        }
+
+        $this->discard($response);
+
+        if ($purchase && ($status >= 500 || $status === 408 || ($status >= 300 && $status < 400))) {
+            throw new LicensingUncertain;
+        }
+
+        throw match (true) {
+            $status === 401 || $status === 403 => new NotConnected("{$label} refused the key. Check it in the settings."),
+            $status === 429 => new PhotoUnavailable("{$label} has had too many requests. Try again in a minute."),
+            $purchase && $status === 402 => new InsufficientBalance("{$label} says the account has nothing left to license this with."),
+            $purchase => new LicenceRefused("{$label} wouldn't license that photograph ({$status})."),
+            default => new PhotoUnavailable("{$label} answered with an error ({$status})."),
+        };
     }
 
     /**

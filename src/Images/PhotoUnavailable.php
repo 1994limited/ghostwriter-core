@@ -10,6 +10,8 @@ use InvalidArgumentException;
  * not an image, a library that failed. Never carries a key.
  *
  * It extends InvalidArgumentException because that is what the addons'
- * own photo code threw, and their controllers already catch it.
+ * own photo code threw, and their controllers already catch it. The
+ * licensing errors (Images\Exceptions) extend it, so those catches still
+ * work.
  */
-final class PhotoUnavailable extends InvalidArgumentException {}
+class PhotoUnavailable extends InvalidArgumentException {}

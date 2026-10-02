@@ -7,9 +7,13 @@ use DateTimeImmutable;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\DomainOptions;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Lock;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\NotFound;
+use NineteenNinetyFour\Ghostwriter\Core\Images\Exceptions\LicensingUncertain;
 use NineteenNinetyFour\Ghostwriter\Core\Images\Libraries\Licence;
+use NineteenNinetyFour\Ghostwriter\Core\Images\Libraries\LicensableLibrary;
 use NineteenNinetyFour\Ghostwriter\Core\Images\Libraries\Quote;
 use NineteenNinetyFour\Ghostwriter\Core\Images\Photo;
+use NineteenNinetyFour\Ghostwriter\Core\Images\PhotoUnavailable;
+use Throwable;
 
 /**
  * The stock image ledger and its rules, over a StockImageStore:
@@ -23,6 +27,9 @@ use NineteenNinetyFour\Ghostwriter\Core\Images\Photo;
  *   again;
  * - where each image is used is kept up to date from the records that
  *   hold it (syncUsages()), and the publish guard asks unlicensedIn().
+ *
+ * license() does the whole "License & replace": the ledger first, then the
+ * library, once, then the file swapped in by the addon's AssetReplacer.
  */
 final class StockImages
 {
@@ -117,12 +124,77 @@ final class StockImages
     }
 
     /**
-     * The licensed file is in place of the stand-in ("Download again and
-     * replace" finished).
+     * "License & replace", after the person confirmed `$quote`:
+     *
+     * 1. The record is saved as `licensing` (beginLicensing()): a second
+     *    attempt, or one for an image already licensed, is refused.
+     * 2. The library is asked once. If the outcome is unknown
+     *    (LicensingUncertain, or anything unexpected), the record stays
+     *    `licensing` for reconcile() and LicensingUncertain is thrown: tell
+     *    the editor not to buy it again. If the library plainly refused
+     *    (no balance, the price changed, no such product, not connected),
+     *    the record is `failed` and the refusal is thrown.
+     * 3. The licence is recorded before anything else can fail.
+     * 4. The licensed file is downloaded and put in place of the stand-in.
+     *    If that fails, the record stays `licensed`, not replaced, with the
+     *    error, for replaceAgain(); nothing is thrown, and the licence is
+     *    never bought twice.
+     *
+     * @throws LicensingUncertain
+     * @throws PhotoUnavailable when the library refused.
      */
-    public function replaced(string $id, ?Person $by = null): StockImage
+    public function license(string $id, LicensableLibrary $library, Quote $quote, AssetReplacer $replacer, ?Person $by = null): StockImage
     {
-        return $this->change($id, fn (StockImage $image, DateTimeImmutable $now) => $image->replaced($by, $now));
+        $image = $this->beginLicensing($id, $quote, $by);
+
+        try {
+            $licence = $library->license($image->externalId, $quote, $image->id, self::name($by));
+        } catch (LicensingUncertain $uncertain) {
+            throw $uncertain;
+        } catch (PhotoUnavailable $refused) {
+            $this->failed($id, $refused->getMessage(), $by);
+
+            throw $refused;
+        } catch (Throwable) {
+            // It may have charged: only reconcile() can say.
+            throw new LicensingUncertain;
+        }
+
+        $this->licensed($id, $licence, false, $by);
+
+        return $this->replaceAgain($id, $library, $replacer, $by);
+    }
+
+    /**
+     * "Download again and replace": the licensed file fetched (never
+     * bought) and put in place of the stand-in. A failure is kept on the
+     * record (error()), not thrown.
+     */
+    public function replaceAgain(string $id, LicensableLibrary $library, AssetReplacer $replacer, ?Person $by = null): StockImage
+    {
+        $image = $this->get($id);
+        $licence = $image->licence();
+
+        if (! $image->is(StockImage::LICENSED) || $licence === null || $image->isReplaced()) {
+            return $image;
+        }
+
+        try {
+            $asset = $replacer->replace($image->asset, $library->download($licence), ReplaceMeta::for($image));
+        } catch (Throwable $exception) {
+            return $this->replaceFailed($id, 'Licensed, but the file couldn\'t be put in place: '.$exception->getMessage().' Try "Download again and replace".');
+        }
+
+        return $this->replaced($id, $by, $asset);
+    }
+
+    /**
+     * The licensed file is in place of the stand-in ("Download again and
+     * replace" finished), at $asset if the addon had to move it.
+     */
+    public function replaced(string $id, ?Person $by = null, ?AssetRef $asset = null): StockImage
+    {
+        return $this->change($id, fn (StockImage $image, DateTimeImmutable $now) => $image->replaced($by, $now, $asset));
     }
 
     public function replaceFailed(string $id, string $error): StockImage
@@ -350,6 +422,12 @@ final class StockImages
         }
 
         return $taken;
+    }
+
+    /** Who licensed it, as the library is told: a name, else the user ID. */
+    private static function name(?Person $by): string
+    {
+        return $by === null ? '' : ($by->name ?? (string) $by->id);
     }
 
     private function now(): DateTimeImmutable
