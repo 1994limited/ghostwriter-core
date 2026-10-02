@@ -1,0 +1,75 @@
+{
+    "addon": "filament",
+    "job": "analyseType",
+    "inputs": [
+        {
+            "@": "TypeSurvey",
+            "groupTitle": "Posts",
+            "groupHandle": "posts",
+            "layout": {
+                "@": "Layout",
+                "fields": "- `title` (text, required): The project's name.\n- `summary` (long text): One or two sentences.\n- `body` (rich text): The write-up, in markdown.",
+                "examples": [
+                    {
+                        "title": "Harbour Trust",
+                        "summary": "A new site for the harbour.",
+                        "body": "## The brief\n\nThey wanted visitors.\n\n## What we made\n\nA map: \"tides\" and all."
+                    },
+                    {
+                        "title": "Mill Lane",
+                        "summary": "Rebuilt in 'six weeks'.",
+                        "body": "Short.",
+                        "meta": {
+                            "seo": {
+                                "title": "Mill",
+                                "tags": [
+                                    "a",
+                                    "b"
+                                ]
+                            }
+                        }
+                    }
+                ],
+                "studied": 3
+            },
+            "title": "Project write-up",
+            "chosenExamples": true
+        }
+    ],
+    "replies": {
+        "type-analyst": [
+            "<type>\ntitle: Project write-up\ndescription: One project.\nquestions:\n  - handle: client\n    label: Who was it for?\n</type>"
+        ]
+    },
+    "requests": [
+        {
+            "agent": "type-analyst",
+            "instructions": "You set up a writing assistant for one section of a website. You are given the fields that entries in this section have, how existing entries are usually put together, and one or two real entries. From these, work out what kind of content this section holds and what a writer would need to be told, and to ask, before producing a new entry that belongs there.\n\nWork from the evidence. Describe the content these entries actually are, not what such a section might typically contain elsewhere.\n\nAnswer with one YAML document inside a <type> block and nothing else:\n\n<type>\ntitle: What this kind of content is called, two or three words, e.g. \"Case study\"\ndescription: One or two plain sentences on what an entry here is and what it is for.\nquestions:\n  - handle: snake_case_handle\n    label: The question, as you would ask a colleague\n    instructions: One line on what a good answer contains. Optional.\n    type: text          # text for a line, textarea for a paragraph\n    required: true\nguidance: |\n  Markdown. Who the reader is. What each part of an entry does, in order, naming the\n  fields or blocks used. Typical length. Anything the existing entries always or never do.\nchecklist:\n  - A short statement that must be true of a finished entry.\n</type>\n\nRules for the questions:\n- Five to eight questions. Ask only for what cannot be invented: what happened, who for, what resulted, figures, names, what must be left out.\n- Do not ask for things the writer should decide, such as the title or the headings.\n- Always end with a question asking what must not appear.\n- Mark a question required only if the entry cannot be written without it.\n\nRules for the guidance:\n- Under 300 words.\n- Describe the structure the existing entries share, in their order.\n- Say how long the entries run.\n- Do not repeat the list of fields; the writer is given that separately.",
+            "prompt": "Section: Posts (3 entries studied)\n\nThe editors call this kind of content \"Project write-up\". Use that as the title.\n\nThe entries below were chosen by an editor as the model for this kind of content. Other entries in the section may look different; describe only these.\n\n## The fields\n\n- `title` (text, required): The project's name.\n- `summary` (long text): One or two sentences.\n- `body` (rich text): The write-up, in markdown.\n\n## Existing entries\n\n<example number=\"1\">\ntitle: 'Harbour Trust'\nsummary: 'A new site for the harbour.'\nbody: |-\n  ## The brief\n\n  They wanted visitors.\n\n  ## What we made\n\n  A map: \"tides\" and all.\n</example>\n\n<example number=\"2\">\ntitle: 'Mill Lane'\nsummary: \"Rebuilt in 'six weeks'.\"\nbody: Short.\nmeta:\n  seo:\n    title: Mill\n    tags:\n      - a\n      - b\n</example>\n\nWrite the type.",
+            "history": [],
+            "images": [],
+            "maxTokens": 16000,
+            "effort": null,
+            "model": null,
+            "timeout": null
+        }
+    ],
+    "result": {
+        "@": "Result",
+        "value": {
+            "title": "Project write-up",
+            "description": "One project.",
+            "questions": [
+                {
+                    "handle": "client",
+                    "label": "Who was it for?"
+                }
+            ]
+        },
+        "usage": {
+            "@": "Usage",
+            "input": 100,
+            "output": 50
+        }
+    }
+}

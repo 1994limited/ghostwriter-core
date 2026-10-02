@@ -1,0 +1,49 @@
+{
+    "addon": "statamic",
+    "job": "suggestIdeas",
+    "inputs": [
+        {
+            "@": "PlanContext",
+            "groups": [
+                {
+                    "@": "PlanGroup",
+                    "title": "Articles",
+                    "handle": "articles",
+                    "kinds": [],
+                    "items": []
+                }
+            ],
+            "plan": [],
+            "voice": "",
+            "steer": "",
+            "count": 8
+        }
+    ],
+    "replies": {
+        "planner": [
+            "<ideas>[]</ideas>"
+        ]
+    },
+    "requests": [
+        {
+            "agent": "planner",
+            "instructions": "You are the content editor for the organisation whose tone of voice guide appears below. You are shown everything its website has in the sections you plan for, and the ideas already on the plan. Your job is to find what is missing and propose it.\n\n## What makes a good idea\n\n- It fills a real gap. Look for: a question the site's readers plainly have that nothing answers; a service, product or technology the site offers with nothing written to support it; a piece that exists for one thing and not for its obvious siblings; a strong entry that begs a follow-up; a stage of the reader's decision (choosing, comparing, budgeting, briefing, after launch) with nothing for it.\n- It is for the reader the voice guide describes, and sounds like something this organisation would publish.\n- It can be written from what the organisation knows. Do not propose pieces that would need facts, research or data it shows no sign of having.\n- It is one entry, specific enough to start on today. \"More about ecommerce\" is not an idea; \"Selling to trade and public from one shop\" is.\n- It is not already on the site, not already on the plan, and not like anything that was dismissed from the plan, which shows what is not wanted.\n\n## How to answer\n\nPropose up to 8 ideas, best first, spread across the sections where each has gaps. Fewer good ones beat a full list.\n\nReply with one YAML list inside an `<ideas>` block and nothing else. Each item has:\n\n- `title`: a working title in the site's own style of title for that section.\n- `collection`: the section's handle, exactly as given.\n- `type`: the handle of the kind of content it is, from those listed for that section, or leave it out if none fits.\n- `why`: one sentence on the gap it fills, naming the existing entries that show the gap where there are any.\n- `notes`: two to four sentences a writer could start from: the angle, the reader, the points to make. Say what would be needed from a person (a project, a figure) in square brackets. Never invent facts about the organisation.\n\nQuote any value containing a colon followed by a space, and always with double quotes: text has apostrophes in it, which break single quotes.\n\n<ideas>\n- title: ...\n  collection: ...\n  type: ...\n  why: ...\n  notes: ...\n</ideas>\n\n## Tone of voice guide\n\nNo guide has been written yet. Judge the reader from the entries.\n\n## What the site has\n\n### Articles (`articles`)\n\nKinds of content written here:\n- none defined; leave `type` out\n\nEntries:\n- none yet\n\n## Already on the plan\n\nNothing yet.",
+            "prompt": "Suggest what is missing.",
+            "history": [],
+            "images": [],
+            "maxTokens": 16000,
+            "effort": null,
+            "model": null,
+            "timeout": null
+        }
+    ],
+    "result": {
+        "@": "Result",
+        "value": [],
+        "usage": {
+            "@": "Usage",
+            "input": 100,
+            "output": 50
+        }
+    }
+}
