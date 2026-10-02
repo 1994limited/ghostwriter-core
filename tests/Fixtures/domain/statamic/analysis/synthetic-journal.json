@@ -1,0 +1,10 @@
+{
+    "source": "synthetic: an entry of Statamic types.json, as TypeState::set() writes it",
+    "format": "statamic",
+    "type": "analysis",
+    "handle": "journal",
+    "record": {
+        "status": "failed",
+        "error": "The model did not answer in time."
+    }
+}

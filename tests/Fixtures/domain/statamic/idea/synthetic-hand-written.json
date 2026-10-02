@@ -1,0 +1,9 @@
+{
+    "source": "synthetic: an idea added by hand to ideas.yaml in the project, with only the keys IdeaRepository::all() requires",
+    "format": "statamic",
+    "type": "idea",
+    "record": {
+        "title": "Our winter opening hours",
+        "collection": "pages"
+    }
+}

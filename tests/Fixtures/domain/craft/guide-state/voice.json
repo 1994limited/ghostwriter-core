@@ -1,0 +1,83 @@
+{
+    "source": "gw-test-craft ghostwriter_state voice",
+    "format": "craft",
+    "type": "guide-state",
+    "handle": "voice",
+    "record": {
+        "status": "idle",
+        "error": null,
+        "task": null,
+        "messages": [],
+        "scanned": [
+            {
+                "title": "A walled garden in Corbridge, two years on",
+                "section": "journal"
+            },
+            {
+                "title": "Careers",
+                "section": "pages"
+            },
+            {
+                "title": "Ten years of Northfold",
+                "section": "journal"
+            },
+            {
+                "title": "Approach",
+                "section": "pages"
+            },
+            {
+                "title": "Our first show garden",
+                "section": "journal"
+            },
+            {
+                "title": "Services",
+                "section": "pages"
+            },
+            {
+                "title": "Spring jobs, in the order we'd do them",
+                "section": "journal"
+            },
+            {
+                "title": "About",
+                "section": "pages"
+            },
+            {
+                "title": "Winter structure: plants that earn their keep in January",
+                "section": "journal"
+            },
+            {
+                "title": "Contact",
+                "section": "pages"
+            },
+            {
+                "title": "What to do in the garden in late autumn",
+                "section": "journal"
+            },
+            {
+                "title": "A school garden in Prudhoe",
+                "section": "journal"
+            },
+            {
+                "title": "Welcome, Hannah",
+                "section": "journal"
+            },
+            {
+                "title": "Making a meadow from a lawn",
+                "section": "journal"
+            },
+            {
+                "title": "Why we start every project with a soil pit",
+                "section": "journal"
+            },
+            {
+                "title": "The courtyard at Allendale Mill",
+                "section": "journal"
+            },
+            {
+                "title": "Rain gardens for ordinary front gardens",
+                "section": "journal"
+            }
+        ],
+        "pending": []
+    }
+}

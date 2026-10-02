@@ -1,0 +1,33 @@
+{
+    "source": "gw-test-filament ghostwriter_states row 2 (kinds:pages), the value",
+    "format": "filament",
+    "type": "kind-suggestions",
+    "handle": "pages",
+    "record": {
+        "status": "idle",
+        "error": null,
+        "checked_at": "2026-10-02T02:18:56+00:00",
+        "records": 5,
+        "suggestions": [
+            {
+                "id": "8c9ea9535935",
+                "title": "Site page",
+                "description": "A standing page that presents one part of the studio, such as who it is, what it offers, how it works, how to reach it or how to join it, and leads the visitor to a next step.",
+                "why": "All five entries share one recipe: a hero with a short headline, a line of positioning and a call-to-action link, then headed text sections, a client or staff quote and a closing call to action; only the subject changes.",
+                "examples": [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5"
+                ]
+            }
+        ],
+        "dismissed": [],
+        "learning": {
+            "status": "idle",
+            "error": null,
+            "queue": []
+        }
+    }
+}

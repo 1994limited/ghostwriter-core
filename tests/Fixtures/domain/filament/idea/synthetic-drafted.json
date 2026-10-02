@@ -1,0 +1,20 @@
+{
+    "source": "synthetic: a ghostwriter_ideas row ContentPlan::started() marked drafted, in a tenant",
+    "format": "filament",
+    "type": "idea",
+    "record": {
+        "id": 4,
+        "tenant_type": "App\\Models\\Team",
+        "tenant_id": "1",
+        "resource": "posts",
+        "kind": "gardening-advice",
+        "title": "Planting bare-root hedging",
+        "why": null,
+        "notes": "Hexham, forty whips.",
+        "status": "drafted",
+        "source": "added",
+        "session_id": 4,
+        "created_at": "2026-10-02 13:00:00",
+        "updated_at": "2026-10-02 13:27:16"
+    }
+}

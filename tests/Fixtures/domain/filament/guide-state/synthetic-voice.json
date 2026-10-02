@@ -1,0 +1,27 @@
+{
+    "source": "synthetic: the value of the guide:voice state row, as Guides::updateState() writes it",
+    "format": "filament",
+    "type": "guide-state",
+    "handle": "voice",
+    "record": {
+        "status": "idle",
+        "error": null,
+        "task": null,
+        "messages": [
+            {
+                "role": "user",
+                "content": "Shorter sentences."
+            },
+            {
+                "role": "assistant",
+                "content": "Done."
+            }
+        ],
+        "scanned": [
+            {
+                "title": "About",
+                "resource": "pages"
+            }
+        ]
+    }
+}

@@ -1,0 +1,163 @@
+{
+    "source": "gw-test-craft ghostwriter_state image:d23eb08a39b4afaa1816b93465",
+    "format": "craft",
+    "type": "image-request",
+    "record": {
+        "userId": 1,
+        "fieldId": 4,
+        "elementId": 112,
+        "siteId": 1,
+        "label": "Hero image",
+        "mode": "find",
+        "terms": [
+            "hand drawn planting plan",
+            "muddy gardening gloves trowel",
+            "northumberland cottage garden"
+        ],
+        "id": "d23eb08a39b4afaa1816b93465",
+        "status": "ready",
+        "error": null,
+        "options": [
+            {
+                "source": "openverse",
+                "id": "e5e39456-52c3-4dae-a13e-046f42f32ab9",
+                "thumb": "https://api.openverse.org/v1/images/e5e39456-52c3-4dae-a13e-046f42f32ab9/thumb/",
+                "credit": "Unknown via Openverse",
+                "credit_url": "https://www.rawpixel.com/image/9172729/cottage-near-newcastle-northumberland",
+                "licence": "CC0",
+                "term": "northumberland cottage garden",
+                "picked": true
+            },
+            {
+                "source": "openverse",
+                "id": "864f2ded-5be5-490a-813e-708217f92fcc",
+                "thumb": "https://api.openverse.org/v1/images/864f2ded-5be5-490a-813e-708217f92fcc/thumb/",
+                "credit": "Image Catalog via Openverse",
+                "credit_url": "https://www.flickr.com/photos/132795455@N08/22866118190",
+                "licence": "CC0",
+                "term": "hand drawn planting plan",
+                "picked": true
+            },
+            {
+                "source": "openverse",
+                "id": "05876cdc-f669-442c-9788-6c7c0f7b051f",
+                "thumb": "https://api.openverse.org/v1/images/05876cdc-f669-442c-9788-6c7c0f7b051f/thumb/",
+                "credit": "cogdogblog via Openverse",
+                "credit_url": "https://www.flickr.com/photos/37996646802@N01/3558575382",
+                "licence": "CC0",
+                "term": "muddy gardening gloves trowel",
+                "picked": true
+            },
+            {
+                "source": "openverse",
+                "id": "81f5bdca-3891-4e3d-ab59-f02c2871991d",
+                "thumb": "https://api.openverse.org/v1/images/81f5bdca-3891-4e3d-ab59-f02c2871991d/thumb/",
+                "credit": "Scotted400 via Openverse",
+                "credit_url": "https://commons.wikimedia.org/w/index.php?curid=77983870",
+                "licence": "CC0",
+                "term": "hand drawn planting plan"
+            },
+            {
+                "source": "openverse",
+                "id": "4d571547-3947-4761-a23a-c32d6548fce2",
+                "thumb": "https://api.openverse.org/v1/images/4d571547-3947-4761-a23a-c32d6548fce2/thumb/",
+                "credit": "Satalah via Openverse",
+                "credit_url": "https://commons.wikimedia.org/w/index.php?curid=179978198",
+                "licence": "CC0",
+                "term": "hand drawn planting plan"
+            },
+            {
+                "source": "openverse",
+                "id": "ec230d02-5b54-46e3-8115-3be07e16fb69",
+                "thumb": "https://api.openverse.org/v1/images/ec230d02-5b54-46e3-8115-3be07e16fb69/thumb/",
+                "credit": "cogdogblog via Openverse",
+                "credit_url": "https://www.flickr.com/photos/37996646802@N01/51975527867",
+                "licence": "CC0",
+                "term": "hand drawn planting plan"
+            },
+            {
+                "source": "openverse",
+                "id": "cc6b8c3c-d923-43a4-8cd1-67e4970fb879",
+                "thumb": "https://api.openverse.org/v1/images/cc6b8c3c-d923-43a4-8cd1-67e4970fb879/thumb/",
+                "credit": "dullhunk via Openverse",
+                "credit_url": "https://www.flickr.com/photos/14829735@N00/53385384810",
+                "licence": "CC0",
+                "term": "hand drawn planting plan"
+            },
+            {
+                "source": "openverse",
+                "id": "2fe78343-3aa8-4a85-b7d7-19535847cd9f",
+                "thumb": "https://api.openverse.org/v1/images/2fe78343-3aa8-4a85-b7d7-19535847cd9f/thumb/",
+                "credit": "HALOE.ONE via Openverse",
+                "credit_url": "https://www.flickr.com/photos/194293925@N05/54924702331",
+                "licence": "Public domain",
+                "term": "hand drawn planting plan"
+            },
+            {
+                "source": "openverse",
+                "id": "651769c7-36a6-4b8b-887c-b6d34e93301a",
+                "thumb": "https://api.openverse.org/v1/images/651769c7-36a6-4b8b-887c-b6d34e93301a/thumb/",
+                "credit": "cogdogblog via Openverse",
+                "credit_url": "https://www.flickr.com/photos/37996646802@N01/3558574550",
+                "licence": "CC0",
+                "term": "muddy gardening gloves trowel"
+            },
+            {
+                "source": "openverse",
+                "id": "ef9de8b4-fc46-447a-a96f-67834b4b6665",
+                "thumb": "https://api.openverse.org/v1/images/ef9de8b4-fc46-447a-a96f-67834b4b6665/thumb/",
+                "credit": "Wonderlane via Openverse",
+                "credit_url": "https://www.flickr.com/photos/71401718@N00/9708815475",
+                "licence": "CC0",
+                "term": "muddy gardening gloves trowel"
+            },
+            {
+                "source": "openverse",
+                "id": "737bf630-92d8-4268-9d59-1e313819fb3c",
+                "thumb": "https://api.openverse.org/v1/images/737bf630-92d8-4268-9d59-1e313819fb3c/thumb/",
+                "credit": "Monash Public Library Service via Openverse",
+                "credit_url": "https://www.flickr.com/photos/143996116@N07/39101285455",
+                "licence": "Public domain",
+                "term": "muddy gardening gloves trowel"
+            },
+            {
+                "source": "openverse",
+                "id": "8f0eb705-b4b9-4e5c-bb26-2e9b24e8ad49",
+                "thumb": "https://api.openverse.org/v1/images/8f0eb705-b4b9-4e5c-bb26-2e9b24e8ad49/thumb/",
+                "credit": "Monash Public Library Service via Openverse",
+                "credit_url": "https://www.flickr.com/photos/143996116@N07/39116777895",
+                "licence": "Public domain",
+                "term": "muddy gardening gloves trowel"
+            },
+            {
+                "source": "openverse",
+                "id": "5e93670b-ed8c-4542-8ffd-0cbe4a0db885",
+                "thumb": "https://api.openverse.org/v1/images/5e93670b-ed8c-4542-8ffd-0cbe4a0db885/thumb/",
+                "credit": "Monash Public Library Service via Openverse",
+                "credit_url": "https://www.flickr.com/photos/143996116@N07/28219615739",
+                "licence": "Public domain",
+                "term": "muddy gardening gloves trowel"
+            },
+            {
+                "source": "openverse",
+                "id": "8ac3fed9-0dcc-460f-b74b-96e155650a33",
+                "thumb": "https://api.openverse.org/v1/images/8ac3fed9-0dcc-460f-b74b-96e155650a33/thumb/",
+                "credit": "Newcastle Libraries via Openverse",
+                "credit_url": "https://www.flickr.com/photos/39821974@N06/4076599942",
+                "licence": "Public domain",
+                "term": "northumberland cottage garden"
+            },
+            {
+                "source": "openverse",
+                "id": "ab4b4c53-9927-45cd-85ab-2d367c45c9c7",
+                "thumb": "https://api.openverse.org/v1/images/ab4b4c53-9927-45cd-85ab-2d367c45c9c7/thumb/",
+                "credit": "Thomas Girtin via Openverse",
+                "credit_url": "https://commons.wikimedia.org/w/index.php?curid=112644522",
+                "licence": "CC0",
+                "term": "northumberland cottage garden"
+            }
+        ],
+        "file": null,
+        "createdAt": 1790897785
+    }
+}

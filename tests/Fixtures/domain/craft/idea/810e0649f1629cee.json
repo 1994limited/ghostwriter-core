@@ -1,0 +1,18 @@
+{
+    "source": "gw-test-craft ghostwriter_documents idea/810e0649f1629cee, the body",
+    "format": "craft",
+    "type": "idea",
+    "handle": "810e0649f1629cee",
+    "record": {
+        "id": "810e0649f1629cee",
+        "title": "Summer jobs, and the ones that can wait",
+        "section": "journal",
+        "type": null,
+        "why": "The seasonal run has \"Spring jobs, in the order we'd do them\", \"What to do in the garden in late autumn\" and \"Winter structure\", with nothing for June to August.",
+        "notes": "Follow the shape of the autumn piece, with a short \"Do these\" list and a longer \"Leave these\" list. Cover watering deeply and less often, deadheading or leaving seed heads, cutting a meadow area and holiday watering. Keep the advice imperative and seasonal for the north of England, where summer starts late and storms are getting heavier. If it fits, link to the rain gardens piece.",
+        "status": "open",
+        "source": "suggested",
+        "session": null,
+        "createdAt": "2026-10-02"
+    }
+}

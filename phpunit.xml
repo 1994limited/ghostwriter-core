@@ -14,6 +14,8 @@
     <testsuites>
         <testsuite name="core">
             <directory>tests</directory>
+            <!-- The contract test cases are abstract: they run through tests/Domain/InMemory, and in each addon. -->
+            <exclude>tests/Contracts</exclude>
         </testsuite>
     </testsuites>
     <source>

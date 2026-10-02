@@ -1,0 +1,55 @@
+{
+    "source": "gw-test-filament ghostwriter_states row 1 (kinds:posts), the value",
+    "format": "filament",
+    "type": "kind-suggestions",
+    "handle": "posts",
+    "record": {
+        "status": "idle",
+        "error": null,
+        "checked_at": "2026-10-02T02:18:51+00:00",
+        "records": 12,
+        "suggestions": [
+            {
+                "id": "df037c9b1d1b",
+                "title": "Gardening advice",
+                "description": "A practical guide to one gardening technique, task or season, explaining what to do and why, drawing on the studio's own practice.",
+                "why": "Five entries (mulch, pruning, winter structure, rain gardens, October jobs) open by naming a technique or season and promise to explain how and when to do it.",
+                "examples": [
+                    "12",
+                    "9",
+                    "6",
+                    "4",
+                    "2"
+                ]
+            },
+            {
+                "id": "5df05196ba84",
+                "title": "Project case study",
+                "description": "A write-up of one garden or landscape the studio designed, describing the site, its constraints and how the design responded, sometimes revisited years later.",
+                "why": "Four entries are titled after a specific place (Tyne Valley hillside, Gateshead playground, Calder Street courtyard, Hexham walled garden) and open with the site's particular conditions.",
+                "examples": [
+                    "11",
+                    "8",
+                    "5",
+                    "1"
+                ]
+            },
+            {
+                "id": "cc157b40e7ec",
+                "title": "Studio news",
+                "description": "A short announcement about Northfold itself, such as a move to new premises or a new member of the team.",
+                "why": "Two entries (the move to Wharf Lane and Priya's arrival) announce changes at the studio, each opening with a one-line summary of the news.",
+                "examples": [
+                    "10",
+                    "7"
+                ]
+            }
+        ],
+        "dismissed": [],
+        "learning": {
+            "status": "idle",
+            "error": null,
+            "queue": []
+        }
+    }
+}

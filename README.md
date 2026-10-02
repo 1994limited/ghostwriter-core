@@ -1,6 +1,6 @@
 # Ghostwriter Core
 
-The framework-free core shared by the Ghostwriter addons for [Statamic](https://github.com/1994limited/ghostwriter-statamic), [Filament](https://github.com/1994limited/ghostwriter-filament) and [Craft CMS](https://github.com/1994limited/ghostwriter-craft). It holds the parts that used to be copied by hand between the three: draft text handling, the prompts, the connection to the AI providers, the schema model and the layout algorithms, and photo search with ranking.
+The framework-free core shared by the Ghostwriter addons for [Statamic](https://github.com/1994limited/ghostwriter-statamic), [Filament](https://github.com/1994limited/ghostwriter-filament) and [Craft CMS](https://github.com/1994limited/ghostwriter-craft). It holds the parts that used to be copied by hand between the three: draft text handling, the prompts, the connection to the AI providers, the schema model and the layout algorithms, the domain model and its rules, and photo search with ranking.
 
 Each addon stays a thin adapter. It reads the CMS's schema and entries, stores state, runs queue jobs, checks permissions and draws the UI, and calls core for everything else.
 
@@ -14,7 +14,7 @@ composer require 1994/ghostwriter-core
 
 PHP 8.2 or later, with `dom` and `mbstring`. Runtime dependencies are `symfony/yaml` (6.4, 7 or 8), `league/commonmark` 2 and the PSR HTTP and log interfaces (`psr/log` 1 to 3). `guzzlehttp/guzzle` (7.8+ or 8) is suggested, not required: it's needed for `Http\GuzzleHttpClients`, the ready-made HTTP client, and for `Testing\MockHttpClient`'s default factories. CI runs the lowest and highest versions allowed, and Guzzle 7 and 8 each.
 
-During the extraction core is `0.x`, and the addons should require an exact minor (`~0.4.0`).
+During the extraction core is `0.x`, and the addons should require an exact minor (`~0.5.0`).
 
 ## What's in it
 
@@ -129,6 +129,20 @@ $alt = $file->photo->alt();
 ```
 
 Downloads are https only, redirects included (core follows them itself, at most three, and never to a private address), read no further than their cap (15 MB for a photo, 2 MB for a thumbnail) and checked to be a JPEG, PNG or WebP. Openverse results are kept only when Openverse's own thumbnail loads; originals are never fetched to check them.
+
+### Domain: `NineteenNinetyFour\Ghostwriter\Core\Domain`
+
+The pieces being written (`Sessions\Session`), the content plan (`Planning\Idea`, `PlanState`), kinds of content (`Kinds\ContentType`, `KindSuggestions`), the voice and image style guides (`Guides\Guide`, `GuideState`), image requests (`Images\ImageRequest`) and the queue-waiting notice (`Queue\Waiting`), with their rules: who may see, resume and delete a piece (`SessionAccess`), one run at a time under a per-session lock with stale runs recovered (`SessionGuard`), when a piece is finished (`Progress`), and the plan's review, dismissal and put-back rules (`Plan`). Each addon implements the store interfaces (`SessionStore`, `PlanStore`, `KindStore`, `GuideStore`, `ImageRequestStore`, `WaitingStore`) and the `Lock` port, and proves them with the contract tests in `tests/Contracts`. Every type reads and writes the shape the addon stores today (`fromArray($stored, Format::Craft)`), so no data migration is needed. In-memory stores for tests are in `Domain\Testing`. See [docs/domain.md](docs/domain.md) for the wiring, and [docs/domain-unification.md](docs/domain-unification.md) for what differed.
+
+```php
+$sessions = new SessionGuard($store, $lock, DomainOptions::filament(shared: config('ghostwriter.shared_conversations')));
+
+$session = $sessions->send($id, $message, new Viewer(auth()->id()));    // Busy (409) while someone's request runs
+$sessions->change($id, fn (Session $s) => $s->answer($reply, $draft, $in, $out));   // in the job
+$finished = Progress::of($session, Record::saved($published), $options)->finished;  // E6
+```
+
+`Images\Placeholders` draws the striped placeholder and decides where it goes (D10); the addon saves the file through an `AssetSink`.
 
 ## Wiring it into an addon
 

@@ -1,0 +1,87 @@
+{
+    "source": "gw-test-filament ghostwriter_states row 3 (image:01m3x6vk8ckymzhem6qzy0kwbn), the value",
+    "format": "filament",
+    "type": "image-request",
+    "handle": "01m3x6vk8ckymzhem6qzy0kwbn",
+    "record": {
+        "mode": "find",
+        "terms": [
+            "walled kitchen garden"
+        ],
+        "id": "01m3x6vk8ckymzhem6qzy0kwbn",
+        "user_id": 1,
+        "status": "ready",
+        "error": null,
+        "options": [
+            {
+                "source": "openverse",
+                "id": "d0972733-7aee-4f85-91e1-6fe788c19694",
+                "thumb": "https://api.openverse.org/v1/images/d0972733-7aee-4f85-91e1-6fe788c19694/thumb/",
+                "credit": "karenblakeman via Openverse",
+                "credit_url": "https://www.flickr.com/photos/11569642@N00/16932342964",
+                "licence": "CC0",
+                "title": "Braziers Park - walled kitchen garden",
+                "description": null,
+                "tags": [
+                    "2015",
+                    "brazierspark",
+                    "garden",
+                    "gradeii",
+                    "ipsden",
+                    "kitchengarden",
+                    "listedbuilding",
+                    "may",
+                    "oxfordshire",
+                    "southoxfordshire",
+                    "uk",
+                    "vegetables"
+                ],
+                "width": 1024,
+                "height": 674,
+                "url": "https://live.staticflickr.com/7738/16932342964_a318be5786_b.jpg",
+                "term": "walled kitchen garden",
+                "picked": true,
+                "reason": "planted kitchen-garden beds, a garden a few seasons after planting",
+                "alt": "Braziers Park - walled kitchen garden",
+                "asset_title": "Braziers Park - walled kitchen garden"
+            },
+            {
+                "source": "openverse",
+                "id": "01aff41b-c807-4925-b5cd-8bc4c90b447b",
+                "thumb": "https://api.openverse.org/v1/images/01aff41b-c807-4925-b5cd-8bc4c90b447b/thumb/",
+                "credit": "karenblakeman via Openverse",
+                "credit_url": "https://www.flickr.com/photos/11569642@N00/17528547486",
+                "licence": "CC0",
+                "title": "Braziers Park - walled kitchen garden (2)",
+                "description": null,
+                "tags": [
+                    "2015",
+                    "brazierspark",
+                    "compostbin",
+                    "fruittrees",
+                    "ipsden",
+                    "kitchengarden",
+                    "may",
+                    "oxfordshire",
+                    "southoxfordshire",
+                    "uk",
+                    "walledkitchengarden",
+                    "wallingford"
+                ],
+                "width": 1024,
+                "height": 662,
+                "url": "https://live.staticflickr.com/7683/17528547486_cb3f5f1089_b.jpg",
+                "term": "walled kitchen garden",
+                "picked": true,
+                "reason": "green garden path with young fruit trees, soft rolling greenery like the references",
+                "alt": "Braziers Park - walled kitchen garden (2)",
+                "asset_title": "Braziers Park - walled kitchen garden (2)"
+            }
+        ],
+        "file": null,
+        "created_at": 1790907895,
+        "judged": true,
+        "none_fit": false,
+        "with_references": true
+    }
+}

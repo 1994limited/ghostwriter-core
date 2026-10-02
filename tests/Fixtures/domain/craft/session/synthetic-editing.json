@@ -1,0 +1,37 @@
+{
+    "source": "synthetic: a Craft session editing an existing entry, as SessionsController::actionEdit() leaves it, with a run claimed by another person",
+    "format": "craft",
+    "type": "session",
+    "record": {
+        "id": "5b34cea91b36e0ccaabef915f2",
+        "type": "guide",
+        "answers": [],
+        "messages": [
+            {
+                "role": "user",
+                "content": "Tighten the intro.",
+                "at": "2026-10-02T09:00:00+00:00",
+                "by": 2
+            }
+        ],
+        "draft": "title: Planting tulips",
+        "status": "working",
+        "error": null,
+        "element_id": 109,
+        "site_id": 1,
+        "user_id": 1,
+        "touched_by": 2,
+        "run_by": 2,
+        "usage": {
+            "input": 0,
+            "output": 0
+        },
+        "examples": [],
+        "images": [],
+        "source": 109,
+        "entry_type": "guide",
+        "applied_at": null,
+        "created_at": "2026-10-02T08:59:00+00:00",
+        "updated_at": "2026-10-02T09:00:00+00:00"
+    }
+}

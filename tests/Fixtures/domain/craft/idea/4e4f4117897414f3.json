@@ -1,0 +1,18 @@
+{
+    "source": "gw-test-craft ghostwriter_documents idea/4e4f4117897414f3, the body",
+    "format": "craft",
+    "type": "idea",
+    "handle": "4e4f4117897414f3",
+    "record": {
+        "id": "4e4f4117897414f3",
+        "title": "Planting a north-facing garden",
+        "section": "journal",
+        "type": null,
+        "why": "\"Welcome, Hannah\" mentions her fondness for awkward north-facing plots and the Allendale Mill courtyard shows a shady site, but there is no practical piece for the many readers with a garden that gets little sun.",
+        "notes": "Open with a plain claim that a north-facing garden is not a problem garden, then explain the difference between dry shade, damp shade and simple lack of direct sun. Give plants that earn their keep in each, with botanical names styled correctly, and the mistakes people make, such as fighting for a lawn. This could carry Hannah's byline or a quote from her. [Needs Hannah's own plant picks and a project example.]",
+        "status": "open",
+        "source": "suggested",
+        "session": null,
+        "createdAt": "2026-10-02"
+    }
+}

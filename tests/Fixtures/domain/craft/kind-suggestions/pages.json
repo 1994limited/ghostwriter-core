@@ -1,0 +1,29 @@
+{
+    "source": "gw-test-craft ghostwriter_state kinds, \"pages\"",
+    "format": "craft",
+    "type": "kind-suggestions",
+    "handle": "pages",
+    "record": {
+        "status": "idle",
+        "error": null,
+        "checkedAt": "2026-10-02T00:19:07+01:00",
+        "entries": 5,
+        "suggestions": [
+            {
+                "id": "f8faf49066ea",
+                "title": "Studio page",
+                "description": "A standing page about the Northfold garden design studio, such as who they are, how they work, what they offer, how to get in touch or how to join them, that ends by pointing the reader to a next step.",
+                "why": "All five entries are this kind: each is built as hero, text, imageBlock, quoteBlock and cta, opens with a short welcoming line and a call to action, then moves into headed sections in the studio's plain first-person voice.",
+                "examples": [
+                    53,
+                    67,
+                    81,
+                    41,
+                    95
+                ],
+                "entryType": "page"
+            }
+        ],
+        "dismissed": []
+    }
+}

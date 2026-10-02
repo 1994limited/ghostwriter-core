@@ -3,7 +3,9 @@
 /.github            export-ignore
 /bin/check-boundaries export-ignore
 /docs               export-ignore
-/tests              export-ignore
+# The contract tests ship, for the addons to run against their stores; the rest of tests/ doesn't.
+/tests/*            export-ignore
+/tests/Contracts    -export-ignore
 /tools              export-ignore
 /.gitattributes     export-ignore
 /.gitignore         export-ignore

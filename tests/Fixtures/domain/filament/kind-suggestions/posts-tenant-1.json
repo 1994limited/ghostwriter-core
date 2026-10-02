@@ -1,0 +1,55 @@
+{
+    "source": "gw-test-filament ghostwriter_states row 5 (kinds:posts), the value",
+    "format": "filament",
+    "type": "kind-suggestions",
+    "handle": "posts",
+    "record": {
+        "status": "idle",
+        "error": null,
+        "checked_at": "2026-10-02T02:25:54+00:00",
+        "records": 12,
+        "suggestions": [
+            {
+                "id": "70f4356e8261",
+                "title": "Gardening advice",
+                "description": "A practical explainer on a gardening technique, topic or seasonal task, written to help readers look after or plan their own gardens.",
+                "why": "Five entries (mulch, late-winter pruning, winter structure, rain gardens, October jobs) teach a method or set of tasks in a friendly, explanatory voice, aimed at readers' own gardens rather than a Northfold project.",
+                "examples": [
+                    "12",
+                    "9",
+                    "6",
+                    "4",
+                    "2"
+                ]
+            },
+            {
+                "id": "7d5c8124b041",
+                "title": "Project story",
+                "description": "A write-up of a garden Northfold has designed or reworked, describing the site, its constraints, what was done and how it has turned out.",
+                "why": "Four entries (Tyne Valley hillside, Gateshead playground, Calder Street courtyard, Hexham walled garden) are each titled after a named place and open with the site's particular conditions before telling the story of the work.",
+                "examples": [
+                    "11",
+                    "8",
+                    "5",
+                    "1"
+                ]
+            },
+            {
+                "id": "fb6bdb4894c2",
+                "title": "Studio news",
+                "description": "A short announcement about Northfold itself, such as a move to new premises or a new member of staff, to keep clients and followers up to date.",
+                "why": "Two entries (the move to Wharf Lane and Priya Raman joining) announce a change at the studio in a news-style opening that states the fact first and then gives background.",
+                "examples": [
+                    "10",
+                    "7"
+                ]
+            }
+        ],
+        "dismissed": [],
+        "learning": {
+            "status": "idle",
+            "error": null,
+            "queue": []
+        }
+    }
+}

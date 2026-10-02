@@ -1,0 +1,19 @@
+{
+    "source": "synthetic: the value of the plan state row, as ContentPlan::updateState() writes it, with a batch waiting",
+    "format": "filament",
+    "type": "plan-state",
+    "handle": "plan",
+    "record": {
+        "status": "idle",
+        "error": null,
+        "pending": [
+            {
+                "title": "A year in the walled garden",
+                "resource": "posts",
+                "kind": null,
+                "why": "Nothing follows one garden.",
+                "notes": ""
+            }
+        ]
+    }
+}
