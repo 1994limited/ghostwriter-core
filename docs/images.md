@@ -108,6 +108,27 @@ Where each CMS puts these stays in the addon:
 | Alt text | the container's `alt` field, if the blueprint has one | (none) | `$asset->alt` |
 | Credit | asset data `credit`, `credit_url`, `licence` | (not saved) | the credit-like text field |
 
+## Photo libraries
+
+Since 1.1.0 each library is a `Libraries\PhotoLibrary`, and `StockSearch` is a set of them. Its public API is unchanged: `sources()`, `available()`, `search()`, `fetch()` and `thumbnails()` work as before, and the four free libraries are always there (`Libraries\Free\Unsplash`, `Pexels`, `Pixabay`, `Openverse`).
+
+```php
+$stock = new StockSearch($http, $credentials, openverse: $setting, logger: $logger, libraries: [$getty]);
+
+$stock->libraries();                    // every library by ID, available or not
+$stock->library('getty')?->capabilities()->quotes;
+$stock->label('getty');                 // "Getty Images"
+$stock->search('pottery', 'landscape', sources: ['getty']);   // only these libraries
+```
+
+- A library passed in comes after the free ones; one with a free library's ID replaces it (a demo library, say).
+- `Capabilities` says what a library is: `free`, `mayRank`, `needsOAuth`, `quotes` (`exact`, `balance`, `credits` or `none`), `previewKeepDays` and `previewStorage` (how long, and whether, a comp may be kept), `termsCheckedAt`, `editorial`, `creditRequired` and `sandbox`.
+- A paid photo carries an `Offer` (`free`, a `Cost` hint such as "1 download", its licence type and products), and `editorial`, `restrictions` and `collection`. `Photo::toArray()` adds those keys only when they are set, so a free photo's array is unchanged. A photo with no offer is free (`Photo::isFree()`).
+- **A model never sees a photo whose library doesn't allow it.** Paid libraries' licences forbid using their content or its metadata for AI, so `PhotoRanker` leaves their photos out of what it sends: they come after the judged ones, in their library's own order, unjudged and never picked. `StockSearch::mayRank($photo)` decides.
+- `fetch()` hands over a free library's file only; a paid library refuses.
+
+Each adapter's test uses the `tests/Images/Libraries/LibraryContract.php` trait over `ImagesTestCase`'s mocked network: search maps IDs, thumbnails and offers; `photo()` refuses IDs that aren't the library's without asking it; no error holds a key; the capabilities hang together.
+
 ## Testing
 
 `StockSearch` takes `Testing\MockHttpClient` (it is a `DownloadClients` too, and records whether each download asked to stream), and `PhotoFinder` and `PhotoRanker` take a `FakeProvider` directly:

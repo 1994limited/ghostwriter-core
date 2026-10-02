@@ -33,6 +33,12 @@ use Throwable;
  *
  * Without a model, or if the call fails, the candidates come back unranked
  * (the top result of each search first) and none is picked.
+ *
+ * A model only ever sees photos whose library allows it
+ * (StockSearch::mayRank(): Capabilities::$mayRank). Paid libraries' terms
+ * forbid using their content or its metadata for AI, so their photos are
+ * never shown, described or judged: they come after the judged ones, in
+ * their library's own order, unjudged and never picked.
  */
 final class PhotoRanker
 {
@@ -79,7 +85,28 @@ final class PhotoRanker
      */
     public function rank(array $candidates, PhotoContext $context, array $references = [], bool $mayRetry = true): Ranking
     {
-        $candidates = array_values($candidates);
+        $withheld = array_values(array_filter($candidates, fn (Photo $photo) => ! $this->stock->mayRank($photo)));
+        $ranking = $this->judge(array_values(array_filter($candidates, fn (Photo $photo) => $this->stock->mayRank($photo))), $context, $references, $mayRetry);
+
+        if ($withheld === []) {
+            return $ranking;
+        }
+
+        return new Ranking(
+            [...$ranking->photos, ...array_map(fn (Photo $photo) => $photo->unjudged(), $withheld)],
+            $ranking->judged,
+            $ranking->noneFit,
+            $ranking->retryTerms,
+            $ranking->withReferences,
+        );
+    }
+
+    /**
+     * @param  array<int, Photo>  $candidates  Only photos a model may see.
+     * @param  array<int, Image|string>  $references
+     */
+    private function judge(array $candidates, PhotoContext $context, array $references, bool $mayRetry): Ranking
+    {
         $unjudged = new Ranking(self::unranked($candidates), false);
         $model = $this->textProvider();
 
