@@ -2,6 +2,30 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. While the version is `0.x`, a minor release may contain breaking changes.
 
+## 0.5.0 - 2026-10-02
+
+The domain model, its rules and the store contracts, unified from the three addons: Phase 4, stage 1 of the core extraction. The addons switch over in stage 2. See [docs/domain.md](docs/domain.md) for how an addon wires it, and [docs/domain-unification.md](docs/domain-unification.md) for what differed and what core does.
+
+### Added
+
+- **Sessions (`Domain\Sessions`):** `Session` (the brief, conversation, draft, status, usage, examples, images, the record it is for, who started, touched and ran it, `startedWorkingAt`), with `claim()`, `isStale()`, `recoverIfStale()`, `answer()`, `markApplied()`, `canRetry()`, `waitingOn()` and `title()`. `SessionAccess`: shared or private conversations (E7), deleted by the starter or a manager (Q1). `SessionGuard`: every change under a per-session `Lock`, one run at a time with `Busy` saying whose request runs, retries, hand edits refused while a run works (F3), and changes after slow work. `Progress` and `Record`: where a piece has got to, and finished only once its record is saved (E6). `SessionImages`: the image fields' state machine, and a turn's image changes merged around choices made meanwhile (F2).
+- **Content plan (`Domain\Planning`):** `Idea`, `PlanState` and `Plan`: suggestions wait for review and a new batch joins them (E3), no title twice, keep or drop, put back only dismissed ideas (E8), an idea whose piece was deleted is open again, only open or dismissed ideas cleared.
+- **Kinds (`Domain\Kinds`):** `ContentType` (the "Something new" brief word for word per addon, `modelledOn()`, `forSession()`, `missing()`, `handleFor()`, `toStudio()`), `KindSuggestions` (when a group is due a look, Q3) and `Analysis`.
+- **Guides (`Domain\Guides`):** `Guide` and `GuideState`. **Image requests (`Domain\Images`):** `ImageRequest`, `ImageRequests` and `StoredFile`: owner only, cleared after a day. **Queue (`Domain\Queue`):** `Waiting`, the notice for work no worker has picked up.
+- **Stale work (CRA-2):** a session, screen state, study or image request still marked working (timeout + 120) × 2 seconds on has stopped, and shows as failed.
+- **`Images\Placeholders`** and the **`Images\AssetSink`** port (D10): one rule for where the striped placeholder goes, the same image byte for byte, and the `placeholder_images` setting's label and note.
+- **Store interfaces and ports:** `SessionStore`, `PlanStore`, `KindStore`, `GuideStore`, `ImageRequestStore`, `WaitingStore` and `Lock`. Contract tests for each in `tests/Contracts` (traits, with abstract PHPUnit cases), now included in the package; in-memory implementations in `Domain\Testing`.
+- **`Format` and `DomainOptions`**, with `statamic()`, `craft()` and `filament()` presets. Every type reads and writes the addon's current stored shape (`fromArray($stored, $format)`, `toArray()`), unchanged fields exactly, so no data migration is needed. `tests/Fixtures/domain` holds 54 stored records, 37 of them recorded from the three test sites with `tools/record-domain/record.php`.
+- **Refusals** as exceptions with a status: `NotFound`, `NotAllowed`, `Conflict`, `Busy`, `LockTimeout`.
+
+### Changed for the addons, once they switch
+
+- All three: a run that stopped without finishing shows as failed and can be tried again (new for Statamic and Filament); a new batch of plan suggestions joins the one waiting instead of replacing it; only a dismissed idea can be put back; clearing takes open or dismissed ideas only.
+- Statamic and Craft: sessions gain a `started_working_at` key when a run is claimed. Filament's sessions are timed from `updated_at`, as it has no column.
+- Craft: an empty page builder gets a placeholder block only when it holds nothing but images, as in Statamic.
+- Filament: a run is claimed under a cache lock rather than a conditional update; a retry needs the last message to be a person's.
+- The branch alias is `0.5.x-dev`; addons should require `~0.5.0`.
+
 ## 0.4.0 - 2026-10-02
 
 The schema model and the layout algorithms, unified from the three addons' copies: Phase 3, stage 1 of the core extraction. The addons switch over in stage 2. See [docs/layout.md](docs/layout.md) for how an addon wires it, and [docs/layout-unification.md](docs/layout-unification.md) for what differed and what core does.
