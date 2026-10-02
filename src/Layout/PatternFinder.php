@@ -40,7 +40,7 @@ final class PatternFinder
 
     public function __construct(
         private readonly LayoutOptions $options = new LayoutOptions,
-        private readonly RichTextDialect $richText = new HtmlDialect,
+        RichTextDialect $richText = new HtmlDialect,
         LinkDialect $links = new NoLinks,
     ) {
         $this->house = new HouseStyle($options, $richText, $links);
