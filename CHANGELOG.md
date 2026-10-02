@@ -2,7 +2,7 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. While the version is `0.x`, a minor release may contain breaking changes.
 
-## 0.2.0 - Unreleased
+## 0.2.0 - 2026-10-02
 
 Photo search, unified from the three addons' copies, with model ranking and the photo libraries' own descriptions. See [docs/images.md](docs/images.md) for how an addon wires it.
 
