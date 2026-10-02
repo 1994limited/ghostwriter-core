@@ -1,0 +1,228 @@
+{
+    "addon": "filament",
+    "source": "Test: NineteenNinetyFour\\Ghostwriter\\Filament\\Tests\\Feature\\WritingTest::test_a_brief_is_answered_and_writing_starts",
+    "schemas": {
+        "bbe59390bab9": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "required": true,
+                "type": "Filament\\Forms\\Components\\TextInput",
+                "path": "title",
+                "meta": {
+                    "max_length": null
+                }
+            },
+            {
+                "handle": "slug",
+                "kind": "text",
+                "label": "Slug",
+                "required": true,
+                "type": "Filament\\Forms\\Components\\TextInput",
+                "path": "slug",
+                "meta": {
+                    "max_length": null
+                }
+            },
+            {
+                "handle": "content",
+                "kind": "blocks",
+                "label": "Content",
+                "type": "Filament\\Forms\\Components\\Builder",
+                "engine": "builder",
+                "path": "content",
+                "sets": {
+                    "hero": {
+                        "label": "Hero",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "required": true,
+                                "type": "Filament\\Forms\\Components\\TextInput",
+                                "path": "heading",
+                                "meta": {
+                                    "max_length": null
+                                }
+                            },
+                            {
+                                "handle": "image",
+                                "kind": "reference",
+                                "label": "Image",
+                                "type": "Filament\\Forms\\Components\\FileUpload",
+                                "files": true,
+                                "path": "image",
+                                "meta": {
+                                    "images": true,
+                                    "multiple": false,
+                                    "max_files": null,
+                                    "disk": "public",
+                                    "directory": "heroes",
+                                    "alt": "image_alt"
+                                }
+                            },
+                            {
+                                "handle": "image_alt",
+                                "kind": "reference",
+                                "label": "Alt text",
+                                "type": "Filament\\Forms\\Components\\TextInput",
+                                "path": "image_alt",
+                                "meta": {
+                                    "max_length": null,
+                                    "skipped": true
+                                }
+                            }
+                        ]
+                    },
+                    "text": {
+                        "label": "Text",
+                        "fields": [
+                            {
+                                "handle": "body",
+                                "kind": "richtext",
+                                "label": "Body",
+                                "type": "Filament\\Forms\\Components\\RichEditor",
+                                "path": "body",
+                                "meta": {
+                                    "format": "html"
+                                }
+                            },
+                            {
+                                "handle": "width",
+                                "kind": "choice",
+                                "label": "Width",
+                                "options": {
+                                    "narrow": "Narrow",
+                                    "wide": "Wide"
+                                },
+                                "type": "Filament\\Forms\\Components\\Select",
+                                "path": "width"
+                            }
+                        ]
+                    },
+                    "spacer": {
+                        "label": "Spacer",
+                        "fields": [
+                            {
+                                "handle": "height",
+                                "kind": "number",
+                                "label": "Height",
+                                "type": "Filament\\Forms\\Components\\TextInput",
+                                "path": "height",
+                                "meta": {
+                                    "max_length": null
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "kinds",
+            "schema": "bbe59390bab9",
+            "input": {
+                "entries": [
+                    {
+                        "id": "3",
+                        "title": "Contact",
+                        "values": {
+                            "content": [
+                                {
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "heading": "Contact",
+                                    "image": null,
+                                    "image_alt": null
+                                },
+                                {
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": 40
+                                },
+                                {
+                                    "type": "text",
+                                    "enabled": true,
+                                    "body": "<p>Contact words.</p>",
+                                    "width": "wide"
+                                },
+                                {
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": 80
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "2",
+                        "title": "Services",
+                        "values": {
+                            "content": [
+                                {
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "heading": "Services",
+                                    "image": null,
+                                    "image_alt": null
+                                },
+                                {
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": 40
+                                },
+                                {
+                                    "type": "text",
+                                    "enabled": true,
+                                    "body": "<p>Services words.</p>",
+                                    "width": "wide"
+                                },
+                                {
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": 80
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "1",
+                        "title": "About",
+                        "values": {
+                            "content": [
+                                {
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "heading": "About",
+                                    "image": null,
+                                    "image_alt": null
+                                },
+                                {
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": 40
+                                },
+                                {
+                                    "type": "text",
+                                    "enabled": true,
+                                    "body": "<p>About words.</p>",
+                                    "width": "wide"
+                                },
+                                {
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": 80
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": []
+        }
+    ]
+}

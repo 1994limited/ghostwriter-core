@@ -1,0 +1,229 @@
+<?php
+
+namespace NineteenNinetyFour\Ghostwriter\Core\Layout;
+
+use NineteenNinetyFour\Ghostwriter\Core\Schema\Field;
+use NineteenNinetyFour\Ghostwriter\Core\Schema\Kind;
+use NineteenNinetyFour\Ghostwriter\Core\Schema\Schema;
+
+/**
+ * Turns a draft into the data an entry holds, guided by the schema:
+ * markdown becomes rich text as the field stores it (the dialect's
+ * business), choices are checked against their options, blocks against the
+ * builder's sets, and any value the draft left out that is a house default
+ * in this group is filled in.
+ *
+ * Anything in the draft that the schema has no place for is dropped and
+ * reported, never saved. The result is plain data in EntryData's shape; the
+ * adapter turns it into what its CMS's fields take.
+ */
+final class EntryBuilder
+{
+    /** @var array<int, string> */
+    private array $notes = [];
+
+    /** @var array<int, string> */
+    private array $toFill = [];
+
+    public function __construct(
+        private readonly LayoutOptions $options = new LayoutOptions,
+        private readonly RichTextDialect $richText = new HtmlDialect,
+    ) {}
+
+    /**
+     * @param  array<string, mixed>  $draft  The draft's data (Text\Draft::$data).
+     * @param  Pattern|null  $pattern  What the group usually does; none when an existing entry is being revised.
+     * @param  array<string, mixed>  $defaults  The kind's own defaults, which win over the group's.
+     */
+    public function build(array $draft, Schema $schema, ?Pattern $pattern = null, array $defaults = []): BuiltEntry
+    {
+        $this->notes = [];
+        $this->toFill = [];
+
+        $data = $this->fields($draft, $schema->fields, $pattern->blocks ?? []);
+
+        if ($this->toFill) {
+            $this->notes[] = 'Still to choose by hand: '.implode('; ', array_unique($this->toFill)).'.';
+        }
+
+        // The kind's own defaults win over what the group usually does.
+        foreach ($defaults + ($pattern->fixed ?? []) as $key => $value) {
+            $data[$key] ??= $this->copy($value);
+        }
+
+        return new BuiltEntry($data, $this->notes);
+    }
+
+    /**
+     * Notes and places to fill are gathered as it goes.
+     *
+     * @phpstan-impure
+     *
+     * @param  array<string, mixed>  $values
+     * @param  array<int, Field>  $fields
+     * @param  array<string, array<string, mixed>>  $blockPatterns
+     * @return array<string, mixed>
+     */
+    private function fields(array $values, array $fields, array $blockPatterns = []): array
+    {
+        $data = [];
+        $known = array_map(fn (Field $field) => $field->handle, $fields);
+
+        foreach (array_diff(array_keys($values), $known, ['type']) as $stray) {
+            $this->notes[] = "\"{$stray}\" is not a field here and was left out.";
+        }
+
+        foreach ($fields as $field) {
+            if (! $field->isWritable() || ! array_key_exists($field->handle, $values)) {
+                continue;
+            }
+
+            $value = $this->value($values[$field->handle], $field, $blockPatterns[$field->handle] ?? []);
+
+            if ($value !== null) {
+                $data[$field->handle] = $value;
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * @param  array<string, mixed>  $pattern
+     */
+    private function value(mixed $value, Field $field, array $pattern): mixed
+    {
+        return match ($field->kind) {
+            Kind::Text => is_scalar($value) ? trim(preg_replace('/\s+/u', ' ', (string) $value) ?? '') : null,
+            Kind::LongText => is_scalar($value) ? trim((string) $value) : null,
+            Kind::RichText => is_scalar($value) ? $this->richText->fromMarkdown(trim((string) $value), $field) : null,
+            Kind::Choice => $this->choice($value, $field),
+            Kind::Choices => array_values(array_filter(array_map(fn ($v) => $this->choice($v, $field), (array) $value), fn ($v) => $v !== null)),
+            Kind::Toggle => filter_var($value, FILTER_VALIDATE_BOOLEAN),
+            Kind::Number => is_numeric($value) ? $value + 0 : null,
+            Kind::List => array_values(array_map('strval', array_filter((array) $value, 'is_scalar'))),
+            Kind::Blocks => $this->blocks((array) $value, $field, $pattern),
+            Kind::Rows => array_values(array_map(
+                fn (array $row) => $this->newId() + $this->fields($row, $field->fields),
+                array_filter((array) $value, 'is_array'),
+            )),
+            Kind::Group => is_array($value) ? $this->fields($value, $field->fields) : null,
+            Kind::Reference => null,
+        };
+    }
+
+    private function choice(mixed $value, Field $field): ?string
+    {
+        if (! is_scalar($value)) {
+            return null;
+        }
+
+        $value = is_bool($value) ? ($value ? 'true' : 'false') : (string) $value;
+        $options = $field->options;
+
+        if ($options === [] || array_key_exists($value, $options)) {
+            return $value;
+        }
+
+        // The model may have written the label rather than the key.
+        $key = array_search(strtolower($value), array_map('strtolower', $options), true);
+
+        if ($key !== false) {
+            return (string) $key;
+        }
+
+        $this->notes[] = "\"{$value}\" is not an option for {$field->handle} and was left out.";
+
+        return null;
+    }
+
+    /**
+     * @param  array<int|string, mixed>  $blocks
+     * @param  array<string, mixed>  $pattern
+     * @return array<int, array<string, mixed>>
+     */
+    private function blocks(array $blocks, Field $field, array $pattern): array
+    {
+        $out = [];
+
+        foreach ($blocks as $block) {
+            $type = is_array($block) ? ($block['type'] ?? null) : null;
+            $set = is_string($type) ? $field->set($type) : null;
+
+            if (! is_array($block) || ! is_string($type) || $set === null) {
+                $this->notes[] = 'A block of type "'.(is_scalar($type) ? $type : '?').'" '.$this->options->unknownBlock.' '.$field->handle.' and was left out.';
+
+                continue;
+            }
+
+            $fields = $this->fields($block, $set->fields);
+
+            // House defaults for this block: its usual settings, and for a
+            // boilerplate block its usual content too. A boilerplate block
+            // is always the copy, whatever the writer put in it: its wording
+            // is not the writer's to change.
+            $copied = in_array($type, (array) ($pattern['boilerplate'] ?? []), true);
+
+            $fixed = (array) ($pattern['fixed'][$type] ?? []);
+
+            $changed = array_filter(array_intersect_key($block, $fixed), fn ($value, $key) => ! is_string($value) || trim($value) !== $fixed[$key], ARRAY_FILTER_USE_BOTH);
+
+            if ($copied && $changed !== []) {
+                $this->notes[] = $set->label.' is the same on every entry here, so its usual content was used in place of what was drafted.';
+            }
+
+            foreach ($fixed as $key => $value) {
+                if ($copied || ! isset($fields[$key])) {
+                    $fields[$key] = $this->copy($value);
+                }
+            }
+
+            // Images, links and chosen entries are a person's to pick. Name
+            // the ones this kind of entry normally has, so none is missed.
+            foreach ($set->fields as $setField) {
+                $expected = in_array($setField->handle, (array) ($pattern['used'][$type] ?? []), true);
+
+                if ($expected && ! $setField->isWritable() && ! isset($fields[$setField->handle])) {
+                    $this->toFill[] = $set->label.': '.($setField->label ?: $setField->handle);
+                }
+            }
+
+            $out[] = $this->newId() + ['type' => $type, 'enabled' => true] + $fields;
+        }
+
+        return $out;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function newId(): array
+    {
+        return $this->options->newId !== null ? ['id' => ($this->options->newId)()] : [];
+    }
+
+    /**
+     * Copied content keeps its shape but not its IDs: those blocks and rows
+     * belong to the entry they were copied from. Where the CMS keeps IDs in
+     * the data, the copies get new ones; otherwise they have none and the
+     * CMS makes them.
+     */
+    private function copy(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        if ($this->options->newId === null) {
+            unset($value['id']);
+
+            return array_map(fn ($item) => $this->copy($item), $value);
+        }
+
+        foreach ($value as $key => $item) {
+            $value[$key] = $key === 'id' && is_string($item) ? ($this->options->newId)() : $this->copy($item);
+        }
+
+        return $value;
+    }
+}

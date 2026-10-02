@@ -1,0 +1,242 @@
+{
+    "addon": "statamic",
+    "source": "Test: NineteenNinetyFour\\Ghostwriter\\Tests\\Feature\\WritingTest::test_a_draft_is_not_saved_where_the_person_could_not_create_an_entry",
+    "schemas": {
+        "64c3faab1a68": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "required": true,
+                "type": "text"
+            },
+            {
+                "handle": "summary",
+                "kind": "longtext",
+                "label": "Summary",
+                "instructions": "Shown in lists.",
+                "type": "textarea"
+            },
+            {
+                "handle": "featured_image",
+                "kind": "reference",
+                "label": "Featured Image",
+                "type": "video"
+            },
+            {
+                "handle": "author",
+                "kind": "reference",
+                "label": "Author",
+                "type": "users"
+            },
+            {
+                "handle": "page_builder",
+                "kind": "blocks",
+                "label": "Page Builder",
+                "type": "replicator",
+                "sets": {
+                    "hero": {
+                        "label": "Hero",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "type": "text"
+                            },
+                            {
+                                "handle": "image",
+                                "kind": "reference",
+                                "label": "Image",
+                                "type": "video"
+                            }
+                        ]
+                    },
+                    "long_form": {
+                        "label": "Long Form",
+                        "instructions": "Prose column.",
+                        "fields": [
+                            {
+                                "handle": "content",
+                                "kind": "richtext",
+                                "label": "Content",
+                                "type": "bard",
+                                "meta": {
+                                    "save_html": false
+                                },
+                                "sets": {
+                                    "pullquote": {
+                                        "label": "Pull Quote",
+                                        "fields": [
+                                            {
+                                                "handle": "text",
+                                                "kind": "longtext",
+                                                "label": "Text",
+                                                "type": "textarea"
+                                            }
+                                        ]
+                                    }
+                                }
+                            },
+                            {
+                                "handle": "numbered",
+                                "kind": "toggle",
+                                "label": "Numbered",
+                                "type": "toggle"
+                            },
+                            {
+                                "handle": "width",
+                                "kind": "choice",
+                                "label": "Width",
+                                "options": {
+                                    "narrow": "Narrow",
+                                    "wide": "Wide"
+                                },
+                                "type": "button_group"
+                            }
+                        ]
+                    },
+                    "cards": {
+                        "label": "Card Grid",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "type": "text"
+                            },
+                            {
+                                "handle": "items",
+                                "kind": "rows",
+                                "label": "Items",
+                                "type": "grid",
+                                "fields": [
+                                    {
+                                        "handle": "text",
+                                        "kind": "text",
+                                        "label": "Text",
+                                        "type": "text"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    "related": {
+                        "label": "Related",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "type": "text"
+                            },
+                            {
+                                "handle": "limit",
+                                "kind": "number",
+                                "label": "Limit",
+                                "type": "integer"
+                            }
+                        ]
+                    },
+                    "gallery": {
+                        "label": "Gallery",
+                        "fields": [
+                            {
+                                "handle": "caption",
+                                "kind": "text",
+                                "label": "Caption",
+                                "type": "text"
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "build",
+            "schema": "64c3faab1a68",
+            "input": {
+                "draft": {
+                    "title": "What Does a Website Cost?",
+                    "summary": "Why quotes vary, and what moves the number.",
+                    "page_builder": [
+                        {
+                            "type": "hero"
+                        },
+                        {
+                            "type": "long_form",
+                            "content": "## Why are the quotes so far apart?\n\nBecause they are for **different** websites.\n"
+                        },
+                        {
+                            "type": "related"
+                        }
+                    ]
+                },
+                "pattern": [],
+                "defaults": []
+            },
+            "expected": {
+                "data": {
+                    "title": "What Does a Website Cost?",
+                    "summary": "Why quotes vary, and what moves the number.",
+                    "page_builder": [
+                        {
+                            "id": "14c4adb9",
+                            "type": "hero",
+                            "enabled": true
+                        },
+                        {
+                            "id": "913f3d31",
+                            "type": "long_form",
+                            "enabled": true,
+                            "content": [
+                                {
+                                    "type": "heading",
+                                    "attrs": {
+                                        "level": 2
+                                    },
+                                    "content": [
+                                        {
+                                            "type": "text",
+                                            "text": "Why are the quotes so far apart?"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "paragraph",
+                                    "content": [
+                                        {
+                                            "type": "text",
+                                            "text": "Because they are for "
+                                        },
+                                        {
+                                            "type": "text",
+                                            "marks": [
+                                                {
+                                                    "type": "bold"
+                                                }
+                                            ],
+                                            "text": "different"
+                                        },
+                                        {
+                                            "type": "text",
+                                            "text": " websites."
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "4e394aea",
+                            "type": "related",
+                            "enabled": true
+                        }
+                    ]
+                },
+                "notes": []
+            }
+        }
+    ]
+}

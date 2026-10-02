@@ -1,6 +1,6 @@
 {
     "name": "1994/ghostwriter-core",
-    "description": "The framework-free core shared by the Ghostwriter addons for Statamic, Filament and Craft: draft text handling, prompts, the AI provider layer, the Studio (every model job) and photo search.",
+    "description": "The framework-free core shared by the Ghostwriter addons for Statamic, Filament and Craft: draft text handling, prompts, the AI provider layer, the Studio (every model job), the schema model and layout algorithms, and photo search.",
     "type": "library",
     "license": "proprietary",
     "homepage": "https://github.com/1994limited/ghostwriter-core",
@@ -54,6 +54,7 @@
         }
     },
     "bin": [
+        "bin/compare-layouts",
         "bin/compare-requests"
     ],
     "scripts": {
@@ -72,7 +73,7 @@
     "prefer-stable": true,
     "extra": {
         "branch-alias": {
-            "dev-main": "0.3.x-dev"
+            "dev-main": "0.4.x-dev"
         }
     }
 }

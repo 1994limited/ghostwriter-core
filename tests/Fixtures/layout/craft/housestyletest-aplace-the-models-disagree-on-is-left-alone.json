@@ -1,0 +1,519 @@
+{
+    "addon": "craft",
+    "source": "Test: nineteenninetyfour\\ghostwriter\\tests\\unit\\HouseStyleTest::testAPlaceTheModelsDisagreeOnIsLeftAlone",
+    "schemas": {
+        "a183e4c63a3a": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "required": true,
+                "type": "title"
+            },
+            {
+                "handle": "pageBuilder",
+                "kind": "blocks",
+                "label": "Page builder",
+                "type": "benf\\neo\\Field",
+                "engine": "neo",
+                "sets": {
+                    "hero": {
+                        "label": "Hero",
+                        "fields": [
+                            {
+                                "handle": "children",
+                                "kind": "blocks",
+                                "label": "Blocks inside",
+                                "type": "neo-children",
+                                "engine": "neo-children",
+                                "sets": {
+                                    "text": {
+                                        "label": "Text",
+                                        "fields": [
+                                            {
+                                                "handle": "richText",
+                                                "kind": "richtext",
+                                                "label": "Rich text",
+                                                "type": "craft\\ckeditor\\Field"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "breadcrumbs": {
+                        "label": "Breadcrumbs",
+                        "fields": [
+                            {
+                                "handle": "crumbs",
+                                "kind": "reference",
+                                "label": "Crumbs",
+                                "type": "craft\\fields\\Matrix",
+                                "engine": "matrix",
+                                "sets": {
+                                    "crumb": {
+                                        "label": "Crumb",
+                                        "fields": [
+                                            {
+                                                "handle": "link",
+                                                "kind": "reference",
+                                                "label": "Link",
+                                                "type": "verbb\\hyper\\fields\\HyperField"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "spacer": {
+                        "label": "Spacer",
+                        "fields": [
+                            {
+                                "handle": "mobile",
+                                "kind": "number",
+                                "label": "Mobile",
+                                "type": "craft\\fields\\Number"
+                            },
+                            {
+                                "handle": "desktop",
+                                "kind": "number",
+                                "label": "Desktop",
+                                "type": "craft\\fields\\Number"
+                            }
+                        ]
+                    },
+                    "body": {
+                        "label": "Body",
+                        "fields": [
+                            {
+                                "handle": "children",
+                                "kind": "blocks",
+                                "label": "Blocks inside",
+                                "type": "neo-children",
+                                "engine": "neo-children",
+                                "sets": {
+                                    "text": {
+                                        "label": "Text",
+                                        "fields": [
+                                            {
+                                                "handle": "richText",
+                                                "kind": "richtext",
+                                                "label": "Rich text",
+                                                "type": "craft\\ckeditor\\Field"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "learn",
+            "schema": "a183e4c63a3a",
+            "input": {
+                "entries": [
+                    {
+                        "id": null,
+                        "values": {
+                            "title": "One",
+                            "pageBuilder": [
+                                {
+                                    "id": 11,
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "children": [
+                                        {
+                                            "id": 12,
+                                            "type": "text",
+                                            "enabled": true,
+                                            "richText": "<h1 style=\"text-align:center;\"><span style=\"color:hsl(0,0%,100%);\"><span class=\"style-uppercase\">One</span></span></h1>"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": 13,
+                                    "type": "breadcrumbs",
+                                    "enabled": true,
+                                    "crumbs": [
+                                        {
+                                            "id": 1,
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "link": [
+                                                {
+                                                    "type": "verbb\\hyper\\links\\Entry",
+                                                    "linkValue": [
+                                                        10
+                                                    ],
+                                                    "linkText": "Home"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": 2,
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "link": [
+                                                {
+                                                    "type": "verbb\\hyper\\links\\Entry",
+                                                    "linkValue": [
+                                                        1166
+                                                    ],
+                                                    "linkText": "Studio"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": 3,
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "link": [
+                                                {
+                                                    "type": "verbb\\hyper\\links\\Entry",
+                                                    "linkValue": [
+                                                        1
+                                                    ],
+                                                    "linkText": "One"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": 14,
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "mobile": 45,
+                                    "desktop": 65
+                                },
+                                {
+                                    "id": 15,
+                                    "type": "body",
+                                    "enabled": true,
+                                    "children": [
+                                        {
+                                            "id": 16,
+                                            "type": "text",
+                                            "enabled": true,
+                                            "richText": "<p>About One.</p>"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": 17,
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "mobile": 50,
+                                    "desktop": 100
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": null,
+                        "values": {
+                            "title": "Two",
+                            "pageBuilder": [
+                                {
+                                    "id": 21,
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "children": [
+                                        {
+                                            "id": 22,
+                                            "type": "text",
+                                            "enabled": true,
+                                            "richText": "<h1>Plain</h1>"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": 23,
+                                    "type": "breadcrumbs",
+                                    "enabled": true,
+                                    "crumbs": [
+                                        {
+                                            "id": 1,
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "link": [
+                                                {
+                                                    "type": "verbb\\hyper\\links\\Entry",
+                                                    "linkValue": [
+                                                        10
+                                                    ],
+                                                    "linkText": "Home"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": 2,
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "link": [
+                                                {
+                                                    "type": "verbb\\hyper\\links\\Entry",
+                                                    "linkValue": [
+                                                        1166
+                                                    ],
+                                                    "linkText": "Studio"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": 3,
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "link": [
+                                                {
+                                                    "type": "verbb\\hyper\\links\\Entry",
+                                                    "linkValue": [
+                                                        2
+                                                    ],
+                                                    "linkText": "Two"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": 24,
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "mobile": 10,
+                                    "desktop": 65
+                                },
+                                {
+                                    "id": 25,
+                                    "type": "body",
+                                    "enabled": true,
+                                    "children": [
+                                        {
+                                            "id": 26,
+                                            "type": "text",
+                                            "enabled": true,
+                                            "richText": "<p>About Two.</p>"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": 27,
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "mobile": 50,
+                                    "desktop": 100
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "positions": {
+                    "pageBuilder/breadcrumbs#0/crumbs/crumb#0": {
+                        "link": [
+                            {
+                                "type": "verbb\\hyper\\links\\Entry",
+                                "linkValue": [
+                                    10
+                                ],
+                                "linkText": "Home"
+                            }
+                        ]
+                    },
+                    "pageBuilder/breadcrumbs#0/crumbs/crumb#1": {
+                        "link": [
+                            {
+                                "type": "verbb\\hyper\\links\\Entry",
+                                "linkValue": [
+                                    1166
+                                ],
+                                "linkText": "Studio"
+                            }
+                        ]
+                    },
+                    "pageBuilder/spacer#0": {
+                        "desktop": 65
+                    },
+                    "pageBuilder/spacer#1": {
+                        "mobile": 50,
+                        "desktop": 100
+                    }
+                },
+                "sequences": {
+                    "pageBuilder/hero#0/children": [
+                        "text"
+                    ],
+                    "pageBuilder/breadcrumbs#0/crumbs": [
+                        "crumb",
+                        "crumb",
+                        "crumb"
+                    ],
+                    "pageBuilder/body#0/children": [
+                        "text"
+                    ]
+                },
+                "markup": [],
+                "links": {
+                    "pageBuilder/breadcrumbs/crumbs/crumb.link": 1
+                }
+            }
+        },
+        {
+            "algorithm": "apply",
+            "schema": "a183e4c63a3a",
+            "input": {
+                "data": {
+                    "pageBuilder": [
+                        {
+                            "type": "hero",
+                            "enabled": true,
+                            "children": [
+                                {
+                                    "type": "text",
+                                    "richText": "<h1>New</h1>"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "breadcrumbs",
+                            "enabled": true
+                        },
+                        {
+                            "type": "spacer",
+                            "enabled": true
+                        }
+                    ]
+                },
+                "style": {
+                    "positions": {
+                        "pageBuilder/breadcrumbs#0/crumbs/crumb#0": {
+                            "link": [
+                                {
+                                    "type": "verbb\\hyper\\links\\Entry",
+                                    "linkValue": [
+                                        10
+                                    ],
+                                    "linkText": "Home"
+                                }
+                            ]
+                        },
+                        "pageBuilder/breadcrumbs#0/crumbs/crumb#1": {
+                            "link": [
+                                {
+                                    "type": "verbb\\hyper\\links\\Entry",
+                                    "linkValue": [
+                                        1166
+                                    ],
+                                    "linkText": "Studio"
+                                }
+                            ]
+                        },
+                        "pageBuilder/spacer#0": {
+                            "desktop": 65
+                        },
+                        "pageBuilder/spacer#1": {
+                            "mobile": 50,
+                            "desktop": 100
+                        }
+                    },
+                    "sequences": {
+                        "pageBuilder/hero#0/children": [
+                            "text"
+                        ],
+                        "pageBuilder/breadcrumbs#0/crumbs": [
+                            "crumb",
+                            "crumb",
+                            "crumb"
+                        ],
+                        "pageBuilder/body#0/children": [
+                            "text"
+                        ]
+                    },
+                    "markup": [],
+                    "links": {
+                        "pageBuilder/breadcrumbs/crumbs/crumb.link": 1
+                    }
+                },
+                "self": {
+                    "id": null,
+                    "title": ""
+                }
+            },
+            "expected": {
+                "data": {
+                    "pageBuilder": [
+                        {
+                            "type": "hero",
+                            "enabled": true,
+                            "children": [
+                                {
+                                    "type": "text",
+                                    "richText": "<h1>New</h1>"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "breadcrumbs",
+                            "enabled": true,
+                            "crumbs": [
+                                {
+                                    "type": "crumb",
+                                    "enabled": true,
+                                    "link": [
+                                        {
+                                            "type": "verbb\\hyper\\links\\Entry",
+                                            "linkValue": [
+                                                10
+                                            ],
+                                            "linkText": "Home"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "crumb",
+                                    "enabled": true,
+                                    "link": [
+                                        {
+                                            "type": "verbb\\hyper\\links\\Entry",
+                                            "linkValue": [
+                                                1166
+                                            ],
+                                            "linkText": "Studio"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "crumb",
+                                    "enabled": true,
+                                    "link": [
+                                        {
+                                            "type": "verbb\\hyper\\links\\Url",
+                                            "linkValue": "https://example.com",
+                                            "linkText": "Link to choose"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "spacer",
+                            "enabled": true,
+                            "desktop": 65
+                        }
+                    ]
+                },
+                "toFill": [
+                    "Breadcrumbs: Crumb 3 (links to example.com for now)"
+                ]
+            }
+        }
+    ]
+}

@@ -1,0 +1,72 @@
+{
+    "addon": "craft",
+    "source": "Test: nineteenninetyfour\\ghostwriter\\tests\\unit\\LoggingTest::testAnUnreadableReplyIsLoggedWithoutItsTextUnlessAskedFor",
+    "schemas": {
+        "41f54c683b36": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "required": true,
+                "type": "title"
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "learn",
+            "schema": "41f54c683b36",
+            "input": {
+                "entries": []
+            },
+            "expected": {
+                "positions": [],
+                "sequences": [],
+                "markup": [],
+                "links": []
+            }
+        },
+        {
+            "algorithm": "pattern",
+            "schema": "41f54c683b36",
+            "input": {
+                "entries": []
+            },
+            "expected": {
+                "entries": 0,
+                "words": 0,
+                "blocks": [],
+                "fixed": [],
+                "examples": [],
+                "filled": [],
+                "house": {
+                    "positions": [],
+                    "sequences": [],
+                    "markup": [],
+                    "links": []
+                }
+            }
+        },
+        {
+            "algorithm": "describe",
+            "schema": "41f54c683b36",
+            "input": {
+                "pattern": {
+                    "entries": 0,
+                    "words": 0,
+                    "blocks": [],
+                    "fixed": [],
+                    "examples": [],
+                    "filled": [],
+                    "house": {
+                        "positions": [],
+                        "sequences": [],
+                        "markup": [],
+                        "links": []
+                    }
+                }
+            },
+            "expected": "- `title` (short text, required)"
+        }
+    ]
+}

@@ -1,0 +1,779 @@
+{
+    "addon": "statamic",
+    "source": "Test: NineteenNinetyFour\\Ghostwriter\\Tests\\Feature\\HouseStyleTest::test_settings_links_sequences_and_markup_agreed_by_position_go_into_a_new_page",
+    "schemas": {
+        "b4f204b607ee": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "required": true,
+                "type": "text"
+            },
+            {
+                "handle": "featured_image",
+                "kind": "reference",
+                "label": "Featured Image",
+                "type": "assets",
+                "files": true,
+                "meta": {
+                    "container": "assets",
+                    "folder": "",
+                    "max_files": 1,
+                    "images": true
+                }
+            },
+            {
+                "handle": "brochure",
+                "kind": "reference",
+                "label": "Brochure",
+                "type": "assets",
+                "files": true,
+                "meta": {
+                    "container": "assets",
+                    "folder": "",
+                    "max_files": 1,
+                    "images": false
+                }
+            },
+            {
+                "handle": "page_builder",
+                "kind": "blocks",
+                "label": "Page Builder",
+                "type": "replicator",
+                "sets": {
+                    "spacer": {
+                        "label": "Spacer",
+                        "fields": [
+                            {
+                                "handle": "height",
+                                "kind": "text",
+                                "label": "Height",
+                                "type": "text"
+                            }
+                        ]
+                    },
+                    "hero": {
+                        "label": "Hero",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "richtext",
+                                "label": "Heading",
+                                "type": "bard",
+                                "meta": {
+                                    "save_html": false
+                                }
+                            },
+                            {
+                                "handle": "image",
+                                "kind": "reference",
+                                "label": "Image",
+                                "type": "assets",
+                                "files": true,
+                                "meta": {
+                                    "container": "assets",
+                                    "folder": "",
+                                    "max_files": 1,
+                                    "images": true
+                                }
+                            },
+                            {
+                                "handle": "background",
+                                "kind": "reference",
+                                "label": "Background",
+                                "type": "assets",
+                                "files": true,
+                                "meta": {
+                                    "container": "assets",
+                                    "folder": "",
+                                    "max_files": 1,
+                                    "images": true
+                                }
+                            },
+                            {
+                                "handle": "button_text",
+                                "kind": "text",
+                                "label": "Button Text",
+                                "type": "text"
+                            },
+                            {
+                                "handle": "button_link",
+                                "kind": "reference",
+                                "label": "Button Link",
+                                "type": "link"
+                            }
+                        ]
+                    },
+                    "breadcrumbs": {
+                        "label": "Breadcrumbs",
+                        "fields": [
+                            {
+                                "handle": "crumbs",
+                                "kind": "blocks",
+                                "label": "Crumbs",
+                                "type": "replicator",
+                                "sets": {
+                                    "crumb": {
+                                        "label": "Crumb",
+                                        "fields": [
+                                            {
+                                                "handle": "label",
+                                                "kind": "text",
+                                                "label": "Label",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "handle": "link",
+                                                "kind": "reference",
+                                                "label": "Link",
+                                                "type": "link"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "learn",
+            "schema": "b4f204b607ee",
+            "input": {
+                "entries": [
+                    {
+                        "id": "p1",
+                        "values": {
+                            "title": "Yacht Studio",
+                            "featured_image": "pages/p1.png",
+                            "page_builder": [
+                                {
+                                    "id": "s1",
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": "45/65"
+                                },
+                                {
+                                    "id": "h1",
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "heading": [
+                                        {
+                                            "type": "heading",
+                                            "attrs": {
+                                                "level": 1,
+                                                "textAlign": "center"
+                                            },
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "Yacht Studio",
+                                                    "marks": [
+                                                        {
+                                                            "type": "bold"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "image": "heroes/p1.png",
+                                    "button_text": "Talk to us",
+                                    "button_link": "entry::contact"
+                                },
+                                {
+                                    "id": "b1",
+                                    "type": "breadcrumbs",
+                                    "enabled": true,
+                                    "crumbs": [
+                                        {
+                                            "id": "c1",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Home",
+                                            "link": "entry::home"
+                                        },
+                                        {
+                                            "id": "c2",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Studio",
+                                            "link": "entry::studio"
+                                        },
+                                        {
+                                            "id": "c3",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Yacht Studio",
+                                            "link": "entry::p1"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "s2",
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": "60/100"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "p2",
+                        "values": {
+                            "title": "Architecture Studio",
+                            "featured_image": "pages/p2.png",
+                            "page_builder": [
+                                {
+                                    "id": "s1",
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": "45/65"
+                                },
+                                {
+                                    "id": "h1",
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "heading": [
+                                        {
+                                            "type": "heading",
+                                            "attrs": {
+                                                "level": 1,
+                                                "textAlign": "center"
+                                            },
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "Architecture Studio",
+                                                    "marks": [
+                                                        {
+                                                            "type": "bold"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "image": "heroes/p2.png",
+                                    "button_text": "Talk to us",
+                                    "button_link": "entry::contact"
+                                },
+                                {
+                                    "id": "b1",
+                                    "type": "breadcrumbs",
+                                    "enabled": true,
+                                    "crumbs": [
+                                        {
+                                            "id": "c1",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Home",
+                                            "link": "entry::home"
+                                        },
+                                        {
+                                            "id": "c2",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Studio",
+                                            "link": "entry::studio"
+                                        },
+                                        {
+                                            "id": "c3",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Architecture Studio",
+                                            "link": "entry::p2"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "s2",
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": "60/100"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "p3",
+                        "values": {
+                            "title": "Visualisation Studio",
+                            "featured_image": "pages/p3.png",
+                            "page_builder": [
+                                {
+                                    "id": "s1",
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": "45/65"
+                                },
+                                {
+                                    "id": "h1",
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "heading": [
+                                        {
+                                            "type": "heading",
+                                            "attrs": {
+                                                "level": 1,
+                                                "textAlign": "center"
+                                            },
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "Visualisation Studio",
+                                                    "marks": [
+                                                        {
+                                                            "type": "bold"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "image": "heroes/p3.png",
+                                    "button_text": "Talk to us",
+                                    "button_link": "entry::contact"
+                                },
+                                {
+                                    "id": "b1",
+                                    "type": "breadcrumbs",
+                                    "enabled": true,
+                                    "crumbs": [
+                                        {
+                                            "id": "c1",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Home",
+                                            "link": "entry::home"
+                                        },
+                                        {
+                                            "id": "c2",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Studio",
+                                            "link": "entry::studio"
+                                        },
+                                        {
+                                            "id": "c3",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Visualisation Studio",
+                                            "link": "entry::p3"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "s2",
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": "80/120"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "positions": {
+                    "page_builder/spacer#0": {
+                        "height": "45/65"
+                    },
+                    "page_builder/hero#0": {
+                        "button_text": "Talk to us",
+                        "button_link": "entry::contact"
+                    },
+                    "page_builder/breadcrumbs#0/crumbs/crumb#0": {
+                        "label": "Home",
+                        "link": "entry::home"
+                    },
+                    "page_builder/breadcrumbs#0/crumbs/crumb#1": {
+                        "label": "Studio",
+                        "link": "entry::studio"
+                    },
+                    "page_builder/breadcrumbs#0/crumbs/crumb#2": {
+                        "label": "@title",
+                        "link": "@self"
+                    },
+                    "page_builder/spacer#1": {
+                        "height": "60/100"
+                    }
+                },
+                "sequences": {
+                    "page_builder/breadcrumbs#0/crumbs": [
+                        "crumb",
+                        "crumb",
+                        "crumb"
+                    ]
+                },
+                "markup": {
+                    "page_builder/hero.heading": {
+                        "heading1": {
+                            "attrs": {
+                                "textAlign": "center"
+                            },
+                            "marks": [
+                                {
+                                    "type": "bold"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "links": {
+                    "page_builder/hero.button_link": 1,
+                    "page_builder/breadcrumbs/crumbs/crumb.link": 1
+                }
+            }
+        },
+        {
+            "algorithm": "apply",
+            "schema": "b4f204b607ee",
+            "input": {
+                "data": {
+                    "title": "Studio Winch",
+                    "page_builder": [
+                        {
+                            "type": "spacer"
+                        },
+                        {
+                            "type": "hero",
+                            "heading": [
+                                {
+                                    "type": "heading",
+                                    "attrs": {
+                                        "level": 1
+                                    },
+                                    "content": [
+                                        {
+                                            "type": "text",
+                                            "text": "Winches, rigged right"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "button_text": "Talk to us"
+                        },
+                        {
+                            "type": "breadcrumbs"
+                        },
+                        {
+                            "type": "spacer"
+                        }
+                    ]
+                },
+                "style": {
+                    "positions": {
+                        "page_builder/spacer#0": {
+                            "height": "45/65"
+                        },
+                        "page_builder/hero#0": {
+                            "button_text": "Talk to us",
+                            "button_link": "entry::contact"
+                        },
+                        "page_builder/breadcrumbs#0/crumbs/crumb#0": {
+                            "label": "Home",
+                            "link": "entry::home"
+                        },
+                        "page_builder/breadcrumbs#0/crumbs/crumb#1": {
+                            "label": "Studio",
+                            "link": "entry::studio"
+                        },
+                        "page_builder/breadcrumbs#0/crumbs/crumb#2": {
+                            "label": "@title",
+                            "link": "@self"
+                        },
+                        "page_builder/spacer#1": {
+                            "height": "60/100"
+                        }
+                    },
+                    "sequences": {
+                        "page_builder/breadcrumbs#0/crumbs": [
+                            "crumb",
+                            "crumb",
+                            "crumb"
+                        ]
+                    },
+                    "markup": {
+                        "page_builder/hero.heading": {
+                            "heading1": {
+                                "attrs": {
+                                    "textAlign": "center"
+                                },
+                                "marks": [
+                                    {
+                                        "type": "bold"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "links": {
+                        "page_builder/hero.button_link": 1,
+                        "page_builder/breadcrumbs/crumbs/crumb.link": 1
+                    }
+                },
+                "self": {
+                    "id": null,
+                    "title": "Studio Winch"
+                }
+            },
+            "expected": {
+                "data": {
+                    "title": "Studio Winch",
+                    "page_builder": [
+                        {
+                            "type": "spacer",
+                            "height": "45/65"
+                        },
+                        {
+                            "type": "hero",
+                            "heading": [
+                                {
+                                    "type": "heading",
+                                    "attrs": {
+                                        "level": 1,
+                                        "textAlign": "center"
+                                    },
+                                    "content": [
+                                        {
+                                            "type": "text",
+                                            "text": "Winches, rigged right",
+                                            "marks": [
+                                                {
+                                                    "type": "bold"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "button_text": "Talk to us",
+                            "button_link": "entry::contact"
+                        },
+                        {
+                            "type": "breadcrumbs",
+                            "crumbs": [
+                                {
+                                    "id": "43a4d7ef",
+                                    "type": "crumb",
+                                    "enabled": true,
+                                    "label": "Home",
+                                    "link": "entry::home"
+                                },
+                                {
+                                    "id": "a468e26b",
+                                    "type": "crumb",
+                                    "enabled": true,
+                                    "label": "Studio",
+                                    "link": "entry::studio"
+                                },
+                                {
+                                    "id": "9127204a",
+                                    "type": "crumb",
+                                    "enabled": true,
+                                    "label": "Studio Winch"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "spacer",
+                            "height": "60/100"
+                        }
+                    ]
+                },
+                "toFill": []
+            }
+        },
+        {
+            "algorithm": "linkToSelf",
+            "schema": "b4f204b607ee",
+            "input": {
+                "data": {
+                    "title": "Studio Winch",
+                    "page_builder": [
+                        {
+                            "type": "spacer",
+                            "height": "45/65"
+                        },
+                        {
+                            "type": "hero",
+                            "heading": [
+                                {
+                                    "type": "heading",
+                                    "attrs": {
+                                        "level": 1,
+                                        "textAlign": "center"
+                                    },
+                                    "content": [
+                                        {
+                                            "type": "text",
+                                            "text": "Winches, rigged right",
+                                            "marks": [
+                                                {
+                                                    "type": "bold"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "button_text": "Talk to us",
+                            "button_link": "entry::contact"
+                        },
+                        {
+                            "type": "breadcrumbs",
+                            "crumbs": [
+                                {
+                                    "id": "43a4d7ef",
+                                    "type": "crumb",
+                                    "enabled": true,
+                                    "label": "Home",
+                                    "link": "entry::home"
+                                },
+                                {
+                                    "id": "a468e26b",
+                                    "type": "crumb",
+                                    "enabled": true,
+                                    "label": "Studio",
+                                    "link": "entry::studio"
+                                },
+                                {
+                                    "id": "9127204a",
+                                    "type": "crumb",
+                                    "enabled": true,
+                                    "label": "Studio Winch"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "spacer",
+                            "height": "60/100"
+                        }
+                    ]
+                },
+                "style": {
+                    "positions": {
+                        "page_builder/spacer#0": {
+                            "height": "45/65"
+                        },
+                        "page_builder/hero#0": {
+                            "button_text": "Talk to us",
+                            "button_link": "entry::contact"
+                        },
+                        "page_builder/breadcrumbs#0/crumbs/crumb#0": {
+                            "label": "Home",
+                            "link": "entry::home"
+                        },
+                        "page_builder/breadcrumbs#0/crumbs/crumb#1": {
+                            "label": "Studio",
+                            "link": "entry::studio"
+                        },
+                        "page_builder/breadcrumbs#0/crumbs/crumb#2": {
+                            "label": "@title",
+                            "link": "@self"
+                        },
+                        "page_builder/spacer#1": {
+                            "height": "60/100"
+                        }
+                    },
+                    "sequences": {
+                        "page_builder/breadcrumbs#0/crumbs": [
+                            "crumb",
+                            "crumb",
+                            "crumb"
+                        ]
+                    },
+                    "markup": {
+                        "page_builder/hero.heading": {
+                            "heading1": {
+                                "attrs": {
+                                    "textAlign": "center"
+                                },
+                                "marks": [
+                                    {
+                                        "type": "bold"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "links": {
+                        "page_builder/hero.button_link": 1,
+                        "page_builder/breadcrumbs/crumbs/crumb.link": 1
+                    }
+                },
+                "id": "new-id",
+                "title": "Studio Winch"
+            },
+            "expected": {
+                "title": "Studio Winch",
+                "page_builder": [
+                    {
+                        "type": "spacer",
+                        "height": "45/65"
+                    },
+                    {
+                        "type": "hero",
+                        "heading": [
+                            {
+                                "type": "heading",
+                                "attrs": {
+                                    "level": 1,
+                                    "textAlign": "center"
+                                },
+                                "content": [
+                                    {
+                                        "type": "text",
+                                        "text": "Winches, rigged right",
+                                        "marks": [
+                                            {
+                                                "type": "bold"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "button_text": "Talk to us",
+                        "button_link": "entry::contact"
+                    },
+                    {
+                        "type": "breadcrumbs",
+                        "crumbs": [
+                            {
+                                "id": "43a4d7ef",
+                                "type": "crumb",
+                                "enabled": true,
+                                "label": "Home",
+                                "link": "entry::home"
+                            },
+                            {
+                                "id": "a468e26b",
+                                "type": "crumb",
+                                "enabled": true,
+                                "label": "Studio",
+                                "link": "entry::studio"
+                            },
+                            {
+                                "id": "9127204a",
+                                "type": "crumb",
+                                "enabled": true,
+                                "label": "Studio Winch",
+                                "link": "entry::new-id"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "spacer",
+                        "height": "60/100"
+                    }
+                ]
+            }
+        }
+    ]
+}

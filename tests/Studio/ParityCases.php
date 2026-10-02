@@ -185,7 +185,14 @@ final class ParityCases
         }
 
         if (is_object($value)) {
-            return ['@' => (new \ReflectionClass($value))->getShortName()] + array_map(self::export(...), get_object_vars($value));
+            $vars = get_object_vars($value);
+
+            // A Layout made from described text, as these cases are, has no schema (core 0.4).
+            if ($value instanceof Layout && $value->schema === null) {
+                unset($vars['schema']);
+            }
+
+            return ['@' => (new \ReflectionClass($value))->getShortName()] + array_map(self::export(...), $vars);
         }
 
         return is_array($value) ? array_map(self::export(...), $value) : $value;

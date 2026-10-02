@@ -1,0 +1,572 @@
+{
+    "addon": "craft",
+    "source": "Test: nineteenninetyfour\\ghostwriter\\tests\\unit\\LayoutTest::testATypeCanLearnFromOnlySomeOfTheEntries",
+    "schemas": {
+        "9e5885395eca": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "required": true,
+                "type": "title"
+            },
+            {
+                "handle": "summary",
+                "kind": "longtext",
+                "label": "Summary",
+                "instructions": "Shown in lists.",
+                "type": "craft\\fields\\PlainText"
+            },
+            {
+                "handle": "relatedEntry",
+                "kind": "reference",
+                "label": "RelatedEntry",
+                "type": "craft\\fields\\Entries"
+            },
+            {
+                "handle": "theme",
+                "kind": "choice",
+                "label": "Theme",
+                "options": {
+                    "light": "Light",
+                    "dark": "Dark"
+                },
+                "type": "craft\\fields\\Dropdown"
+            },
+            {
+                "handle": "kind",
+                "kind": "choice",
+                "label": "Kind",
+                "options": {
+                    "project": "Project",
+                    "guide": "Guide"
+                },
+                "type": "craft\\fields\\Dropdown"
+            },
+            {
+                "handle": "pageBuilder",
+                "kind": "blocks",
+                "label": "PageBuilder",
+                "type": "craft\\fields\\Matrix",
+                "engine": "matrix",
+                "sets": {
+                    "hero": {
+                        "label": "Hero",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "type": "craft\\fields\\PlainText"
+                            },
+                            {
+                                "handle": "relatedEntry",
+                                "kind": "reference",
+                                "label": "RelatedEntry",
+                                "type": "craft\\fields\\Entries"
+                            }
+                        ]
+                    },
+                    "longForm": {
+                        "label": "LongForm",
+                        "fields": [
+                            {
+                                "handle": "content",
+                                "kind": "richtext",
+                                "label": "Content",
+                                "type": "craft\\ckeditor\\Field"
+                            },
+                            {
+                                "handle": "numbered",
+                                "kind": "toggle",
+                                "label": "Numbered",
+                                "type": "craft\\fields\\Lightswitch"
+                            },
+                            {
+                                "handle": "width",
+                                "kind": "choice",
+                                "label": "Width",
+                                "options": {
+                                    "narrow": "Narrow",
+                                    "wide": "Wide"
+                                },
+                                "type": "craft\\fields\\ButtonGroup"
+                            }
+                        ]
+                    },
+                    "cards": {
+                        "label": "Cards",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "type": "craft\\fields\\PlainText"
+                            },
+                            {
+                                "handle": "items",
+                                "kind": "rows",
+                                "label": "Items",
+                                "type": "craft\\fields\\Table",
+                                "meta": {
+                                    "columns": {
+                                        "text": "col1"
+                                    }
+                                },
+                                "fields": [
+                                    {
+                                        "handle": "text",
+                                        "kind": "text",
+                                        "label": "Text",
+                                        "type": "table:singleline",
+                                        "meta": {
+                                            "id": "col1"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    "related": {
+                        "label": "Related",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "type": "craft\\fields\\PlainText"
+                            },
+                            {
+                                "handle": "limit",
+                                "kind": "number",
+                                "label": "Limit",
+                                "type": "craft\\fields\\Number"
+                            }
+                        ]
+                    },
+                    "gallery": {
+                        "label": "Gallery",
+                        "fields": [
+                            {
+                                "handle": "caption",
+                                "kind": "text",
+                                "label": "Caption",
+                                "type": "craft\\fields\\PlainText"
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "learn",
+            "schema": "9e5885395eca",
+            "input": {
+                "entries": [
+                    {
+                        "id": 1075,
+                        "values": {
+                            "title": "Two",
+                            "summary": "A summary line about Two that is long enough to count.",
+                            "relatedEntry": [],
+                            "theme": "light",
+                            "kind": "guide",
+                            "pageBuilder": [
+                                {
+                                    "id": 1076,
+                                    "type": "longForm",
+                                    "enabled": true,
+                                    "content": "<p>Guide.</p>",
+                                    "numbered": false,
+                                    "width": "narrow"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "positions": [],
+                "sequences": [],
+                "markup": [],
+                "links": []
+            }
+        },
+        {
+            "algorithm": "pattern",
+            "schema": "9e5885395eca",
+            "input": {
+                "entries": [
+                    {
+                        "id": 1075,
+                        "values": {
+                            "title": "Two",
+                            "summary": "A summary line about Two that is long enough to count.",
+                            "relatedEntry": [],
+                            "theme": "light",
+                            "kind": "guide",
+                            "pageBuilder": [
+                                {
+                                    "id": 1076,
+                                    "type": "longForm",
+                                    "enabled": true,
+                                    "content": "<p>Guide.</p>",
+                                    "numbered": false,
+                                    "width": "narrow"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "entries": 1,
+                "words": 27,
+                "blocks": {
+                    "pageBuilder": {
+                        "sequence": [
+                            "longForm"
+                        ],
+                        "usage": {
+                            "longForm": 1.0
+                        },
+                        "fixed": [],
+                        "used": {
+                            "longForm": [
+                                "content",
+                                "numbered",
+                                "width"
+                            ]
+                        },
+                        "boilerplate": []
+                    }
+                },
+                "fixed": [],
+                "examples": [
+                    {
+                        "title": "Two",
+                        "summary": "A summary line about Two that is long enough to count.",
+                        "theme": "light",
+                        "kind": "guide",
+                        "pageBuilder": [
+                            {
+                                "type": "longForm",
+                                "content": "Guide.",
+                                "numbered": false,
+                                "width": "narrow"
+                            }
+                        ]
+                    }
+                ],
+                "filled": {
+                    "title": 1.0,
+                    "summary": 1.0,
+                    "relatedEntry": 0.0,
+                    "theme": 1.0,
+                    "kind": 1.0,
+                    "pageBuilder": 1.0,
+                    "longForm.content": 1.0,
+                    "longForm.numbered": 1.0,
+                    "longForm.width": 1.0
+                },
+                "house": {
+                    "positions": [],
+                    "sequences": [],
+                    "markup": [],
+                    "links": []
+                }
+            }
+        },
+        {
+            "algorithm": "learn",
+            "schema": "9e5885395eca",
+            "input": {
+                "entries": [
+                    {
+                        "id": 1075,
+                        "values": {
+                            "title": "Two",
+                            "summary": "A summary line about Two that is long enough to count.",
+                            "relatedEntry": [],
+                            "theme": "light",
+                            "kind": "guide",
+                            "pageBuilder": [
+                                {
+                                    "id": 1076,
+                                    "type": "longForm",
+                                    "enabled": true,
+                                    "content": "<p>Guide.</p>",
+                                    "numbered": false,
+                                    "width": "narrow"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": 1063,
+                        "values": {
+                            "title": "One",
+                            "summary": "A summary line about One that is long enough to count.",
+                            "relatedEntry": [],
+                            "theme": "light",
+                            "kind": "project",
+                            "pageBuilder": [
+                                {
+                                    "id": 1064,
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "heading": null,
+                                    "relatedEntry": []
+                                },
+                                {
+                                    "id": 1065,
+                                    "type": "longForm",
+                                    "enabled": true,
+                                    "content": "<h2>The Problem</h2><p>When on-site search is done right it helps your customers find what they need and nudges them towards a decision. Offer up a complex range badly and those high end sales vanish.</p><blockquote><p>Challenge accepted.</p></blockquote>",
+                                    "numbered": true,
+                                    "width": "narrow"
+                                },
+                                {
+                                    "id": 1066,
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Broader uses",
+                                    "items": [
+                                        {
+                                            "text": "Property searches"
+                                        },
+                                        {
+                                            "text": "Recipe selection"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": 1067,
+                                    "type": "related",
+                                    "enabled": true,
+                                    "heading": "More articles",
+                                    "limit": 3
+                                },
+                                {
+                                    "id": 1068,
+                                    "type": "gallery",
+                                    "enabled": false,
+                                    "caption": "Switched off"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "positions": {
+                    "pageBuilder/longForm#0": {
+                        "width": "narrow"
+                    }
+                },
+                "sequences": [],
+                "markup": [],
+                "links": []
+            }
+        },
+        {
+            "algorithm": "pattern",
+            "schema": "9e5885395eca",
+            "input": {
+                "entries": [
+                    {
+                        "id": 1075,
+                        "values": {
+                            "title": "Two",
+                            "summary": "A summary line about Two that is long enough to count.",
+                            "relatedEntry": [],
+                            "theme": "light",
+                            "kind": "guide",
+                            "pageBuilder": [
+                                {
+                                    "id": 1076,
+                                    "type": "longForm",
+                                    "enabled": true,
+                                    "content": "<p>Guide.</p>",
+                                    "numbered": false,
+                                    "width": "narrow"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": 1063,
+                        "values": {
+                            "title": "One",
+                            "summary": "A summary line about One that is long enough to count.",
+                            "relatedEntry": [],
+                            "theme": "light",
+                            "kind": "project",
+                            "pageBuilder": [
+                                {
+                                    "id": 1064,
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "heading": null,
+                                    "relatedEntry": []
+                                },
+                                {
+                                    "id": 1065,
+                                    "type": "longForm",
+                                    "enabled": true,
+                                    "content": "<h2>The Problem</h2><p>When on-site search is done right it helps your customers find what they need and nudges them towards a decision. Offer up a complex range badly and those high end sales vanish.</p><blockquote><p>Challenge accepted.</p></blockquote>",
+                                    "numbered": true,
+                                    "width": "narrow"
+                                },
+                                {
+                                    "id": 1066,
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Broader uses",
+                                    "items": [
+                                        {
+                                            "text": "Property searches"
+                                        },
+                                        {
+                                            "text": "Recipe selection"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": 1067,
+                                    "type": "related",
+                                    "enabled": true,
+                                    "heading": "More articles",
+                                    "limit": 3
+                                },
+                                {
+                                    "id": 1068,
+                                    "type": "gallery",
+                                    "enabled": false,
+                                    "caption": "Switched off"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "entries": 2,
+                "words": 85,
+                "blocks": {
+                    "pageBuilder": {
+                        "sequence": [
+                            "longForm"
+                        ],
+                        "usage": {
+                            "longForm": 1.0,
+                            "hero": 0.5,
+                            "cards": 0.5,
+                            "related": 0.5
+                        },
+                        "fixed": {
+                            "longForm": {
+                                "width": "narrow"
+                            }
+                        },
+                        "used": {
+                            "longForm": [
+                                "content",
+                                "numbered",
+                                "width"
+                            ],
+                            "hero": [],
+                            "cards": [
+                                "heading",
+                                "items"
+                            ],
+                            "related": [
+                                "heading",
+                                "limit"
+                            ]
+                        },
+                        "boilerplate": []
+                    }
+                },
+                "fixed": [],
+                "examples": [
+                    {
+                        "title": "Two",
+                        "summary": "A summary line about Two that is long enough to count.",
+                        "theme": "light",
+                        "kind": "guide",
+                        "pageBuilder": [
+                            {
+                                "type": "longForm",
+                                "content": "Guide.",
+                                "numbered": false
+                            }
+                        ]
+                    },
+                    {
+                        "title": "One",
+                        "summary": "A summary line about One that is long enough to count.",
+                        "theme": "light",
+                        "kind": "project",
+                        "pageBuilder": [
+                            {
+                                "type": "hero"
+                            },
+                            {
+                                "type": "longForm",
+                                "content": "## The Problem\n\nWhen on-site search is done right it helps your customers find what they need and nudges them towards a decision. Offer up a complex range badly and those high end sales vanish.\n\n> Challenge accepted.",
+                                "numbered": true
+                            },
+                            {
+                                "type": "cards",
+                                "heading": "Broader uses",
+                                "items": [
+                                    {
+                                        "text": "Property searches"
+                                    },
+                                    {
+                                        "text": "Recipe selection"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "related",
+                                "heading": "More articles",
+                                "limit": 3
+                            }
+                        ]
+                    }
+                ],
+                "filled": {
+                    "title": 1.0,
+                    "summary": 1.0,
+                    "relatedEntry": 0.0,
+                    "theme": 1.0,
+                    "kind": 1.0,
+                    "pageBuilder": 1.0,
+                    "longForm.content": 1.0,
+                    "longForm.numbered": 1.0,
+                    "longForm.width": 1.0,
+                    "hero.heading": 0.0,
+                    "hero.relatedEntry": 0.0,
+                    "cards.heading": 1.0,
+                    "cards.items": 1.0,
+                    "related.heading": 1.0,
+                    "related.limit": 1.0
+                },
+                "house": {
+                    "positions": {
+                        "pageBuilder/longForm#0": {
+                            "width": "narrow"
+                        }
+                    },
+                    "sequences": [],
+                    "markup": [],
+                    "links": []
+                }
+            }
+        }
+    ]
+}

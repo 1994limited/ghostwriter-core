@@ -1,0 +1,564 @@
+{
+    "addon": "statamic",
+    "source": "Test: NineteenNinetyFour\\Ghostwriter\\Tests\\Feature\\BlueprintTest::test_content_pasted_in_a_few_versions_is_still_copied",
+    "schemas": {
+        "64c3faab1a68": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "required": true,
+                "type": "text"
+            },
+            {
+                "handle": "summary",
+                "kind": "longtext",
+                "label": "Summary",
+                "instructions": "Shown in lists.",
+                "type": "textarea"
+            },
+            {
+                "handle": "featured_image",
+                "kind": "reference",
+                "label": "Featured Image",
+                "type": "video"
+            },
+            {
+                "handle": "author",
+                "kind": "reference",
+                "label": "Author",
+                "type": "users"
+            },
+            {
+                "handle": "page_builder",
+                "kind": "blocks",
+                "label": "Page Builder",
+                "type": "replicator",
+                "sets": {
+                    "hero": {
+                        "label": "Hero",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "type": "text"
+                            },
+                            {
+                                "handle": "image",
+                                "kind": "reference",
+                                "label": "Image",
+                                "type": "video"
+                            }
+                        ]
+                    },
+                    "long_form": {
+                        "label": "Long Form",
+                        "instructions": "Prose column.",
+                        "fields": [
+                            {
+                                "handle": "content",
+                                "kind": "richtext",
+                                "label": "Content",
+                                "type": "bard",
+                                "meta": {
+                                    "save_html": false
+                                },
+                                "sets": {
+                                    "pullquote": {
+                                        "label": "Pull Quote",
+                                        "fields": [
+                                            {
+                                                "handle": "text",
+                                                "kind": "longtext",
+                                                "label": "Text",
+                                                "type": "textarea"
+                                            }
+                                        ]
+                                    }
+                                }
+                            },
+                            {
+                                "handle": "numbered",
+                                "kind": "toggle",
+                                "label": "Numbered",
+                                "type": "toggle"
+                            },
+                            {
+                                "handle": "width",
+                                "kind": "choice",
+                                "label": "Width",
+                                "options": {
+                                    "narrow": "Narrow",
+                                    "wide": "Wide"
+                                },
+                                "type": "button_group"
+                            }
+                        ]
+                    },
+                    "cards": {
+                        "label": "Card Grid",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "type": "text"
+                            },
+                            {
+                                "handle": "items",
+                                "kind": "rows",
+                                "label": "Items",
+                                "type": "grid",
+                                "fields": [
+                                    {
+                                        "handle": "text",
+                                        "kind": "text",
+                                        "label": "Text",
+                                        "type": "text"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    "related": {
+                        "label": "Related",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "type": "text"
+                            },
+                            {
+                                "handle": "limit",
+                                "kind": "number",
+                                "label": "Limit",
+                                "type": "integer"
+                            }
+                        ]
+                    },
+                    "gallery": {
+                        "label": "Gallery",
+                        "fields": [
+                            {
+                                "handle": "caption",
+                                "kind": "text",
+                                "label": "Caption",
+                                "type": "text"
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "learn",
+            "schema": "64c3faab1a68",
+            "input": {
+                "entries": [
+                    {
+                        "id": "351f3c67-18ff-4a86-9df1-40bea35770b2",
+                        "values": {
+                            "page_builder": [
+                                {
+                                    "id": "c-one",
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Steps",
+                                    "items": [
+                                        {
+                                            "id": "w1",
+                                            "text": "Website step"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "g-one",
+                                    "type": "gallery",
+                                    "enabled": true,
+                                    "caption": "Caption for one"
+                                }
+                            ],
+                            "title": "One",
+                            "summary": "A summary line about One that is long enough to count.",
+                            "author": "user-1",
+                            "featured_image": "articles/one.jpg"
+                        }
+                    },
+                    {
+                        "id": "55d25763-1e9f-4864-ae3e-954b3e0ae2d6",
+                        "values": {
+                            "page_builder": [
+                                {
+                                    "id": "c-two",
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Steps",
+                                    "items": [
+                                        {
+                                            "id": "w1",
+                                            "text": "Website step"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "g-two",
+                                    "type": "gallery",
+                                    "enabled": true,
+                                    "caption": "Caption for two"
+                                }
+                            ],
+                            "title": "Two",
+                            "summary": "A summary line about Two that is long enough to count.",
+                            "author": "user-1",
+                            "featured_image": "articles/two.jpg"
+                        }
+                    },
+                    {
+                        "id": "1ace126f-e032-4d4f-bd6f-0063ab4c9eb1",
+                        "values": {
+                            "page_builder": [
+                                {
+                                    "id": "c-three",
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Steps",
+                                    "items": [
+                                        {
+                                            "id": "w1",
+                                            "text": "Website step"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "g-three",
+                                    "type": "gallery",
+                                    "enabled": true,
+                                    "caption": "Caption for three"
+                                }
+                            ],
+                            "title": "Three",
+                            "summary": "A summary line about Three that is long enough to count.",
+                            "author": "user-1",
+                            "featured_image": "articles/three.jpg"
+                        }
+                    },
+                    {
+                        "id": "ecf3eaf5-e21b-434f-a538-9f1471f3c701",
+                        "values": {
+                            "page_builder": [
+                                {
+                                    "id": "c-four",
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Steps",
+                                    "items": [
+                                        {
+                                            "id": "p1",
+                                            "text": "App step"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "g-four",
+                                    "type": "gallery",
+                                    "enabled": true,
+                                    "caption": "Caption for four"
+                                }
+                            ],
+                            "title": "Four",
+                            "summary": "A summary line about Four that is long enough to count.",
+                            "author": "user-1",
+                            "featured_image": "articles/four.jpg"
+                        }
+                    },
+                    {
+                        "id": "eccc4fb6-fe0e-4df6-8f17-e8403ca9f379",
+                        "values": {
+                            "page_builder": [
+                                {
+                                    "id": "c-five",
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Steps",
+                                    "items": [
+                                        {
+                                            "id": "p1",
+                                            "text": "App step"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "g-five",
+                                    "type": "gallery",
+                                    "enabled": true,
+                                    "caption": "Caption for five"
+                                }
+                            ],
+                            "title": "Five",
+                            "summary": "A summary line about Five that is long enough to count.",
+                            "author": "user-1",
+                            "featured_image": "articles/five.jpg"
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "positions": {
+                    "page_builder/cards#0": {
+                        "heading": "Steps"
+                    }
+                },
+                "sequences": [],
+                "markup": [],
+                "links": []
+            }
+        },
+        {
+            "algorithm": "pattern",
+            "schema": "64c3faab1a68",
+            "input": {
+                "entries": [
+                    {
+                        "id": "351f3c67-18ff-4a86-9df1-40bea35770b2",
+                        "values": {
+                            "page_builder": [
+                                {
+                                    "id": "c-one",
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Steps",
+                                    "items": [
+                                        {
+                                            "id": "w1",
+                                            "text": "Website step"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "g-one",
+                                    "type": "gallery",
+                                    "enabled": true,
+                                    "caption": "Caption for one"
+                                }
+                            ],
+                            "title": "One",
+                            "summary": "A summary line about One that is long enough to count.",
+                            "author": "user-1",
+                            "featured_image": "articles/one.jpg"
+                        }
+                    },
+                    {
+                        "id": "55d25763-1e9f-4864-ae3e-954b3e0ae2d6",
+                        "values": {
+                            "page_builder": [
+                                {
+                                    "id": "c-two",
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Steps",
+                                    "items": [
+                                        {
+                                            "id": "w1",
+                                            "text": "Website step"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "g-two",
+                                    "type": "gallery",
+                                    "enabled": true,
+                                    "caption": "Caption for two"
+                                }
+                            ],
+                            "title": "Two",
+                            "summary": "A summary line about Two that is long enough to count.",
+                            "author": "user-1",
+                            "featured_image": "articles/two.jpg"
+                        }
+                    },
+                    {
+                        "id": "1ace126f-e032-4d4f-bd6f-0063ab4c9eb1",
+                        "values": {
+                            "page_builder": [
+                                {
+                                    "id": "c-three",
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Steps",
+                                    "items": [
+                                        {
+                                            "id": "w1",
+                                            "text": "Website step"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "g-three",
+                                    "type": "gallery",
+                                    "enabled": true,
+                                    "caption": "Caption for three"
+                                }
+                            ],
+                            "title": "Three",
+                            "summary": "A summary line about Three that is long enough to count.",
+                            "author": "user-1",
+                            "featured_image": "articles/three.jpg"
+                        }
+                    },
+                    {
+                        "id": "ecf3eaf5-e21b-434f-a538-9f1471f3c701",
+                        "values": {
+                            "page_builder": [
+                                {
+                                    "id": "c-four",
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Steps",
+                                    "items": [
+                                        {
+                                            "id": "p1",
+                                            "text": "App step"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "g-four",
+                                    "type": "gallery",
+                                    "enabled": true,
+                                    "caption": "Caption for four"
+                                }
+                            ],
+                            "title": "Four",
+                            "summary": "A summary line about Four that is long enough to count.",
+                            "author": "user-1",
+                            "featured_image": "articles/four.jpg"
+                        }
+                    },
+                    {
+                        "id": "eccc4fb6-fe0e-4df6-8f17-e8403ca9f379",
+                        "values": {
+                            "page_builder": [
+                                {
+                                    "id": "c-five",
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Steps",
+                                    "items": [
+                                        {
+                                            "id": "p1",
+                                            "text": "App step"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "g-five",
+                                    "type": "gallery",
+                                    "enabled": true,
+                                    "caption": "Caption for five"
+                                }
+                            ],
+                            "title": "Five",
+                            "summary": "A summary line about Five that is long enough to count.",
+                            "author": "user-1",
+                            "featured_image": "articles/five.jpg"
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "entries": 5,
+                "words": 30,
+                "blocks": {
+                    "page_builder": {
+                        "sequence": [
+                            "cards",
+                            "gallery"
+                        ],
+                        "usage": {
+                            "cards": 1.0,
+                            "gallery": 1.0
+                        },
+                        "fixed": {
+                            "cards": {
+                                "heading": "Steps",
+                                "items": [
+                                    {
+                                        "id": "w1",
+                                        "text": "Website step"
+                                    }
+                                ]
+                            }
+                        },
+                        "used": {
+                            "cards": [
+                                "heading",
+                                "items"
+                            ],
+                            "gallery": [
+                                "caption"
+                            ]
+                        },
+                        "boilerplate": [
+                            "cards"
+                        ]
+                    }
+                },
+                "fixed": {
+                    "author": "user-1"
+                },
+                "examples": [
+                    {
+                        "title": "One",
+                        "summary": "A summary line about One that is long enough to count.",
+                        "page_builder": [
+                            {
+                                "type": "cards"
+                            },
+                            {
+                                "type": "gallery",
+                                "caption": "Caption for one"
+                            }
+                        ]
+                    },
+                    {
+                        "title": "Two",
+                        "summary": "A summary line about Two that is long enough to count.",
+                        "page_builder": [
+                            {
+                                "type": "cards"
+                            },
+                            {
+                                "type": "gallery",
+                                "caption": "Caption for two"
+                            }
+                        ]
+                    }
+                ],
+                "filled": {
+                    "title": 1.0,
+                    "summary": 1.0,
+                    "featured_image": 1.0,
+                    "author": 1.0,
+                    "page_builder": 1.0,
+                    "cards.heading": 1.0,
+                    "cards.items": 1.0,
+                    "gallery.caption": 1.0
+                },
+                "house": {
+                    "positions": {
+                        "page_builder/cards#0": {
+                            "heading": "Steps"
+                        }
+                    },
+                    "sequences": [],
+                    "markup": [],
+                    "links": []
+                }
+            }
+        }
+    ]
+}

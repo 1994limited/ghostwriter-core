@@ -1,0 +1,554 @@
+{
+    "addon": "statamic",
+    "source": "Test: NineteenNinetyFour\\Ghostwriter\\Tests\\Feature\\ImageTest::test_finished_images_go_into_the_form_with_the_draft",
+    "schemas": {
+        "a564c7333930": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "required": true,
+                "type": "text"
+            },
+            {
+                "handle": "summary",
+                "kind": "longtext",
+                "label": "Summary",
+                "type": "textarea"
+            },
+            {
+                "handle": "cover",
+                "kind": "reference",
+                "label": "Cover",
+                "type": "assets",
+                "files": true,
+                "meta": {
+                    "container": "assets",
+                    "folder": "",
+                    "max_files": 1,
+                    "images": true
+                }
+            },
+            {
+                "handle": "blocks",
+                "kind": "blocks",
+                "label": "Blocks",
+                "type": "replicator",
+                "sets": {
+                    "banner": {
+                        "label": "Banner",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "type": "text"
+                            },
+                            {
+                                "handle": "picture",
+                                "kind": "reference",
+                                "label": "Picture",
+                                "type": "assets",
+                                "files": true,
+                                "meta": {
+                                    "container": "assets",
+                                    "folder": "",
+                                    "max_files": 1,
+                                    "images": true
+                                }
+                            }
+                        ]
+                    },
+                    "text": {
+                        "label": "Text",
+                        "fields": [
+                            {
+                                "handle": "body",
+                                "kind": "longtext",
+                                "label": "Body",
+                                "type": "textarea"
+                            },
+                            {
+                                "handle": "aside",
+                                "kind": "reference",
+                                "label": "Aside",
+                                "type": "assets",
+                                "files": true,
+                                "meta": {
+                                    "container": "assets",
+                                    "folder": "",
+                                    "max_files": null,
+                                    "images": true
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "learn",
+            "schema": "a564c7333930",
+            "input": {
+                "entries": [
+                    {
+                        "id": "b1f1dd77-7f50-43e7-b9a5-21695278358a",
+                        "values": {
+                            "title": "One",
+                            "cover": "stories/one.png",
+                            "blocks": [
+                                {
+                                    "id": "b",
+                                    "type": "banner",
+                                    "enabled": true,
+                                    "heading": "Hi one",
+                                    "picture": "banners/one.png"
+                                },
+                                {
+                                    "id": "t",
+                                    "type": "text",
+                                    "enabled": true,
+                                    "body": "Body of one"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "d91be336-0a7f-4f3a-85f9-ef05062802cf",
+                        "values": {
+                            "title": "Two",
+                            "cover": "stories/two.png",
+                            "blocks": [
+                                {
+                                    "id": "b",
+                                    "type": "banner",
+                                    "enabled": true,
+                                    "heading": "Hi two",
+                                    "picture": "banners/two.png"
+                                },
+                                {
+                                    "id": "t",
+                                    "type": "text",
+                                    "enabled": true,
+                                    "body": "Body of two"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "positions": [],
+                "sequences": [],
+                "markup": [],
+                "links": []
+            }
+        },
+        {
+            "algorithm": "pattern",
+            "schema": "a564c7333930",
+            "input": {
+                "entries": [
+                    {
+                        "id": "b1f1dd77-7f50-43e7-b9a5-21695278358a",
+                        "values": {
+                            "title": "One",
+                            "cover": "stories/one.png",
+                            "blocks": [
+                                {
+                                    "id": "b",
+                                    "type": "banner",
+                                    "enabled": true,
+                                    "heading": "Hi one",
+                                    "picture": "banners/one.png"
+                                },
+                                {
+                                    "id": "t",
+                                    "type": "text",
+                                    "enabled": true,
+                                    "body": "Body of one"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "d91be336-0a7f-4f3a-85f9-ef05062802cf",
+                        "values": {
+                            "title": "Two",
+                            "cover": "stories/two.png",
+                            "blocks": [
+                                {
+                                    "id": "b",
+                                    "type": "banner",
+                                    "enabled": true,
+                                    "heading": "Hi two",
+                                    "picture": "banners/two.png"
+                                },
+                                {
+                                    "id": "t",
+                                    "type": "text",
+                                    "enabled": true,
+                                    "body": "Body of two"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "entries": 2,
+                "words": 14,
+                "blocks": {
+                    "blocks": {
+                        "sequence": [
+                            "banner",
+                            "text"
+                        ],
+                        "usage": {
+                            "banner": 1.0,
+                            "text": 1.0
+                        },
+                        "fixed": [],
+                        "used": {
+                            "banner": [
+                                "heading",
+                                "picture"
+                            ],
+                            "text": [
+                                "body"
+                            ]
+                        },
+                        "boilerplate": []
+                    }
+                },
+                "fixed": [],
+                "examples": [
+                    {
+                        "title": "One",
+                        "blocks": [
+                            {
+                                "type": "banner",
+                                "heading": "Hi one"
+                            },
+                            {
+                                "type": "text",
+                                "body": "Body of one"
+                            }
+                        ]
+                    },
+                    {
+                        "title": "Two",
+                        "blocks": [
+                            {
+                                "type": "banner",
+                                "heading": "Hi two"
+                            },
+                            {
+                                "type": "text",
+                                "body": "Body of two"
+                            }
+                        ]
+                    }
+                ],
+                "filled": {
+                    "title": 1.0,
+                    "summary": 0.0,
+                    "cover": 1.0,
+                    "blocks": 1.0,
+                    "banner.heading": 1.0,
+                    "banner.picture": 1.0,
+                    "text.body": 1.0,
+                    "text.aside": 0.0
+                },
+                "house": {
+                    "positions": [],
+                    "sequences": [],
+                    "markup": [],
+                    "links": []
+                }
+            }
+        },
+        {
+            "algorithm": "build",
+            "schema": "a564c7333930",
+            "input": {
+                "draft": {
+                    "title": "A New Story",
+                    "summary": "What happened next.",
+                    "blocks": [
+                        {
+                            "type": "banner",
+                            "heading": "Hello"
+                        },
+                        {
+                            "type": "text",
+                            "body": "Words."
+                        }
+                    ]
+                },
+                "pattern": {
+                    "entries": 2,
+                    "words": 14,
+                    "blocks": {
+                        "blocks": {
+                            "sequence": [
+                                "banner",
+                                "text"
+                            ],
+                            "usage": {
+                                "banner": 1.0,
+                                "text": 1.0
+                            },
+                            "fixed": [],
+                            "used": {
+                                "banner": [
+                                    "heading",
+                                    "picture"
+                                ],
+                                "text": [
+                                    "body"
+                                ]
+                            },
+                            "boilerplate": []
+                        }
+                    },
+                    "fixed": [],
+                    "examples": [
+                        {
+                            "title": "One",
+                            "blocks": [
+                                {
+                                    "type": "banner",
+                                    "heading": "Hi one"
+                                },
+                                {
+                                    "type": "text",
+                                    "body": "Body of one"
+                                }
+                            ]
+                        },
+                        {
+                            "title": "Two",
+                            "blocks": [
+                                {
+                                    "type": "banner",
+                                    "heading": "Hi two"
+                                },
+                                {
+                                    "type": "text",
+                                    "body": "Body of two"
+                                }
+                            ]
+                        }
+                    ],
+                    "filled": {
+                        "title": 1.0,
+                        "summary": 0.0,
+                        "cover": 1.0,
+                        "blocks": 1.0,
+                        "banner.heading": 1.0,
+                        "banner.picture": 1.0,
+                        "text.body": 1.0,
+                        "text.aside": 0.0
+                    },
+                    "house": {
+                        "positions": [],
+                        "sequences": [],
+                        "markup": [],
+                        "links": []
+                    }
+                },
+                "defaults": []
+            },
+            "expected": {
+                "data": {
+                    "title": "A New Story",
+                    "summary": "What happened next.",
+                    "blocks": [
+                        {
+                            "id": "7f262187",
+                            "type": "banner",
+                            "enabled": true,
+                            "heading": "Hello"
+                        },
+                        {
+                            "id": "3897ec44",
+                            "type": "text",
+                            "enabled": true,
+                            "body": "Words."
+                        }
+                    ]
+                },
+                "notes": [
+                    "Still to choose by hand: Banner: Picture."
+                ]
+            }
+        },
+        {
+            "algorithm": "apply",
+            "schema": "a564c7333930",
+            "input": {
+                "data": {
+                    "title": "A New Story",
+                    "summary": "What happened next.",
+                    "blocks": [
+                        {
+                            "id": "7f262187",
+                            "type": "banner",
+                            "enabled": true,
+                            "heading": "Hello"
+                        },
+                        {
+                            "id": "3897ec44",
+                            "type": "text",
+                            "enabled": true,
+                            "body": "Words."
+                        }
+                    ]
+                },
+                "style": {
+                    "positions": [],
+                    "sequences": [],
+                    "markup": [],
+                    "links": []
+                },
+                "self": {
+                    "id": null,
+                    "title": "A New Story"
+                }
+            },
+            "expected": {
+                "data": {
+                    "title": "A New Story",
+                    "summary": "What happened next.",
+                    "blocks": [
+                        {
+                            "id": "7f262187",
+                            "type": "banner",
+                            "enabled": true,
+                            "heading": "Hello"
+                        },
+                        {
+                            "id": "3897ec44",
+                            "type": "text",
+                            "enabled": true,
+                            "body": "Words."
+                        }
+                    ]
+                },
+                "toFill": []
+            }
+        },
+        {
+            "algorithm": "apply",
+            "schema": "a564c7333930",
+            "input": {
+                "data": {
+                    "title": "A New Story",
+                    "summary": "What happened next.",
+                    "blocks": [
+                        {
+                            "id": "53107cf6",
+                            "type": "banner",
+                            "enabled": true,
+                            "heading": "Hello"
+                        },
+                        {
+                            "id": "26e073f2",
+                            "type": "text",
+                            "enabled": true,
+                            "body": "Words."
+                        }
+                    ]
+                },
+                "style": {
+                    "positions": [],
+                    "sequences": [],
+                    "markup": [],
+                    "links": []
+                },
+                "self": {
+                    "id": null,
+                    "title": "A New Story"
+                }
+            },
+            "expected": {
+                "data": {
+                    "title": "A New Story",
+                    "summary": "What happened next.",
+                    "blocks": [
+                        {
+                            "id": "53107cf6",
+                            "type": "banner",
+                            "enabled": true,
+                            "heading": "Hello"
+                        },
+                        {
+                            "id": "26e073f2",
+                            "type": "text",
+                            "enabled": true,
+                            "body": "Words."
+                        }
+                    ]
+                },
+                "toFill": []
+            }
+        },
+        {
+            "algorithm": "linkToSelf",
+            "schema": "a564c7333930",
+            "input": {
+                "data": {
+                    "title": "A New Story",
+                    "summary": "What happened next.",
+                    "blocks": [
+                        {
+                            "id": "53107cf6",
+                            "type": "banner",
+                            "enabled": true,
+                            "heading": "Hello",
+                            "picture": "ghostwriter/image-placeholder.png"
+                        },
+                        {
+                            "id": "26e073f2",
+                            "type": "text",
+                            "enabled": true,
+                            "body": "Words."
+                        }
+                    ],
+                    "cover": "ghostwriter/image-placeholder.png"
+                },
+                "style": {
+                    "positions": [],
+                    "sequences": [],
+                    "markup": [],
+                    "links": []
+                },
+                "id": "ade28ff6-39d4-4c60-af77-72d46ea10dde",
+                "title": "A New Story"
+            },
+            "expected": {
+                "title": "A New Story",
+                "summary": "What happened next.",
+                "blocks": [
+                    {
+                        "id": "53107cf6",
+                        "type": "banner",
+                        "enabled": true,
+                        "heading": "Hello",
+                        "picture": "ghostwriter/image-placeholder.png"
+                    },
+                    {
+                        "id": "26e073f2",
+                        "type": "text",
+                        "enabled": true,
+                        "body": "Words."
+                    }
+                ],
+                "cover": "ghostwriter/image-placeholder.png"
+            }
+        }
+    ]
+}

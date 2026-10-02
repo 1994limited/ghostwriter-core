@@ -1,0 +1,503 @@
+{
+    "addon": "statamic",
+    "source": "Test: NineteenNinetyFour\\Ghostwriter\\Tests\\Feature\\WritingTest::test_kinds_of_entry_are_found_from_how_entries_are_built",
+    "schemas": {
+        "64c3faab1a68": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "required": true,
+                "type": "text"
+            },
+            {
+                "handle": "summary",
+                "kind": "longtext",
+                "label": "Summary",
+                "instructions": "Shown in lists.",
+                "type": "textarea"
+            },
+            {
+                "handle": "featured_image",
+                "kind": "reference",
+                "label": "Featured Image",
+                "type": "video"
+            },
+            {
+                "handle": "author",
+                "kind": "reference",
+                "label": "Author",
+                "type": "users"
+            },
+            {
+                "handle": "page_builder",
+                "kind": "blocks",
+                "label": "Page Builder",
+                "type": "replicator",
+                "sets": {
+                    "hero": {
+                        "label": "Hero",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "type": "text"
+                            },
+                            {
+                                "handle": "image",
+                                "kind": "reference",
+                                "label": "Image",
+                                "type": "video"
+                            }
+                        ]
+                    },
+                    "long_form": {
+                        "label": "Long Form",
+                        "instructions": "Prose column.",
+                        "fields": [
+                            {
+                                "handle": "content",
+                                "kind": "richtext",
+                                "label": "Content",
+                                "type": "bard",
+                                "meta": {
+                                    "save_html": false
+                                },
+                                "sets": {
+                                    "pullquote": {
+                                        "label": "Pull Quote",
+                                        "fields": [
+                                            {
+                                                "handle": "text",
+                                                "kind": "longtext",
+                                                "label": "Text",
+                                                "type": "textarea"
+                                            }
+                                        ]
+                                    }
+                                }
+                            },
+                            {
+                                "handle": "numbered",
+                                "kind": "toggle",
+                                "label": "Numbered",
+                                "type": "toggle"
+                            },
+                            {
+                                "handle": "width",
+                                "kind": "choice",
+                                "label": "Width",
+                                "options": {
+                                    "narrow": "Narrow",
+                                    "wide": "Wide"
+                                },
+                                "type": "button_group"
+                            }
+                        ]
+                    },
+                    "cards": {
+                        "label": "Card Grid",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "type": "text"
+                            },
+                            {
+                                "handle": "items",
+                                "kind": "rows",
+                                "label": "Items",
+                                "type": "grid",
+                                "fields": [
+                                    {
+                                        "handle": "text",
+                                        "kind": "text",
+                                        "label": "Text",
+                                        "type": "text"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    "related": {
+                        "label": "Related",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "type": "text"
+                            },
+                            {
+                                "handle": "limit",
+                                "kind": "number",
+                                "label": "Limit",
+                                "type": "integer"
+                            }
+                        ]
+                    },
+                    "gallery": {
+                        "label": "Gallery",
+                        "fields": [
+                            {
+                                "handle": "caption",
+                                "kind": "text",
+                                "label": "Caption",
+                                "type": "text"
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "kinds",
+            "schema": "64c3faab1a68",
+            "input": {
+                "entries": [
+                    {
+                        "id": "38dde920-923c-4f0a-b566-0f77923c1726",
+                        "title": "Landing B",
+                        "values": {
+                            "page_builder": [
+                                {
+                                    "id": "l1",
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "heading": "Landing B"
+                                },
+                                {
+                                    "id": "l2",
+                                    "type": "gallery",
+                                    "enabled": true,
+                                    "caption": "Our work"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "1e166485-a3b8-4083-8938-152370488ebd",
+                        "title": "One-off",
+                        "values": {
+                            "page_builder": [
+                                {
+                                    "id": "o1",
+                                    "type": "related",
+                                    "enabled": true
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "b2e72b7a-c98d-462a-9abc-e97ed6c4e856",
+                        "title": "One",
+                        "values": {
+                            "page_builder": [
+                                {
+                                    "id": "a1",
+                                    "type": "hero",
+                                    "enabled": true
+                                },
+                                {
+                                    "id": "a2",
+                                    "type": "long_form",
+                                    "enabled": true,
+                                    "numbered": true,
+                                    "width": "narrow",
+                                    "content": [
+                                        {
+                                            "type": "heading",
+                                            "attrs": {
+                                                "level": 2
+                                            },
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "The Problem"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "paragraph",
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "A paragraph about one that says something specific enough to be worth reading twice over."
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "set",
+                                            "attrs": {
+                                                "id": "s1",
+                                                "values": {
+                                                    "type": "pullquote",
+                                                    "text": "Challenge accepted."
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "a3",
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Broader uses",
+                                    "items": [
+                                        {
+                                            "id": "r1",
+                                            "text": "Property searches"
+                                        },
+                                        {
+                                            "id": "r2",
+                                            "text": "Recipe selection"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "a4",
+                                    "type": "related",
+                                    "enabled": true,
+                                    "heading": "More articles",
+                                    "limit": 3
+                                },
+                                {
+                                    "id": "a5",
+                                    "type": "gallery",
+                                    "enabled": false,
+                                    "caption": "Switched off"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "ca170056-7a72-445f-8379-cb362d66de2e",
+                        "title": "Two",
+                        "values": {
+                            "page_builder": [
+                                {
+                                    "id": "a1",
+                                    "type": "hero",
+                                    "enabled": true
+                                },
+                                {
+                                    "id": "a2",
+                                    "type": "long_form",
+                                    "enabled": true,
+                                    "numbered": true,
+                                    "width": "narrow",
+                                    "content": [
+                                        {
+                                            "type": "heading",
+                                            "attrs": {
+                                                "level": 2
+                                            },
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "The Problem"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "paragraph",
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "A paragraph about two that says something specific enough to be worth reading twice over."
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "set",
+                                            "attrs": {
+                                                "id": "s1",
+                                                "values": {
+                                                    "type": "pullquote",
+                                                    "text": "Challenge accepted."
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "a3",
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Broader uses",
+                                    "items": [
+                                        {
+                                            "id": "r1",
+                                            "text": "Property searches"
+                                        },
+                                        {
+                                            "id": "r2",
+                                            "text": "Recipe selection"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "a4",
+                                    "type": "related",
+                                    "enabled": true,
+                                    "heading": "More articles",
+                                    "limit": 3
+                                },
+                                {
+                                    "id": "a5",
+                                    "type": "gallery",
+                                    "enabled": false,
+                                    "caption": "Switched off"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "9266bd1a-7d80-44da-ba30-c92df1da0887",
+                        "title": "Three",
+                        "values": {
+                            "page_builder": [
+                                {
+                                    "id": "a1",
+                                    "type": "hero",
+                                    "enabled": true
+                                },
+                                {
+                                    "id": "a2",
+                                    "type": "long_form",
+                                    "enabled": true,
+                                    "numbered": true,
+                                    "width": "narrow",
+                                    "content": [
+                                        {
+                                            "type": "heading",
+                                            "attrs": {
+                                                "level": 2
+                                            },
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "The Problem"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "paragraph",
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "A paragraph about three that says something specific enough to be worth reading twice over."
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "set",
+                                            "attrs": {
+                                                "id": "s1",
+                                                "values": {
+                                                    "type": "pullquote",
+                                                    "text": "Challenge accepted."
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "a3",
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Broader uses",
+                                    "items": [
+                                        {
+                                            "id": "r1",
+                                            "text": "Property searches"
+                                        },
+                                        {
+                                            "id": "r2",
+                                            "text": "Recipe selection"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "a4",
+                                    "type": "related",
+                                    "enabled": true,
+                                    "heading": "More articles",
+                                    "limit": 3
+                                },
+                                {
+                                    "id": "a5",
+                                    "type": "gallery",
+                                    "enabled": false,
+                                    "caption": "Switched off"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "a7024a01-2e1b-49c9-891d-79aa46525b1a",
+                        "title": "Landing A",
+                        "values": {
+                            "page_builder": [
+                                {
+                                    "id": "l1",
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "heading": "Landing A"
+                                },
+                                {
+                                    "id": "l2",
+                                    "type": "gallery",
+                                    "enabled": true,
+                                    "caption": "Our work"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": [
+                {
+                    "label": "Like One, Two and 1 more",
+                    "count": 3,
+                    "examples": [
+                        "b2e72b7a-c98d-462a-9abc-e97ed6c4e856",
+                        "ca170056-7a72-445f-8379-cb362d66de2e",
+                        "9266bd1a-7d80-44da-ba30-c92df1da0887"
+                    ],
+                    "titles": [
+                        "One",
+                        "Two",
+                        "Three"
+                    ],
+                    "blocks": [
+                        "hero",
+                        "long_form",
+                        "cards",
+                        "related"
+                    ]
+                },
+                {
+                    "label": "Like Landing B and Landing A",
+                    "count": 2,
+                    "examples": [
+                        "38dde920-923c-4f0a-b566-0f77923c1726",
+                        "a7024a01-2e1b-49c9-891d-79aa46525b1a"
+                    ],
+                    "titles": [
+                        "Landing B",
+                        "Landing A"
+                    ],
+                    "blocks": [
+                        "hero",
+                        "gallery"
+                    ]
+                }
+            ]
+        }
+    ]
+}

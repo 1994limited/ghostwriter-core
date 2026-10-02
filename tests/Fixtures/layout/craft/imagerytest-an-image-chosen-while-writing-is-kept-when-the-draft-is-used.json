@@ -1,0 +1,555 @@
+{
+    "addon": "craft",
+    "source": "Test: nineteenninetyfour\\ghostwriter\\tests\\unit\\ImageryTest::testAnImageChosenWhileWritingIsKeptWhenTheDraftIsUsed",
+    "schemas": {
+        "7cf7024a1bfc": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "required": true,
+                "type": "title"
+            },
+            {
+                "handle": "cover",
+                "kind": "reference",
+                "label": "Cover",
+                "type": "craft\\fields\\Assets",
+                "files": true,
+                "meta": {
+                    "max_files": 1,
+                    "sources": [
+                        "volume:ae2d13b1-fdbc-458d-a6fe-ee21a3fac685"
+                    ],
+                    "source": null,
+                    "images": true
+                }
+            },
+            {
+                "handle": "storyBuilder",
+                "kind": "blocks",
+                "label": "StoryBuilder",
+                "type": "benf\\neo\\Field",
+                "engine": "neo",
+                "sets": {
+                    "banner": {
+                        "label": "Banner",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "type": "craft\\fields\\PlainText"
+                            },
+                            {
+                                "handle": "media",
+                                "kind": "reference",
+                                "label": "Media",
+                                "type": "craft\\fields\\Matrix",
+                                "engine": "matrix",
+                                "sets": {
+                                    "mediaItem": {
+                                        "label": "MediaItem",
+                                        "fields": [
+                                            {
+                                                "handle": "picture",
+                                                "kind": "reference",
+                                                "label": "Picture",
+                                                "type": "craft\\fields\\Assets",
+                                                "files": true,
+                                                "meta": {
+                                                    "max_files": 1,
+                                                    "sources": [
+                                                        "volume:ae2d13b1-fdbc-458d-a6fe-ee21a3fac685"
+                                                    ],
+                                                    "source": null,
+                                                    "images": true
+                                                }
+                                            }
+                                        ]
+                                    }
+                                }
+                            },
+                            {
+                                "handle": "background",
+                                "kind": "reference",
+                                "label": "Background",
+                                "type": "craft\\fields\\Assets",
+                                "files": true,
+                                "meta": {
+                                    "max_files": 1,
+                                    "sources": [
+                                        "volume:ae2d13b1-fdbc-458d-a6fe-ee21a3fac685"
+                                    ],
+                                    "source": null,
+                                    "images": true
+                                }
+                            }
+                        ]
+                    },
+                    "footnote": {
+                        "label": "Footnote",
+                        "fields": [
+                            {
+                                "handle": "note",
+                                "kind": "text",
+                                "label": "Note",
+                                "type": "craft\\fields\\PlainText"
+                            },
+                            {
+                                "handle": "noteIcon",
+                                "kind": "reference",
+                                "label": "NoteIcon",
+                                "required": true,
+                                "type": "craft\\fields\\Assets",
+                                "files": true,
+                                "meta": {
+                                    "max_files": 1,
+                                    "sources": [
+                                        "volume:ae2d13b1-fdbc-458d-a6fe-ee21a3fac685"
+                                    ],
+                                    "source": null,
+                                    "images": true
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "learn",
+            "schema": "7cf7024a1bfc",
+            "input": {
+                "entries": [
+                    {
+                        "id": 454,
+                        "values": {
+                            "title": "Three",
+                            "cover": [
+                                452
+                            ],
+                            "storyBuilder": [
+                                {
+                                    "id": 455,
+                                    "type": "banner",
+                                    "enabled": true,
+                                    "heading": "Hi three",
+                                    "media": [
+                                        {
+                                            "id": 456,
+                                            "type": "mediaItem",
+                                            "enabled": true,
+                                            "picture": [
+                                                453
+                                            ]
+                                        }
+                                    ],
+                                    "background": []
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": 446,
+                        "values": {
+                            "title": "Two",
+                            "cover": [
+                                444
+                            ],
+                            "storyBuilder": [
+                                {
+                                    "id": 447,
+                                    "type": "banner",
+                                    "enabled": true,
+                                    "heading": "Hi two",
+                                    "media": [
+                                        {
+                                            "id": 448,
+                                            "type": "mediaItem",
+                                            "enabled": true,
+                                            "picture": [
+                                                445
+                                            ]
+                                        }
+                                    ],
+                                    "background": []
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": 438,
+                        "values": {
+                            "title": "One",
+                            "cover": [
+                                436
+                            ],
+                            "storyBuilder": [
+                                {
+                                    "id": 439,
+                                    "type": "banner",
+                                    "enabled": true,
+                                    "heading": "Hi one",
+                                    "media": [
+                                        {
+                                            "id": 440,
+                                            "type": "mediaItem",
+                                            "enabled": true,
+                                            "picture": [
+                                                437
+                                            ]
+                                        }
+                                    ],
+                                    "background": []
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "positions": [],
+                "sequences": {
+                    "storyBuilder/banner#0/media": [
+                        "mediaItem"
+                    ]
+                },
+                "markup": [],
+                "links": []
+            }
+        },
+        {
+            "algorithm": "pattern",
+            "schema": "7cf7024a1bfc",
+            "input": {
+                "entries": [
+                    {
+                        "id": 454,
+                        "values": {
+                            "title": "Three",
+                            "cover": [
+                                452
+                            ],
+                            "storyBuilder": [
+                                {
+                                    "id": 455,
+                                    "type": "banner",
+                                    "enabled": true,
+                                    "heading": "Hi three",
+                                    "media": [
+                                        {
+                                            "id": 456,
+                                            "type": "mediaItem",
+                                            "enabled": true,
+                                            "picture": [
+                                                453
+                                            ]
+                                        }
+                                    ],
+                                    "background": []
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": 446,
+                        "values": {
+                            "title": "Two",
+                            "cover": [
+                                444
+                            ],
+                            "storyBuilder": [
+                                {
+                                    "id": 447,
+                                    "type": "banner",
+                                    "enabled": true,
+                                    "heading": "Hi two",
+                                    "media": [
+                                        {
+                                            "id": 448,
+                                            "type": "mediaItem",
+                                            "enabled": true,
+                                            "picture": [
+                                                445
+                                            ]
+                                        }
+                                    ],
+                                    "background": []
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": 438,
+                        "values": {
+                            "title": "One",
+                            "cover": [
+                                436
+                            ],
+                            "storyBuilder": [
+                                {
+                                    "id": 439,
+                                    "type": "banner",
+                                    "enabled": true,
+                                    "heading": "Hi one",
+                                    "media": [
+                                        {
+                                            "id": 440,
+                                            "type": "mediaItem",
+                                            "enabled": true,
+                                            "picture": [
+                                                437
+                                            ]
+                                        }
+                                    ],
+                                    "background": []
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "entries": 3,
+                "words": 8,
+                "blocks": {
+                    "storyBuilder": {
+                        "sequence": [
+                            "banner"
+                        ],
+                        "usage": {
+                            "banner": 1.0
+                        },
+                        "fixed": [],
+                        "used": {
+                            "banner": [
+                                "heading",
+                                "media"
+                            ]
+                        },
+                        "boilerplate": []
+                    }
+                },
+                "fixed": [],
+                "examples": [
+                    {
+                        "title": "Three",
+                        "storyBuilder": [
+                            {
+                                "type": "banner",
+                                "heading": "Hi three"
+                            }
+                        ]
+                    },
+                    {
+                        "title": "Two",
+                        "storyBuilder": [
+                            {
+                                "type": "banner",
+                                "heading": "Hi two"
+                            }
+                        ]
+                    }
+                ],
+                "filled": {
+                    "title": 1.0,
+                    "cover": 1.0,
+                    "storyBuilder": 1.0,
+                    "banner.heading": 1.0,
+                    "banner.media": 1.0,
+                    "mediaItem.picture": 1.0,
+                    "banner.background": 0.0
+                },
+                "house": {
+                    "positions": [],
+                    "sequences": {
+                        "storyBuilder/banner#0/media": [
+                            "mediaItem"
+                        ]
+                    },
+                    "markup": [],
+                    "links": []
+                }
+            }
+        },
+        {
+            "algorithm": "describe",
+            "schema": "7cf7024a1bfc",
+            "input": {
+                "pattern": {
+                    "entries": 3,
+                    "words": 8,
+                    "blocks": {
+                        "storyBuilder": {
+                            "sequence": [
+                                "banner"
+                            ],
+                            "usage": {
+                                "banner": 1.0
+                            },
+                            "fixed": [],
+                            "used": {
+                                "banner": [
+                                    "heading",
+                                    "media"
+                                ]
+                            },
+                            "boilerplate": []
+                        }
+                    },
+                    "fixed": [],
+                    "examples": [
+                        {
+                            "title": "Three",
+                            "storyBuilder": [
+                                {
+                                    "type": "banner",
+                                    "heading": "Hi three"
+                                }
+                            ]
+                        },
+                        {
+                            "title": "Two",
+                            "storyBuilder": [
+                                {
+                                    "type": "banner",
+                                    "heading": "Hi two"
+                                }
+                            ]
+                        }
+                    ],
+                    "filled": {
+                        "title": 1.0,
+                        "cover": 1.0,
+                        "storyBuilder": 1.0,
+                        "banner.heading": 1.0,
+                        "banner.media": 1.0,
+                        "mediaItem.picture": 1.0,
+                        "banner.background": 0.0
+                    },
+                    "house": {
+                        "positions": [],
+                        "sequences": {
+                            "storyBuilder/banner#0/media": [
+                                "mediaItem"
+                            ]
+                        },
+                        "markup": [],
+                        "links": []
+                    }
+                }
+            },
+            "expected": "- `title` (short text, required)\n- `storyBuilder` (list of blocks)\n  Each block is written as `type: <block>` followed by that block's fields. Blocks:\n  - `banner`: Banner, on 100% of entries\n      - `heading` (short text)\n  Also available but not normally used here: `footnote` (Footnote).\n\nEntries in this section usually build `storyBuilder` from these blocks, in this order: banner. Follow that order unless the brief gives a reason not to."
+        },
+        {
+            "algorithm": "build",
+            "schema": "7cf7024a1bfc",
+            "input": {
+                "draft": {
+                    "title": "A Warmer Story"
+                },
+                "pattern": {
+                    "entries": 3,
+                    "words": 8,
+                    "blocks": {
+                        "storyBuilder": {
+                            "sequence": [
+                                "banner"
+                            ],
+                            "usage": {
+                                "banner": 1.0
+                            },
+                            "fixed": [],
+                            "used": {
+                                "banner": [
+                                    "heading",
+                                    "media"
+                                ]
+                            },
+                            "boilerplate": []
+                        }
+                    },
+                    "fixed": [],
+                    "examples": [
+                        {
+                            "title": "Three",
+                            "storyBuilder": [
+                                {
+                                    "type": "banner",
+                                    "heading": "Hi three"
+                                }
+                            ]
+                        },
+                        {
+                            "title": "Two",
+                            "storyBuilder": [
+                                {
+                                    "type": "banner",
+                                    "heading": "Hi two"
+                                }
+                            ]
+                        }
+                    ],
+                    "filled": {
+                        "title": 1.0,
+                        "cover": 1.0,
+                        "storyBuilder": 1.0,
+                        "banner.heading": 1.0,
+                        "banner.media": 1.0,
+                        "mediaItem.picture": 1.0,
+                        "banner.background": 0.0
+                    },
+                    "house": {
+                        "positions": [],
+                        "sequences": {
+                            "storyBuilder/banner#0/media": [
+                                "mediaItem"
+                            ]
+                        },
+                        "markup": [],
+                        "links": []
+                    }
+                },
+                "defaults": []
+            },
+            "expected": {
+                "data": {
+                    "title": "A Warmer Story"
+                },
+                "notes": []
+            }
+        },
+        {
+            "algorithm": "apply",
+            "schema": "7cf7024a1bfc",
+            "input": {
+                "data": {
+                    "title": "A Warmer Story"
+                },
+                "style": {
+                    "positions": [],
+                    "sequences": {
+                        "storyBuilder/banner#0/media": [
+                            "mediaItem"
+                        ]
+                    },
+                    "markup": [],
+                    "links": []
+                },
+                "self": {
+                    "id": 461,
+                    "title": "A Warmer Story"
+                }
+            },
+            "expected": {
+                "data": {
+                    "title": "A Warmer Story"
+                },
+                "toFill": []
+            }
+        }
+    ]
+}

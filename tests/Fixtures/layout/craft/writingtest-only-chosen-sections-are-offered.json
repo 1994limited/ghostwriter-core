@@ -1,0 +1,37 @@
+{
+    "addon": "craft",
+    "source": "Test: nineteenninetyfour\\ghostwriter\\tests\\unit\\WritingTest::testOnlyChosenSectionsAreOffered",
+    "schemas": {
+        "f06eb785f5c2": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "required": true,
+                "type": "title"
+            },
+            {
+                "handle": "subheading",
+                "kind": "text",
+                "label": "Subheading",
+                "type": "craft\\fields\\PlainText"
+            },
+            {
+                "handle": "thumbnail",
+                "kind": "reference",
+                "label": "Thumbnail",
+                "type": "craft\\fields\\Entries"
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "kinds",
+            "schema": "f06eb785f5c2",
+            "input": {
+                "entries": []
+            },
+            "expected": []
+        }
+    ]
+}

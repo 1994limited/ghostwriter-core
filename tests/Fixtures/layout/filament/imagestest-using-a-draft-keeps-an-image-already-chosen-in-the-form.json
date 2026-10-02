@@ -1,0 +1,276 @@
+{
+    "addon": "filament",
+    "source": "Test: NineteenNinetyFour\\Ghostwriter\\Filament\\Tests\\Feature\\ImagesTest::test_using_a_draft_keeps_an_image_already_chosen_in_the_form",
+    "schemas": {
+        "6705b8879a61": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "required": true,
+                "type": "Filament\\Forms\\Components\\TextInput",
+                "path": "title",
+                "meta": {
+                    "max_length": 120
+                }
+            },
+            {
+                "handle": "summary",
+                "kind": "longtext",
+                "label": "Summary",
+                "instructions": "One or two sentences, shown in lists. Never more than two sentences.",
+                "type": "Filament\\Forms\\Components\\Textarea",
+                "path": "summary",
+                "meta": {
+                    "max_length": null
+                }
+            },
+            {
+                "handle": "body",
+                "kind": "richtext",
+                "label": "Body",
+                "type": "Filament\\Forms\\Components\\RichEditor",
+                "path": "body",
+                "meta": {
+                    "format": "html"
+                }
+            },
+            {
+                "handle": "status",
+                "kind": "choice",
+                "label": "Status",
+                "required": true,
+                "options": {
+                    "draft": "Draft",
+                    "published": "Published"
+                },
+                "type": "Filament\\Forms\\Components\\Select",
+                "path": "status"
+            },
+            {
+                "handle": "published_at",
+                "kind": "reference",
+                "label": "Published at",
+                "type": "Filament\\Forms\\Components\\DateTimePicker",
+                "path": "published_at"
+            },
+            {
+                "handle": "seo_title",
+                "kind": "reference",
+                "label": "Seo title",
+                "type": "Filament\\Forms\\Components\\TextInput",
+                "path": "seo_title",
+                "meta": {
+                    "max_length": null,
+                    "skipped": true
+                }
+            },
+            {
+                "handle": "cover",
+                "kind": "reference",
+                "label": "Cover",
+                "type": "Filament\\Forms\\Components\\FileUpload",
+                "files": true,
+                "path": "cover",
+                "meta": {
+                    "images": true,
+                    "multiple": false,
+                    "max_files": null,
+                    "disk": "public",
+                    "directory": "covers"
+                }
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "learn",
+            "schema": "6705b8879a61",
+            "input": {
+                "entries": [
+                    {
+                        "id": 2,
+                        "values": {
+                            "title": "Two",
+                            "summary": null,
+                            "body": "<p>two</p>",
+                            "status": "published",
+                            "published_at": null,
+                            "seo_title": null,
+                            "cover": "covers/two.png"
+                        }
+                    },
+                    {
+                        "id": 1,
+                        "values": {
+                            "title": "One",
+                            "summary": null,
+                            "body": "<p>one</p>",
+                            "status": "published",
+                            "published_at": null,
+                            "seo_title": null,
+                            "cover": "covers/one.png"
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "positions": [],
+                "sequences": [],
+                "markup": [],
+                "links": []
+            }
+        },
+        {
+            "algorithm": "pattern",
+            "schema": "6705b8879a61",
+            "input": {
+                "entries": [
+                    {
+                        "id": 2,
+                        "values": {
+                            "title": "Two",
+                            "summary": null,
+                            "body": "<p>two</p>",
+                            "status": "published",
+                            "published_at": null,
+                            "seo_title": null,
+                            "cover": "covers/two.png"
+                        }
+                    },
+                    {
+                        "id": 1,
+                        "values": {
+                            "title": "One",
+                            "summary": null,
+                            "body": "<p>one</p>",
+                            "status": "published",
+                            "published_at": null,
+                            "seo_title": null,
+                            "cover": "covers/one.png"
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "entries": 2,
+                "words": 6,
+                "blocks": [],
+                "fixed": [],
+                "examples": [
+                    {
+                        "title": "Two",
+                        "body": "two",
+                        "status": "published"
+                    },
+                    {
+                        "title": "One",
+                        "body": "one",
+                        "status": "published"
+                    }
+                ],
+                "filled": {
+                    "title": 1.0,
+                    "summary": 0.0,
+                    "body": 1.0,
+                    "status": 1.0,
+                    "published_at": 0.0,
+                    "seo_title": 0.0,
+                    "cover": 1.0
+                },
+                "house": {
+                    "positions": [],
+                    "sequences": [],
+                    "markup": [],
+                    "links": []
+                }
+            }
+        },
+        {
+            "algorithm": "build",
+            "schema": "6705b8879a61",
+            "input": {
+                "draft": {
+                    "title": "New",
+                    "summary": "Short.",
+                    "body": "Words.",
+                    "status": "published"
+                },
+                "pattern": {
+                    "entries": 2,
+                    "words": 6,
+                    "blocks": [],
+                    "fixed": [],
+                    "examples": [
+                        {
+                            "title": "Two",
+                            "body": "two",
+                            "status": "published"
+                        },
+                        {
+                            "title": "One",
+                            "body": "one",
+                            "status": "published"
+                        }
+                    ],
+                    "filled": {
+                        "title": 1.0,
+                        "summary": 0.0,
+                        "body": 1.0,
+                        "status": 1.0,
+                        "published_at": 0.0,
+                        "seo_title": 0.0,
+                        "cover": 1.0
+                    },
+                    "house": {
+                        "positions": [],
+                        "sequences": [],
+                        "markup": [],
+                        "links": []
+                    }
+                },
+                "defaults": []
+            },
+            "expected": {
+                "data": {
+                    "title": "New",
+                    "summary": "Short.",
+                    "body": "<p>Words.</p>",
+                    "status": "published"
+                },
+                "notes": []
+            }
+        },
+        {
+            "algorithm": "apply",
+            "schema": "6705b8879a61",
+            "input": {
+                "data": {
+                    "title": "New",
+                    "summary": "Short.",
+                    "body": "<p>Words.</p>",
+                    "status": "published"
+                },
+                "style": {
+                    "positions": [],
+                    "sequences": [],
+                    "markup": [],
+                    "links": []
+                },
+                "self": {
+                    "id": null,
+                    "title": "New"
+                }
+            },
+            "expected": {
+                "data": {
+                    "title": "New",
+                    "summary": "Short.",
+                    "body": "<p>Words.</p>",
+                    "status": "published"
+                },
+                "toFill": []
+            }
+        }
+    ]
+}

@@ -1,0 +1,274 @@
+{
+    "addon": "statamic",
+    "source": "Test: NineteenNinetyFour\\Ghostwriter\\Tests\\Feature\\ImageTest::test_an_image_chosen_while_the_writer_works_is_kept_when_the_turn_saves",
+    "schemas": {
+        "a564c7333930": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "required": true,
+                "type": "text"
+            },
+            {
+                "handle": "summary",
+                "kind": "longtext",
+                "label": "Summary",
+                "type": "textarea"
+            },
+            {
+                "handle": "cover",
+                "kind": "reference",
+                "label": "Cover",
+                "type": "assets",
+                "files": true,
+                "meta": {
+                    "container": "assets",
+                    "folder": "",
+                    "max_files": 1,
+                    "images": true
+                }
+            },
+            {
+                "handle": "blocks",
+                "kind": "blocks",
+                "label": "Blocks",
+                "type": "replicator",
+                "sets": {
+                    "banner": {
+                        "label": "Banner",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "type": "text"
+                            },
+                            {
+                                "handle": "picture",
+                                "kind": "reference",
+                                "label": "Picture",
+                                "type": "assets",
+                                "files": true,
+                                "meta": {
+                                    "container": "assets",
+                                    "folder": "",
+                                    "max_files": 1,
+                                    "images": true
+                                }
+                            }
+                        ]
+                    },
+                    "text": {
+                        "label": "Text",
+                        "fields": [
+                            {
+                                "handle": "body",
+                                "kind": "longtext",
+                                "label": "Body",
+                                "type": "textarea"
+                            },
+                            {
+                                "handle": "aside",
+                                "kind": "reference",
+                                "label": "Aside",
+                                "type": "assets",
+                                "files": true,
+                                "meta": {
+                                    "container": "assets",
+                                    "folder": "",
+                                    "max_files": null,
+                                    "images": true
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "learn",
+            "schema": "a564c7333930",
+            "input": {
+                "entries": [
+                    {
+                        "id": "6cd138d6-349c-41f3-808e-1543ca1a67f2",
+                        "values": {
+                            "title": "One",
+                            "cover": "stories/one.png",
+                            "blocks": [
+                                {
+                                    "id": "b",
+                                    "type": "banner",
+                                    "enabled": true,
+                                    "heading": "Hi one",
+                                    "picture": "banners/one.png"
+                                },
+                                {
+                                    "id": "t",
+                                    "type": "text",
+                                    "enabled": true,
+                                    "body": "Body of one"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "6b165866-4e26-4071-85a6-fe0c08ae2f5d",
+                        "values": {
+                            "title": "Two",
+                            "cover": "stories/two.png",
+                            "blocks": [
+                                {
+                                    "id": "b",
+                                    "type": "banner",
+                                    "enabled": true,
+                                    "heading": "Hi two",
+                                    "picture": "banners/two.png"
+                                },
+                                {
+                                    "id": "t",
+                                    "type": "text",
+                                    "enabled": true,
+                                    "body": "Body of two"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "positions": [],
+                "sequences": [],
+                "markup": [],
+                "links": []
+            }
+        },
+        {
+            "algorithm": "pattern",
+            "schema": "a564c7333930",
+            "input": {
+                "entries": [
+                    {
+                        "id": "6cd138d6-349c-41f3-808e-1543ca1a67f2",
+                        "values": {
+                            "title": "One",
+                            "cover": "stories/one.png",
+                            "blocks": [
+                                {
+                                    "id": "b",
+                                    "type": "banner",
+                                    "enabled": true,
+                                    "heading": "Hi one",
+                                    "picture": "banners/one.png"
+                                },
+                                {
+                                    "id": "t",
+                                    "type": "text",
+                                    "enabled": true,
+                                    "body": "Body of one"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "6b165866-4e26-4071-85a6-fe0c08ae2f5d",
+                        "values": {
+                            "title": "Two",
+                            "cover": "stories/two.png",
+                            "blocks": [
+                                {
+                                    "id": "b",
+                                    "type": "banner",
+                                    "enabled": true,
+                                    "heading": "Hi two",
+                                    "picture": "banners/two.png"
+                                },
+                                {
+                                    "id": "t",
+                                    "type": "text",
+                                    "enabled": true,
+                                    "body": "Body of two"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "entries": 2,
+                "words": 14,
+                "blocks": {
+                    "blocks": {
+                        "sequence": [
+                            "banner",
+                            "text"
+                        ],
+                        "usage": {
+                            "banner": 1.0,
+                            "text": 1.0
+                        },
+                        "fixed": [],
+                        "used": {
+                            "banner": [
+                                "heading",
+                                "picture"
+                            ],
+                            "text": [
+                                "body"
+                            ]
+                        },
+                        "boilerplate": []
+                    }
+                },
+                "fixed": [],
+                "examples": [
+                    {
+                        "title": "One",
+                        "blocks": [
+                            {
+                                "type": "banner",
+                                "heading": "Hi one"
+                            },
+                            {
+                                "type": "text",
+                                "body": "Body of one"
+                            }
+                        ]
+                    },
+                    {
+                        "title": "Two",
+                        "blocks": [
+                            {
+                                "type": "banner",
+                                "heading": "Hi two"
+                            },
+                            {
+                                "type": "text",
+                                "body": "Body of two"
+                            }
+                        ]
+                    }
+                ],
+                "filled": {
+                    "title": 1.0,
+                    "summary": 0.0,
+                    "cover": 1.0,
+                    "blocks": 1.0,
+                    "banner.heading": 1.0,
+                    "banner.picture": 1.0,
+                    "text.body": 1.0,
+                    "text.aside": 0.0
+                },
+                "house": {
+                    "positions": [],
+                    "sequences": [],
+                    "markup": [],
+                    "links": []
+                }
+            }
+        }
+    ]
+}
