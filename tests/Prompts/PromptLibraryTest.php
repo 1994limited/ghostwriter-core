@@ -14,6 +14,10 @@ use PHPUnit\Framework\TestCase;
  * tests/Fixtures/prompts are copies of each addon's prompts as of the
  * extraction (Statamic's photo-picker was inline in its PhotoPicker agent,
  * and its photo-query is Studio::PHOTO_QUERY, first PhotoResearcher's).
+ *
+ * Since 0.2.0 photo-picker is core's own (it judges with or without
+ * reference images, and replies with reasons or "none: ..."), so its three
+ * fixtures are core's text, the same for every addon.
  */
 class PromptLibraryTest extends TestCase
 {

@@ -5,6 +5,7 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Ai\Http;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\HttpFactory;
 use LogicException;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Ports\DownloadClients;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Ports\HttpClients;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -23,8 +24,12 @@ use Psr\Http\Message\StreamFactoryInterface;
  * through. Guzzle 8 validates option types (timeouts must be int or float,
  * header values strings) and rejects a per-request `handler`, so pass a
  * handler here, at construction, as above.
+ *
+ * downloadClient() turns redirects off (core follows them itself, https
+ * only) and, with $stream, streams the body so a download can be cut off
+ * at its size cap.
  */
-final class GuzzleHttpClients implements HttpClients
+final class GuzzleHttpClients implements DownloadClients, HttpClients
 {
     private ?HttpFactory $factory = null;
 
@@ -45,6 +50,11 @@ final class GuzzleHttpClients implements HttpClients
     public function client(int $timeout): ClientInterface
     {
         return new Client(['timeout' => $timeout, 'connect_timeout' => $this->connectTimeout] + $this->options);
+    }
+
+    public function downloadClient(int $timeout, bool $stream = true): ClientInterface
+    {
+        return new Client(['timeout' => $timeout, 'connect_timeout' => $this->connectTimeout, 'allow_redirects' => false, 'stream' => $stream] + $this->options);
     }
 
     public function requestFactory(): RequestFactoryInterface
