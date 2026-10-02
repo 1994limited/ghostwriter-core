@@ -2,7 +2,7 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 it follows semantic versioning: a minor or patch release doesn't break the public API.
 
-## Unreleased
+## 1.1.0 - 2026-10-02
 
 Multi-source stock photos, from the stock images design: phase 1, the library abstraction; phase 2, the ledger domain and the model-input guard; and phase 4, the licensing framework and its fakes. Nothing in the 1.0 API changes; the addons' calls work as they are.
 
@@ -25,7 +25,7 @@ Multi-source stock photos, from the stock images design: phase 1, the library ab
 
 ### Changed
 
-- **A model never sees a photo whose library doesn't allow it** (`Capabilities::$mayRank`). `PhotoRanker` sends only those photos' thumbnails and descriptions to the `photo-picker` agent; the rest follow the judged ones in their library's order, unjudged and never picked. Every free library allows it, so nothing changes for them yet. (The terms check says Unsplash shouldn't be judged; that change is a separate pull request, as it changes what the addons show.)
+- **A model never sees a photo whose library doesn't allow it** (`Capabilities::$mayRank`). `PhotoRanker` sends only those photos' thumbnails and descriptions to the `photo-picker` agent; the rest follow the judged ones in their library's order, unjudged and never picked. Every free library allows it, so nothing changes for them yet. Unsplash stays judged by decision; see the stock images design.
 - **Reference images and imagery samples go through the model-input guard.** One whose embedded credit or copyright names Getty Images or iStock is left out, logged at debug. Others are sent as before.
 - `PhotoUnavailable` is no longer `final`, so the licensing errors can extend it.
 - The branch alias is `1.x-dev` (it still said `0.5.x-dev`).
