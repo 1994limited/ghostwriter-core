@@ -2,6 +2,7 @@
 
 namespace NineteenNinetyFour\Ghostwriter\Core\Images;
 
+use NineteenNinetyFour\Ghostwriter\Core\Images\Libraries\Offer;
 use NineteenNinetyFour\Ghostwriter\Core\Text\Slug;
 
 /**
@@ -23,6 +24,12 @@ use NineteenNinetyFour\Ghostwriter\Core\Text\Slug;
  * `url` is the full-size address the library gave with the search result,
  * for information. StockSearch::fetch() looks the photo up again by
  * `source` and `id`, so nothing a browser sends back is downloaded.
+ *
+ * A paid library's photos also say how they can be had (`offer`: a price
+ * hint and licence type), whether they are for editorial use only
+ * (`editorial`, with the library's own `restrictions`), and which of its
+ * collections they are from. A free library's photos leave these unset:
+ * no offer means free.
  */
 final class Photo
 {
@@ -48,12 +55,27 @@ final class Photo
         public readonly string $term = '',
         public readonly bool $picked = false,
         public readonly ?string $reason = null,
+        public readonly ?Offer $offer = null,
+        public readonly bool $editorial = false,
+        public readonly ?string $restrictions = null,
+        public readonly ?string $collection = null,
     ) {}
 
     /** Unique across libraries: "unsplash:Ab3dE". */
     public function key(): string
     {
         return $this->source.':'.$this->id;
+    }
+
+    /** How it can be had: its offer, or free when it has none. */
+    public function offer(): Offer
+    {
+        return $this->offer ?? Offer::free();
+    }
+
+    public function isFree(): bool
+    {
+        return $this->offer === null || $this->offer->free;
     }
 
     public function withTerm(string $term): self
@@ -132,9 +154,11 @@ final class Photo
     /**
      * As an array for JSON, a session or a queue job: the keys the addons'
      * photo lists already used (credit_url and so on), plus the library's
-     * words and the helpers' results.
+     * words and the helpers' results. `offer`, `editorial`, `restrictions`
+     * and `collection` are added only when set, so a free photo's array is
+     * as it always was.
      *
-     * @return array{source: string, id: string, thumb: string, credit: string, credit_url: ?string, licence: string, title: ?string, description: ?string, tags: array<int, string>, width: ?int, height: ?int, url: ?string, term: string, picked: bool, reason: ?string, alt: string, asset_title: string}
+     * @return array{source: string, id: string, thumb: string, credit: string, credit_url: ?string, licence: string, title: ?string, description: ?string, tags: array<int, string>, width: ?int, height: ?int, url: ?string, term: string, picked: bool, reason: ?string, alt: string, asset_title: string, offer?: array<string, mixed>, editorial?: true, restrictions?: string, collection?: string}
      */
     public function toArray(): array
     {
@@ -156,7 +180,12 @@ final class Photo
             'reason' => $this->reason,
             'alt' => $this->alt(),
             'asset_title' => $this->assetTitle(),
-        ];
+        ] + array_filter([
+            'offer' => $this->offer?->toArray(),
+            'editorial' => $this->editorial ?: null,
+            'restrictions' => $this->restrictions,
+            'collection' => $this->collection,
+        ], fn ($value) => $value !== null);
     }
 
     /**
@@ -187,6 +216,10 @@ final class Photo
             term: $string('term') ?? '',
             picked: (bool) ($data['picked'] ?? false),
             reason: $string('reason'),
+            offer: is_array($data['offer'] ?? null) ? Offer::fromArray($data['offer']) : null,
+            editorial: (bool) ($data['editorial'] ?? false),
+            restrictions: $string('restrictions'),
+            collection: $string('collection'),
         );
     }
 
@@ -213,7 +246,7 @@ final class Photo
         return new self(
             $this->source, $this->id, $this->thumb, $this->credit, $this->creditUrl, $this->licence,
             $this->title, $this->description, $this->tags, $this->width, $this->height, $this->url,
-            $term, $picked, $reason,
+            $term, $picked, $reason, $this->offer, $this->editorial, $this->restrictions, $this->collection,
         );
     }
 }
