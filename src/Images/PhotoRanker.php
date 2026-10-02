@@ -8,6 +8,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\Limits;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextProvider;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
+use NineteenNinetyFour\Ghostwriter\Core\Domain\Stock\ModelInputGuard;
 use NineteenNinetyFour\Ghostwriter\Core\Prompts\PromptLibrary;
 use NineteenNinetyFour\Ghostwriter\Core\Text\Slug;
 use Psr\Log\LoggerInterface;
@@ -38,7 +39,9 @@ use Throwable;
  * (StockSearch::mayRank(): Capabilities::$mayRank). Paid libraries' terms
  * forbid using their content or its metadata for AI, so their photos are
  * never shown, described or judged: they come after the judged ones, in
- * their library's own order, unjudged and never picked.
+ * their library's own order, unjudged and never picked. Reference images
+ * go through the ModelInputGuard first, so no Getty or iStock image the
+ * site holds is shown either.
  */
 final class PhotoRanker
 {
@@ -58,8 +61,11 @@ final class PhotoRanker
 
     private readonly Shrinker $shrinker;
 
+    private readonly ModelInputGuard $guard;
+
     /**
      * @param  Providers|TextProvider|null  $model  The registry (its text model is used when it has a key), a provider, or null for no judging.
+     * @param  ModelInputGuard|null  $guard  Checks each reference image before a model sees it; give it the ledger so it knows the site's stock images. Without one, the bytes are still checked.
      */
     public function __construct(
         private readonly StockSearch $stock,
@@ -67,9 +73,11 @@ final class PhotoRanker
         private readonly PromptLibrary $prompts,
         ?LoggerInterface $logger = null,
         ?Shrinker $shrinker = null,
+        ?ModelInputGuard $guard = null,
     ) {
         $this->logger = $logger ?? new NullLogger;
         $this->shrinker = $shrinker ?? new Shrinker;
+        $this->guard = $guard ?? new ModelInputGuard(logger: $this->logger);
     }
 
     /** Whether there is a model to judge with. */
@@ -80,7 +88,7 @@ final class PhotoRanker
 
     /**
      * @param  array<int, Photo>  $candidates
-     * @param  array<int, Image|string>  $references  Images, or their bytes, already in that place; at most REFERENCES are shown.
+     * @param  array<int, Image|string|ReferenceImage>  $references  Images, or their bytes, already in that place; at most REFERENCES of those the guard allows are shown.
      * @param  bool  $mayRetry  Ask for better searches if none fit. False for a second round.
      */
     public function rank(array $candidates, PhotoContext $context, array $references = [], bool $mayRetry = true): Ranking
@@ -103,7 +111,7 @@ final class PhotoRanker
 
     /**
      * @param  array<int, Photo>  $candidates  Only photos a model may see.
-     * @param  array<int, Image|string>  $references
+     * @param  array<int, Image|string|ReferenceImage>  $references
      */
     private function judge(array $candidates, PhotoContext $context, array $references, bool $mayRetry): Ranking
     {
@@ -295,7 +303,7 @@ final class PhotoRanker
     }
 
     /**
-     * @param  array<int, Image|string>  $references
+     * @param  array<int, Image|string|ReferenceImage>  $references
      * @return array<int, Image>
      */
     private function references(array $references): array
@@ -307,7 +315,13 @@ final class PhotoRanker
                 break;
             }
 
-            $small = $this->shrinker->small($reference instanceof Image ? $reference->data : $reference);
+            $reference = $reference instanceof ReferenceImage ? $reference : new ReferenceImage($reference);
+
+            if (! $this->guard->allowsImage($reference->image, $reference->asset, $reference->filename)) {
+                continue;
+            }
+
+            $small = $this->shrinker->small($reference->bytes());
 
             if ($small !== null && Limits::fits([...$shown, $small])) {
                 $shown[] = $small;

@@ -192,6 +192,11 @@ final class ParityCases
                 unset($vars['schema']);
             }
 
+            // Nor does a sample say where it came from (core 1.1, for the model-input guard).
+            if ($value instanceof ImagerySample) {
+                $vars = array_filter($vars, fn ($var, string $key) => $var !== null || ! in_array($key, ['asset', 'filename'], true), ARRAY_FILTER_USE_BOTH);
+            }
+
             return ['@' => (new \ReflectionClass($value))->getShortName()] + array_map(self::export(...), $vars);
         }
 

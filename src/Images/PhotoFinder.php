@@ -8,6 +8,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\Image;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextProvider;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
+use NineteenNinetyFour\Ghostwriter\Core\Domain\Stock\ModelInputGuard;
 use NineteenNinetyFour\Ghostwriter\Core\Prompts\PromptLibrary;
 use Psr\Log\LoggerInterface;
 
@@ -47,6 +48,7 @@ final class PhotoFinder
 
     /**
      * @param  Providers|TextProvider|null  $model  The registry (its text model is used when it has a key), a provider, or null to search without a model.
+     * @param  ModelInputGuard|null  $guard  For the ranker it makes: checks each reference image before a model sees it.
      */
     public function __construct(
         private readonly StockSearch $stock,
@@ -54,8 +56,9 @@ final class PhotoFinder
         private readonly PromptLibrary $prompts,
         ?LoggerInterface $logger = null,
         ?PhotoRanker $ranker = null,
+        ?ModelInputGuard $guard = null,
     ) {
-        $this->ranker = $ranker ?? new PhotoRanker($stock, $model, $prompts, $logger);
+        $this->ranker = $ranker ?? new PhotoRanker($stock, $model, $prompts, $logger, guard: $guard);
     }
 
     public function stock(): StockSearch
@@ -75,7 +78,7 @@ final class PhotoFinder
     }
 
     /**
-     * @param  array<int, Image|string>  $references  Images, or their bytes, already in that place; none is fine.
+     * @param  array<int, Image|string|ReferenceImage>  $references  Images, or their bytes, already in that place; none is fine.
      * @param  array<int, string>|string|null  $terms  Searches to run (a list, or text separated by semicolons); null to have them chosen.
      *
      * @throws ProviderException when the searches are to be chosen and the model call fails.
