@@ -2,7 +2,9 @@
 
 namespace NineteenNinetyFour\Ghostwriter\Core\Layout\Links;
 
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\Markers;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\LinkDialect;
+use NineteenNinetyFour\Ghostwriter\Core\Layout\LinkPlaceholders;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Field;
 
 /**
@@ -13,10 +15,14 @@ use NineteenNinetyFour\Ghostwriter\Core\Schema\Field;
  *
  * Only a `link` field can be pointed at example.com, with any text field
  * named for it (`link_text`, `button_text` for `button_link`) saying "Link
- * to choose". Entries to pick can't be stood in for.
+ * to choose". Entries to pick can't be stood in for. With the sentinel
+ * (placeholderFor()) the field holds `#gw-link:<hint>`, as the fieldtype
+ * stores any string.
  */
-final class StatamicLinks implements LinkDialect
+final class StatamicLinks implements LinkDialect, LinkPlaceholders
 {
+    use MarksLinks;
+
     /** Fieldtypes that hold where a link goes. */
     private const TYPES = ['link', 'entries'];
 
@@ -65,6 +71,17 @@ final class StatamicLinks implements LinkDialect
 
         foreach ($this->textFor($field->handle, $siblings) as $text) {
             $values[$text] = self::PLACEHOLDER_TEXT;
+        }
+
+        return $values;
+    }
+
+    public function placeholderFor(Field $field, array $siblings, string $hint): ?array
+    {
+        $values = $this->placeholder($field, $siblings);
+
+        if ($values !== null) {
+            $values[$field->handle] = Markers::link($hint);
         }
 
         return $values;

@@ -35,6 +35,7 @@ final class LayoutOptions
      * @param  string  $unknownBlock  How a block type the field doesn't allow is reported: 'A block of type "x" {this} pageBuilder and was left out.'
      * @param  bool  $kindsFromAnyBuilder  Whether the kind finder groups entries by their first page builder even when it has nothing to write in it (Filament), or by their first `blocks` field (Statamic, Craft).
      * @param  (callable(array<int, string>, int): string)|null  $kindLabel  Names a kind after its first titles and how many more there are, for a translated "Like A, B and 3 more". Null: English.
+     * @param  bool  $linkSentinels  Whether a link field the house style can't settle is marked as still to choose with the `#gw-link:` sentinel (Gaps\Markers), where the link dialect can (LinkPlaceholders), rather than pointed at example.com. Off by default in 1.x.
      */
     public function __construct(
         public readonly string $group = 'section',
@@ -46,6 +47,7 @@ final class LayoutOptions
         public readonly string $unknownBlock = 'cannot go in',
         public readonly bool $kindsFromAnyBuilder = false,
         ?callable $kindLabel = null,
+        public readonly bool $linkSentinels = false,
     ) {
         if (! in_array($unsettled, [self::NAME_NESTED, self::NAME_LINKS], true)) {
             throw new InvalidArgumentException("Unsettled references are named '".self::NAME_NESTED."' or '".self::NAME_LINKS."', not '{$unsettled}'.");
@@ -89,5 +91,14 @@ final class LayoutOptions
     public static function filament(?callable $kindLabel = null): self
     {
         return new self(item: 'record', kindsFromAnyBuilder: true, kindLabel: $kindLabel);
+    }
+
+    /**
+     * The same options with links still to choose marked by the sentinel
+     * (or not).
+     */
+    public function withLinkSentinels(bool $on = true): self
+    {
+        return new self($this->group, $this->item, $this->bookkeeping, $this->richTextInPositions, $this->unsettled, $this->newId, $this->unknownBlock, $this->kindsFromAnyBuilder, $this->kindLabel, $on);
     }
 }

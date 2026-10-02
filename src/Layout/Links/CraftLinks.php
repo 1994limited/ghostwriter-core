@@ -2,7 +2,9 @@
 
 namespace NineteenNinetyFour\Ghostwriter\Core\Layout\Links;
 
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\Markers;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\LinkDialect;
+use NineteenNinetyFour\Ghostwriter\Core\Layout\LinkPlaceholders;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Field;
 
 /**
@@ -15,9 +17,14 @@ use NineteenNinetyFour\Ghostwriter\Core\Schema\Field;
  * Craft class:
  *
  *     new CraftLinks(hyper: [HyperField::class], link: [Link::class])
+ *
+ * Both validate a link's address, so a link still to choose
+ * (placeholderFor()) holds `https://example.com/#gw-link:<hint>`.
  */
-final class CraftLinks implements LinkDialect
+final class CraftLinks implements LinkDialect, LinkPlaceholders
 {
+    use MarksLinks;
+
     /** Keys that hold where a link goes, in Hyper's and Craft's link fields. */
     private const TARGETS = ['linkValue', 'value'];
 
@@ -86,6 +93,21 @@ final class CraftLinks implements LinkDialect
 
         if (in_array($field->type, $this->link, true)) {
             return [$field->handle => ['type' => 'url', 'value' => self::PLACEHOLDER_URL, 'label' => self::PLACEHOLDER_TEXT]];
+        }
+
+        return null;
+    }
+
+    public function placeholderFor(Field $field, array $siblings, string $hint): ?array
+    {
+        $url = Markers::linkUrl($hint);
+
+        if (in_array($field->type, $this->hyper, true)) {
+            return [$field->handle => [['type' => self::HYPER_URL, 'linkValue' => $url, 'linkText' => self::PLACEHOLDER_TEXT]]];
+        }
+
+        if (in_array($field->type, $this->link, true)) {
+            return [$field->handle => ['type' => 'url', 'value' => $url, 'label' => self::PLACEHOLDER_TEXT]];
         }
 
         return null;

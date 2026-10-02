@@ -2,6 +2,24 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 it follows semantic versioning: a minor or patch release doesn't break the public API.
 
+## Unreleased
+
+"Finish this page", the core phases (finish-this-page design). Nothing in the 1.x API changes; the addons' calls work as they are.
+
+### Added
+
+- **Markers for what an editor must finish (`Gaps\Markers`), phase 1.** A fact to add is `[[ask: adult ticket price]]`, written strictly by `Markers::ask()` and found leniently (`[[ ASK:x ]]` counts); a link to choose is a real link to `#gw-link:<hint>` (`Markers::link()`), or `https://example.com/#gw-link:<hint>` for link fields that validate an address (`Markers::linkUrl()`). Also `asks()`, `links()`, `leftovers()` (a vocabulary placeholder such as `[[item]]` left in text), `placeholderText()` (`TBC`, `[insert date]`, `lorem ipsum`…), `isLinkSentinel()`, `linkHint()`, `normalise()` (near misses such as `[ask: x]` and `[[Ask - x]]` put right), `excerpt()` and `patterns()`, kept for the front end in `resources/gaps/patterns.json` (a test fails when it is out of date, and checks the patterns match the same in JavaScript).
+- **`Gaps\FieldPath` and `Gaps\BlockRef`:** where a value sits in an entry, with blocks named by ID where they have one (`page_builder/#a1b2/intro`), so a reorder doesn't move a gap; `dotted()` gives the form's `page_builder.1.intro`.
+- **`Layout\LinkPlaceholders`**, implemented by `StatamicLinks`, `CraftLinks` and `NoLinks`: `placeholderFor(Field, $siblings, $hint)` marks a link field as still to choose with the sentinel (Statamic `#gw-link:<hint>`; Craft's Link field and Hyper `https://example.com/#gw-link:<hint>`; Filament none), and `supportsLinks(Field)` says whether a text field can hold a link mark. A separate interface, so a `LinkDialect` written outside core keeps working.
+- **`LayoutOptions::$linkSentinels`** (and `withLinkSentinels()`): the house style marks a link it can't settle with the sentinel, with the field's label as the hint, and names it "(link still to choose)". **Off by default in 1.x**: example.com stays, as the addons' tests and the golden layouts expect, and the gap detectors find both.
+- **`BuiltEntry::$asks` and `BuiltEntry::$toFill`**: a fact the writer marked in a field that can't hold text (a number, a choice, a toggle, a date) is listed with its path, label and hint, and a note says so ("Still to add by hand: Price (adult ticket price)."); the references still to choose are listed with their paths too. The "Still to choose by hand" note is unchanged.
+
+### Changed
+
+- **The writer marks what it doesn't know instead of writing around it** (`resources/prompts/writer.md`). A new section, "Marking what only your colleague knows": a missing fact becomes `[[ask: what is needed]]` (at most five; more means asking first), a link with no known target points at `#gw-link:<where>` (in markdown fields only; elsewhere it is an ask), a fact meant for a number or date field is marked in that field, the reply lists what was marked, and a revision keeps every ask the colleague hasn't answered. "Never invent" now names prices and durations too, and marks never go in the title. Every addon's writer request changes accordingly (`tests/Fixtures/studio/*/write-*.json`).
+- `EntryBuilder` keeps markers in text as they are, puts near misses right (`Markers::normalise()`), and no longer turns a marker in a toggle into `false` or reports one in a choice as "not an option": it lists it in `$asks`.
+- `Text\Slug::make()` leaves out `[[ask: …]]`.
+
 ## 1.2.0 - 2026-10-02
 
 ### Added

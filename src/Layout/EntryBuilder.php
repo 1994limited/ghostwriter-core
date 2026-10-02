@@ -2,6 +2,9 @@
 
 namespace NineteenNinetyFour\Ghostwriter\Core\Layout;
 
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\BlockRef;
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\FieldPath;
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\Markers;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Field;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Kind;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Schema;
@@ -16,6 +19,11 @@ use NineteenNinetyFour\Ghostwriter\Core\Schema\Schema;
  * Anything in the draft that the schema has no place for is dropped and
  * reported, never saved. The result is plain data in EntryData's shape; the
  * adapter turns it into what its CMS's fields take.
+ *
+ * Facts the writer marked as still to add (`[[ask: …]]`, Gaps\Markers) are
+ * kept in text as they are, with near misses put right. One written into a
+ * field that can't hold text (a number, a choice, a date) can't be kept
+ * there, so it is listed in BuiltEntry::$asks with where it was meant to go.
  */
 final class EntryBuilder
 {
@@ -24,6 +32,12 @@ final class EntryBuilder
 
     /** @var array<int, string> */
     private array $toFill = [];
+
+    /** @var list<array{path: string, label: string}> */
+    private array $places = [];
+
+    /** @var list<array{path: string, label: string, hint: string}> */
+    private array $asks = [];
 
     public function __construct(
         private readonly LayoutOptions $options = new LayoutOptions,
@@ -39,6 +53,8 @@ final class EntryBuilder
     {
         $this->notes = [];
         $this->toFill = [];
+        $this->places = [];
+        $this->asks = [];
 
         $data = $this->fields($draft, $schema->fields, $pattern->blocks ?? []);
 
@@ -46,12 +62,16 @@ final class EntryBuilder
             $this->notes[] = 'Still to choose by hand: '.implode('; ', array_unique($this->toFill)).'.';
         }
 
+        if ($this->asks) {
+            $this->notes[] = 'Still to add by hand: '.implode('; ', array_unique(array_map(fn (array $ask) => "{$ask['label']} ({$ask['hint']})", $this->asks))).'.';
+        }
+
         // The kind's own defaults win over what the group usually does.
         foreach ($defaults + ($pattern->fixed ?? []) as $key => $value) {
             $data[$key] ??= $this->copy($value);
         }
 
-        return new BuiltEntry($data, $this->notes);
+        return new BuiltEntry($data, $this->notes, $this->asks, $this->places);
     }
 
     /**
@@ -64,7 +84,7 @@ final class EntryBuilder
      * @param  array<string, array<string, mixed>>  $blockPatterns
      * @return array<string, mixed>
      */
-    private function fields(array $values, array $fields, array $blockPatterns = []): array
+    private function fields(array $values, array $fields, array $blockPatterns = [], ?FieldPath $at = null, string $label = ''): array
     {
         $data = [];
         $known = array_map(fn (Field $field) => $field->handle, $fields);
@@ -74,11 +94,27 @@ final class EntryBuilder
         }
 
         foreach ($fields as $field) {
-            if (! $field->isWritable() || ! array_key_exists($field->handle, $values)) {
+            if (! array_key_exists($field->handle, $values)) {
                 continue;
             }
 
-            $value = $this->value($values[$field->handle], $field, $blockPatterns[$field->handle] ?? []);
+            $path = $at === null ? FieldPath::of($field->handle) : $at->with($field->handle);
+            $name = ($label === '' ? '' : "{$label}: ").($field->label !== '' ? $field->label : $field->handle);
+
+            // A fact meant for a field that can't hold text: kept as a gap.
+            if (! in_array($field->kind, [Kind::Text, Kind::LongText, Kind::RichText, Kind::List], true) && is_string($values[$field->handle]) && ($asked = Markers::asks(Markers::normalise($values[$field->handle]))) !== []) {
+                foreach ($asked as $ask) {
+                    $this->asks[] = ['path' => $path->toString(), 'label' => $name, 'hint' => $ask['hint']];
+                }
+
+                continue;
+            }
+
+            if (! $field->isWritable()) {
+                continue;
+            }
+
+            $value = $this->value($values[$field->handle], $field, $blockPatterns[$field->handle] ?? [], $path, $name);
 
             if ($value !== null) {
                 $data[$field->handle] = $value;
@@ -91,23 +127,20 @@ final class EntryBuilder
     /**
      * @param  array<string, mixed>  $pattern
      */
-    private function value(mixed $value, Field $field, array $pattern): mixed
+    private function value(mixed $value, Field $field, array $pattern, FieldPath $path, string $name): mixed
     {
         return match ($field->kind) {
-            Kind::Text => is_scalar($value) ? trim(preg_replace('/\s+/u', ' ', (string) $value) ?? '') : null,
-            Kind::LongText => is_scalar($value) ? trim((string) $value) : null,
-            Kind::RichText => is_scalar($value) ? $this->richText->fromMarkdown(trim((string) $value), $field) : null,
+            Kind::Text => is_scalar($value) ? trim(preg_replace('/\s+/u', ' ', Markers::normalise((string) $value)) ?? '') : null,
+            Kind::LongText => is_scalar($value) ? trim(Markers::normalise((string) $value)) : null,
+            Kind::RichText => is_scalar($value) ? $this->richText->fromMarkdown(trim(Markers::normalise((string) $value)), $field) : null,
             Kind::Choice => $this->choice($value, $field),
             Kind::Choices => array_values(array_filter(array_map(fn ($v) => $this->choice($v, $field), (array) $value), fn ($v) => $v !== null)),
             Kind::Toggle => filter_var($value, FILTER_VALIDATE_BOOLEAN),
             Kind::Number => is_numeric($value) ? $value + 0 : null,
-            Kind::List => array_values(array_map('strval', array_filter((array) $value, 'is_scalar'))),
-            Kind::Blocks => $this->blocks((array) $value, $field, $pattern),
-            Kind::Rows => array_values(array_map(
-                fn (array $row) => $this->newId() + $this->fields($row, $field->fields),
-                array_filter((array) $value, 'is_array'),
-            )),
-            Kind::Group => is_array($value) ? $this->fields($value, $field->fields) : null,
+            Kind::List => array_values(array_map(fn ($item) => Markers::normalise((string) $item), array_filter((array) $value, 'is_scalar'))),
+            Kind::Blocks => $this->blocks((array) $value, $field, $pattern, $path, $name),
+            Kind::Rows => $this->rows((array) $value, $field, $path, $name),
+            Kind::Group => is_array($value) ? $this->fields($value, $field->fields, [], $path, $name) : null,
             Kind::Reference => null,
         };
     }
@@ -138,11 +171,27 @@ final class EntryBuilder
     }
 
     /**
+     * @param  array<int|string, mixed>  $rows
+     * @return array<int, array<string, mixed>>
+     */
+    private function rows(array $rows, Field $field, FieldPath $path, string $name): array
+    {
+        $out = [];
+
+        foreach (array_values(array_filter($rows, 'is_array')) as $i => $row) {
+            $id = $this->newId();
+            $out[] = $id + $this->fields($row, $field->fields, [], $path->with(new BlockRef($id['id'] ?? null, $i)), $name.' '.($i + 1));
+        }
+
+        return $out;
+    }
+
+    /**
      * @param  array<int|string, mixed>  $blocks
      * @param  array<string, mixed>  $pattern
      * @return array<int, array<string, mixed>>
      */
-    private function blocks(array $blocks, Field $field, array $pattern): array
+    private function blocks(array $blocks, Field $field, array $pattern, FieldPath $path, string $name): array
     {
         $out = [];
 
@@ -156,7 +205,12 @@ final class EntryBuilder
                 continue;
             }
 
-            $fields = $this->fields($block, $set->fields);
+            // The block's ID is made after its fields', as it always was, so
+            // the places found inside it are named by position until then.
+            $byPosition = $path->with(new BlockRef(null, count($out), $type));
+            $asks = count($this->asks);
+            $places = count($this->places);
+            $fields = $this->fields($block, $set->fields, [], $byPosition, $set->label);
 
             // House defaults for this block: its usual settings, and for a
             // boilerplate block its usual content too. A boilerplate block
@@ -185,13 +239,38 @@ final class EntryBuilder
 
                 if ($expected && ! $setField->isWritable() && ! isset($fields[$setField->handle])) {
                     $this->toFill[] = $set->label.': '.($setField->label ?: $setField->handle);
+                    $this->places[] = ['path' => $byPosition->with($setField->handle)->toString(), 'label' => $set->label.': '.($setField->label ?: $setField->handle)];
                 }
             }
 
-            $out[] = $this->newId() + ['type' => $type, 'enabled' => true] + $fields;
+            $id = $this->newId();
+            $this->renamePaths($asks, $places, $byPosition, $path->with(new BlockRef($id['id'] ?? null, count($out), $type)));
+
+            $out[] = $id + ['type' => $type, 'enabled' => true] + $fields;
         }
 
         return $out;
+    }
+
+    /**
+     * Places found inside a block before it had its ID, renamed to it.
+     */
+    private function renamePaths(int $asks, int $places, FieldPath $before, FieldPath $after): void
+    {
+        $old = $before->toString().'/';
+        $new = $after->toString().'/';
+
+        for ($i = $asks; $i < count($this->asks); $i++) {
+            if (str_starts_with($this->asks[$i]['path'], $old)) {
+                $this->asks[$i]['path'] = $new.substr($this->asks[$i]['path'], strlen($old));
+            }
+        }
+
+        for ($i = $places; $i < count($this->places); $i++) {
+            if (str_starts_with($this->places[$i]['path'], $old)) {
+                $this->places[$i]['path'] = $new.substr($this->places[$i]['path'], strlen($old));
+            }
+        }
     }
 
     /**
