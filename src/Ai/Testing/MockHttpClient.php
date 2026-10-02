@@ -5,6 +5,7 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Ai\Testing;
 use Closure;
 use GuzzleHttp\Psr7\HttpFactory;
 use LogicException;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Ports\DownloadClients;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Ports\HttpClients;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -17,7 +18,8 @@ use Throwable;
 /**
  * A PSR-18 client for tests: hands back queued responses in order, and
  * keeps every request it was sent. It is its own HttpClients too, so it can
- * be passed straight to Providers or a Transport.
+ * be passed straight to Providers or a Transport. As DownloadClients it
+ * never follows redirects either: a queued 3xx is handed back as it is.
  *
  *     $http = new MockHttpClient();
  *     $http->queueJson(['content' => [['type' => 'text', 'text' => 'Hi.']]]);
@@ -28,7 +30,7 @@ use Throwable;
  * PSR-17 factories default to Guzzle's (guzzlehttp/psr7), which every addon
  * has; pass your own otherwise.
  */
-final class MockHttpClient implements ClientInterface, HttpClients
+final class MockHttpClient implements ClientInterface, DownloadClients, HttpClients
 {
     /** @var array<int, ResponseInterface|Throwable|Closure(RequestInterface): ResponseInterface> */
     private array $queue = [];
@@ -38,6 +40,9 @@ final class MockHttpClient implements ClientInterface, HttpClients
 
     /** @var array<int, int> The timeout each client was built with, in order. */
     public array $timeouts = [];
+
+    /** @var array<int, bool> Whether each download client asked to stream, in order. */
+    public array $streams = [];
 
     private readonly RequestFactoryInterface $requestFactory;
 
@@ -138,6 +143,18 @@ final class MockHttpClient implements ClientInterface, HttpClients
     public function client(int $timeout): ClientInterface
     {
         $this->timeouts[] = $timeout;
+
+        return $this;
+    }
+
+    /**
+     * The same mock, as a download client. Its timeouts are kept in
+     * $timeouts too, and whether each asked for streaming in $streams.
+     */
+    public function downloadClient(int $timeout, bool $stream = true): ClientInterface
+    {
+        $this->timeouts[] = $timeout;
+        $this->streams[] = $stream;
 
         return $this;
     }
