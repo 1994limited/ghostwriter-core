@@ -1,0 +1,17 @@
+{
+    "source": "synthetic: an idea IdeaRepository::add() wrote and SessionController::store() marked drafted",
+    "format": "statamic",
+    "type": "idea",
+    "record": {
+        "id": "01M3Z0A1B2C3D4E5F6G7H8J9KA",
+        "title": "Pruning roses in February",
+        "collection": "journal",
+        "type": "guide",
+        "why": "Nothing covers winter pruning.",
+        "notes": "",
+        "status": "drafted",
+        "source": "suggested",
+        "session": "01M3WWM3KKW1FV098209K5HHYE",
+        "created_at": "2026-10-01"
+    }
+}

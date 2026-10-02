@@ -1,0 +1,9 @@
+{
+    "source": "synthetic: a Craft imagery guide document body, as VoiceGuide::save() writes it",
+    "format": "craft",
+    "type": "guide",
+    "handle": "imagery",
+    "record": {
+        "body": "## Journal\n\nSoft daylight, close on hands and soil.\n\n## Pages\n\nWide views of finished gardens.\n"
+    }
+}

@@ -1,0 +1,17 @@
+{
+    "source": "gw-test-statamic resources/ghostwriter/ideas.yaml, item 4",
+    "format": "statamic",
+    "type": "idea",
+    "record": {
+        "id": "01M3WY1VBQ8ZK304DX4DS06YXA",
+        "title": "Where the money goes in a new garden",
+        "collection": "journal",
+        "type": null,
+        "why": "Nothing covers the budgeting stage, and the voice guide rules out prices, so readers need cost discussed in principle, as in \"the cost is usually saved in plants that don't die\".",
+        "notes": "Without any figures, explain which parts of a garden take the most budget (groundwork, drainage, hard landscaping) and which parts people overspend on. Give firm opinions on where not to economise, such as soil preparation, and where you can phase things over several years. The reader is weighing up whether to start and how big to go. [Need: the studio's view on how it phases projects and where clients most often regret cutting corners.]",
+        "status": "open",
+        "source": "suggested",
+        "session": null,
+        "created_at": "2026-10-01"
+    }
+}

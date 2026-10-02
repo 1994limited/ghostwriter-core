@@ -1,0 +1,18 @@
+{
+    "source": "gw-test-craft ghostwriter_documents idea/1160c199d56b1ca0, the body",
+    "format": "craft",
+    "type": "idea",
+    "handle": "1160c199d56b1ca0",
+    "record": {
+        "id": "1160c199d56b1ca0",
+        "title": "Gardens for schools and community groups",
+        "section": "pages",
+        "type": null,
+        "why": "The voice guide names schools and community groups as core readers, and \"A school garden in Prudhoe\" shows the work, but they have no page of their own. The Services page only mentions school grounds in passing.",
+        "notes": "Follow the page pattern: a one-line standfirst with a \"Get in touch\" button, then short \"we\" headings such as \"We design with you, not just for you\" and \"We plan for the summer holidays\". Cover involving pupils or members, upkeep by volunteers and budgets from grants. Use a testimonial signed with a first name and place, then close with a question such as \"Have a school garden in mind?\" [Needs a quote from the Prudhoe school and any detail on how fees or funding work for groups.]",
+        "status": "open",
+        "source": "suggested",
+        "session": null,
+        "createdAt": "2026-10-02"
+    }
+}

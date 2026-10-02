@@ -1,0 +1,113 @@
+{
+    "source": "gw-test-craft ghostwriter_sessions row 4a34cea91b36e0ccaabef915f1, the data column",
+    "format": "craft",
+    "type": "session",
+    "record": {
+        "id": "4a34cea91b36e0ccaabef915f1",
+        "type": "any:journal",
+        "answers": {
+            "shape": "Short and warm, a few paragraphs, like a news post rather than a job advert. Open with the news, then what the two years involve, who we're looking for, and finish with how to apply and the closing date, clearly, so nobody misses it. The letter prompt could be pulled out on its own line. [Check: could \"Welcome, Hannah\" be a good model for tone and length? Say whether it fits]",
+            "points": "- It's our first apprenticeship at the studio. Starts January.\n- Two years, mixing time on site and in the design office.\n- We're looking for someone curious and practical. No degree needed.\n- How to apply: a short letter about a garden or landscape you love.\n- Closing date 30 November.\n- Why we're doing it now, in a line or two: [Add: why we're starting an apprenticeship and why now]\n- What a typical week looks like, roughly how site and office time split: [Add: rough split or a sketch of a typical week]\n- Who they'll work with and learn from day to day: [Add: who will mentor the apprentice]\n- Pay, hours and where they'll be based: [Add: pay, hours, base location, and whether a driving licence is needed for site work]\n- Whether it leads to a qualification, or anything formal at the end: [Add: qualification or college element, if any]\n- Where to send the letter and who to contact with questions: [Add: email or postal address and a contact name]\n- What happens after the closing date, e.g. interviews, a day on site: [Add: selection process and dates]",
+            "reader": "Anyone who might want a way into garden design and landscaping without a degree: school leavers, people changing career, keen gardeners who've never had a chance to do it properly. Probably local, or willing to be. After reading they should write their short letter and send it in by 30 November. Friends and clients reading it should think of someone and pass it on.",
+            "subject": "Northfold is taking on its first apprentice, starting in January. The entry announces the apprenticeship, says what it involves and who we're looking for, and explains how to apply before the closing date.",
+            "must_not_appear": "Client names or project details that aren't already public. No promises about a job at the end or a qualification unless confirmed."
+        },
+        "messages": [
+            {
+                "at": "2026-10-02T00:25:57+01:00",
+                "role": "user",
+                "content": "Here is the brief for a new entry: Something new.\n\n**What is this about?**\nNorthfold is taking on its first apprentice, starting in January. The entry announces the apprenticeship, says what it involves and who we're looking for, and explains how to apply before the closing date.\n\n**Who is it for, and what should they do after reading?**\nAnyone who might want a way into garden design and landscaping without a degree: school leavers, people changing career, keen gardeners who've never had a chance to do it properly. Probably local, or willing to be. After reading they should write their short letter and send it in by 30 November. Friends and clients reading it should think of someone and pass it on.\n\n**What must it say?**\n- It's our first apprenticeship at the studio. Starts January.\n- Two years, mixing time on site and in the design office.\n- We're looking for someone curious and practical. No degree needed.\n- How to apply: a short letter about a garden or landscape you love.\n- Closing date 30 November.\n- Why we're doing it now, in a line or two: [Add: why we're starting an apprenticeship and why now]\n- What a typical week looks like, roughly how site and office time split: [Add: rough split or a sketch of a typical week]\n- Who they'll work with and learn from day to day: [Add: who will mentor the apprentice]\n- Pay, hours and where they'll be based: [Add: pay, hours, base location, and whether a driving licence is needed for site work]\n- Whether it leads to a qualification, or anything formal at the end: [Add: qualification or college element, if any]\n- Where to send the letter and who to contact with questions: [Add: email or postal address and a contact name]\n- What happens after the closing date, e.g. interviews, a day on site: [Add: selection process and dates]\n\n**Anything about its shape or length?**\nShort and warm, a few paragraphs, like a news post rather than a job advert. Open with the news, then what the two years involve, who we're looking for, and finish with how to apply and the closing date, clearly, so nobody misses it. The letter prompt could be pulled out on its own line. [Check: could \"Welcome, Hannah\" be a good model for tone and length? Say whether it fits]\n\n**What must not appear?**\nClient names or project details that aren't already public. No promises about a job at the end or a qualification unless confirmed."
+            },
+            {
+                "at": "2026-10-02T00:26:30+01:00",
+                "asks": false,
+                "role": "assistant",
+                "draft": {
+                    "was": null,
+                    "words": 330,
+                    "change": "written"
+                },
+                "content": "I drafted a short news post modelled on \"Ten years of Northfold\". \"Welcome, Hannah\" isn't among the examples I was given, so I can't say whether it fits. The bracketed items were still unfilled (why now, the weekly split, mentor, pay, hours, base, licence, qualification, contact address, selection process), so I wrote around them, promised no qualification or job, and took the soil pits and hand drawing from earlier entries; you'll want to add at least where to send the letter before this goes live."
+            },
+            {
+                "at": "2026-10-02T00:30:25+01:00",
+                "role": "user",
+                "content": "Make it warmer and less formal, and put the closing date in the first paragraph."
+            },
+            {
+                "at": "2026-10-02T00:30:39+01:00",
+                "asks": false,
+                "role": "assistant",
+                "draft": {
+                    "was": 330,
+                    "words": 342,
+                    "change": "updated"
+                },
+                "content": "I loosened the language throughout with contractions, plainer phrasing and a few homelier touches, and moved the 30 November closing date into the opening paragraph. Nothing factual has changed, and the date still appears again in the \"How to apply\" section so nobody misses it."
+            },
+            {
+                "at": "2026-10-02T00:44:57+01:00",
+                "role": "user",
+                "content": "This entry already exists on the site. Its content as it stands is the current draft. I will ask for changes to it."
+            },
+            {
+                "at": "2026-10-02T00:44:57+01:00",
+                "role": "assistant",
+                "content": "I have the entry as it stands. Tell me what to change.",
+                "editing": true
+            },
+            {
+                "at": "2026-10-02T00:45:00+01:00",
+                "role": "user",
+                "content": "Add a short paragraph at the bottom"
+            },
+            {
+                "at": "2026-10-02T00:45:14+01:00",
+                "asks": false,
+                "role": "assistant",
+                "draft": {
+                    "was": 343,
+                    "words": 375,
+                    "change": "updated"
+                },
+                "content": "You didn't say what the paragraph should cover, so I added a short, wry closing paragraph in the voice's usual style after the \"pass it on\" line. It makes no new claims and doesn't promise a job or a qualification. Nothing else has changed."
+            },
+            {
+                "role": "user",
+                "content": "Make the title a little shorter. Change nothing else.",
+                "at": "2026-10-02T14:22:43+01:00",
+                "by": 1
+            },
+            {
+                "role": "assistant",
+                "content": "I've shortened the title from \"Our first apprentice\" to \"First apprentice\", keeping \"first\" because that's the news. Nothing else has changed.",
+                "at": "2026-10-02T14:22:55+01:00",
+                "asks": false,
+                "draft": {
+                    "change": "updated",
+                    "words": 374,
+                    "was": 375
+                }
+            }
+        ],
+        "draft": "title: \"First apprentice\"\nexcerpt: 'Northfold is taking on its first apprentice in January. Two years on site and in the studio, no degree needed, and applications close on 30 November.'\ncategory: news\nbody: |-\n  We're taking on an apprentice. It's the first time Northfold has done this, it starts in January, and it runs for two years. You don't need a degree, just a real wish to get into garden design and landscaping. Letters need to reach us by 30 November.\n\n  We've never done this before. We're rather looking forward to it.\n\n  ## What the two years involve\n\n  You'll split your time between site and the design office. On site, that's the real work of making a garden: digging the soil pit we dig on every project, setting out beds, planting, and going back later to see what has thrived and what has sulked. In the office, it's surveys, drawings and planting plans, and we start those by hand before anything goes near a screen.\n\n  You'll learn by doing, alongside the rest of us, on real gardens for real people.\n\n  ## Who we're looking for\n\n  Someone curious and practical. You don't need a degree. You might be leaving school. You might be changing career. You might be the person friends ring when their roses look poorly, who has never quite had the chance to do it properly.\n\n  What matters is that you notice things, ask why, and don't mind muddy knees. Most of our gardens are in Northumberland, so you'll need to be local, or happy to become so.\n\n  ## How to apply\n\n  There's no form. Just write us a short letter about one thing:\n\n  **A garden or landscape you love, and why.**\n\n  It can be famous, or it can be your gran's back yard. A page is plenty. We'd much rather hear what you noticed than read a list of what you've done.\n\n  Send it to the studio by **30 November**. If you have questions before then, get in touch. We're happy to chat.\n\n  And if someone you know should read this, please pass it on.\n\n  We don't know yet who will write to us, or which garden they'll choose. That's the part we're most looking forward to. Will we do it again? Ask us in two years.",
+        "status": "idle",
+        "error": null,
+        "element_id": 109,
+        "site_id": 1,
+        "user_id": 1,
+        "touched_by": 1,
+        "run_by": 1,
+        "usage": {
+            "input": 28379,
+            "output": 6466
+        },
+        "examples": [],
+        "images": [],
+        "source": 109,
+        "entry_type": null,
+        "applied_at": null,
+        "created_at": "2026-10-02T00:25:57+01:00",
+        "updated_at": "2026-10-02T14:22:55+01:00"
+    }
+}

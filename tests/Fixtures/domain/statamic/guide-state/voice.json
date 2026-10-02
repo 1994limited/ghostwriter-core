@@ -1,0 +1,87 @@
+{
+    "source": "gw-test-statamic storage/ghostwriter/voice.json",
+    "format": "statamic",
+    "type": "guide-state",
+    "handle": "voice",
+    "record": {
+        "status": "idle",
+        "error": null,
+        "task": null,
+        "messages": [],
+        "scanned": [
+            {
+                "title": "About",
+                "collection": "pages"
+            },
+            {
+                "title": "Replanting a community orchard in Hebden Bridge",
+                "collection": "journal"
+            },
+            {
+                "title": "Approach",
+                "collection": "pages"
+            },
+            {
+                "title": "Priya joins the studio",
+                "collection": "journal"
+            },
+            {
+                "title": "Careers",
+                "collection": "pages"
+            },
+            {
+                "title": "Ten jobs for the first warm weekend",
+                "collection": "journal"
+            },
+            {
+                "title": "Contact",
+                "collection": "pages"
+            },
+            {
+                "title": "We've moved into the old dairy",
+                "collection": "journal"
+            },
+            {
+                "title": "Home",
+                "collection": "pages"
+            },
+            {
+                "title": "How a planting plan comes together",
+                "collection": "journal"
+            },
+            {
+                "title": "Services",
+                "collection": "pages"
+            },
+            {
+                "title": "Why we leave the seedheads standing",
+                "collection": "journal"
+            },
+            {
+                "title": "Five trees for a small garden",
+                "collection": "journal"
+            },
+            {
+                "title": "Bringing back a walled garden near Corbridge",
+                "collection": "journal"
+            },
+            {
+                "title": "What to do in the garden in October",
+                "collection": "journal"
+            },
+            {
+                "title": "Planting for salt and wind at Craster",
+                "collection": "journal"
+            },
+            {
+                "title": "Meadows are not low-maintenance",
+                "collection": "journal"
+            },
+            {
+                "title": "A rain garden for a terrace in Headingley",
+                "collection": "journal"
+            }
+        ],
+        "pending": []
+    }
+}

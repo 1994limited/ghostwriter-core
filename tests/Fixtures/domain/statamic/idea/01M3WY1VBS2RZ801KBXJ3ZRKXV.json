@@ -1,0 +1,17 @@
+{
+    "source": "gw-test-statamic resources/ghostwriter/ideas.yaml, item 7",
+    "format": "statamic",
+    "type": "idea",
+    "record": {
+        "id": "01M3WY1VBS2RZ801KBXJ3ZRKXV",
+        "title": "What to do in the garden in February",
+        "collection": "journal",
+        "type": null,
+        "why": "\"What to do in the garden in October\" and \"Ten jobs for the first warm weekend\" cover autumn and spring, but there's nothing for late winter, when \"Why we leave the seedheads standing\" leaves readers wondering when to finally cut back.",
+        "notes": "Open on a concrete February scene, such as frost on the seedheads that were left up. Cover when to cut back grasses and perennials, winter pruning, cleaning tools and planning the year. Keep the dry payoffs, along the lines of \"You'll thank yourself in March.\" It's written for the reader who gardens themselves.",
+        "status": "open",
+        "source": "suggested",
+        "session": null,
+        "created_at": "2026-10-01"
+    }
+}

@@ -1,0 +1,49 @@
+{
+    "source": "synthetic: the YAML Craft TypeRepository::save() writes into a type document, with an entry type, where, defaults and examples",
+    "format": "craft",
+    "type": "kind",
+    "handle": "guide",
+    "record": {
+        "title": "Planting guide",
+        "description": "A seasonal how-to.",
+        "section": "journal",
+        "entryType": "guide",
+        "where": {
+            "relatedTo": 12
+        },
+        "defaults": {
+            "featured": true
+        },
+        "examples": [
+            109,
+            110
+        ],
+        "questions": [
+            {
+                "handle": "subject",
+                "label": "What is the guide about?",
+                "type": "textarea",
+                "required": true
+            },
+            {
+                "handle": "audience",
+                "label": "Who is it for?",
+                "instructions": "One line is enough.",
+                "type": "text"
+            },
+            {
+                "handle": "season",
+                "label": "Season",
+                "type": "select",
+                "options": {
+                    "spring": "Spring",
+                    "autumn": "Autumn"
+                }
+            }
+        ],
+        "guidance": "Open on the moment in the year.",
+        "checklist": [
+            "Says when to plant."
+        ]
+    }
+}

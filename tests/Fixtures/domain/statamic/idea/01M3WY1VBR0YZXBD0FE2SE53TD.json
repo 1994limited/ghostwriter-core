@@ -1,0 +1,17 @@
+{
+    "source": "gw-test-statamic resources/ghostwriter/ideas.yaml, item 6",
+    "format": "statamic",
+    "type": "idea",
+    "record": {
+        "id": "01M3WY1VBR0YZXBD0FE2SE53TD",
+        "title": "Turning a lawn into a meadow",
+        "collection": "journal",
+        "type": null,
+        "why": "\"Meadows are not low-maintenance\" makes the case for and against, but never follows up with how to actually do it, which is the obvious next question for anyone it persuaded.",
+        "notes": "This is a practical companion to the opinion piece and should link back to it. Cover stripping or reducing fertility, sowing yellow rattle (glossed as a semi-parasitic annual that weakens the grasses), timing for a northern autumn, and the annual cut and lift. Be honest that the first two years look disappointing. [Need: the studio's preferred method and seed sources, and a project to point to if there is one.]",
+        "status": "open",
+        "source": "suggested",
+        "session": null,
+        "created_at": "2026-10-01"
+    }
+}

@@ -1,0 +1,10 @@
+{
+    "source": "synthetic: an entry of Craft's types state, as TypeState::set() writes it",
+    "format": "craft",
+    "type": "analysis",
+    "handle": "journal",
+    "record": {
+        "status": "idle",
+        "error": null
+    }
+}

@@ -1,0 +1,18 @@
+{
+    "source": "gw-test-craft ghostwriter_documents idea/02c114adc61257d5, the body",
+    "format": "craft",
+    "type": "idea",
+    "handle": "02c114adc61257d5",
+    "record": {
+        "id": "02c114adc61257d5",
+        "title": "What a garden design costs, and where the money goes",
+        "section": "journal",
+        "type": null,
+        "why": "Nothing on the site helps a reader set a budget before they get in touch. The Services and Approach pages describe what we do, and \"Why we start every project with a soil pit\" calls the pit the cheapest hour of a project, but no piece gives the price of anything.",
+        "notes": "Open with the question we're asked most and give the honest answer plainly, in pounds. Break a typical project into its parts (first visit, design, planting plan, build, plants) and say which ones people underestimate. Close with the fee promise in the house style and an invitation to book a first visit. [Needs real figures from the studio for consultation fees, design fees and typical build ranges, plus one anonymised project breakdown.]",
+        "status": "open",
+        "source": "suggested",
+        "session": null,
+        "createdAt": "2026-10-02"
+    }
+}

@@ -1,0 +1,30 @@
+{
+    "source": "gw-test-statamic storage/ghostwriter/kinds.json, \"pages\"",
+    "format": "statamic",
+    "type": "kind-suggestions",
+    "handle": "pages",
+    "record": {
+        "status": "idle",
+        "error": null,
+        "checked_at": "2026-10-01T23:18:34+00:00",
+        "entries": 6,
+        "suggestions": [
+            {
+                "id": "nya15hen69dq",
+                "title": "Site page",
+                "description": "A standalone page about the studio itself, such as its home, story, approach, services, careers or contact details, that opens with a hero line and a call to action and then explains one part of the business to prospective clients or recruits.",
+                "why": "All six entries are top-level pages built the same way (hero, text, image, quote, cta), each with a short headline, a one-line intro and a button before plain-spoken sections about one part of Northfold.",
+                "examples": [
+                    "049ed0c0-9796-43f7-b158-4f6129328c12",
+                    "f98bb856-15a9-4274-b95b-abd38b305309",
+                    "76ef333e-a8a3-49c8-9a75-bbd61fc6e2f6",
+                    "b123ff03-cb8d-4ba0-a5ed-4501d31f0740",
+                    "9e6d081b-84e7-427e-be33-95a2ffea878f",
+                    "bcf2c65a-99a0-4d4b-a9fa-6ff4cb5f82d6"
+                ],
+                "blueprint": "pages"
+            }
+        ],
+        "dismissed": []
+    }
+}

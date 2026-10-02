@@ -1,0 +1,50 @@
+{
+    "source": "synthetic: the YAML Statamic TypeRepository::save() writes for a kind with a blueprint, where, defaults and examples",
+    "format": "statamic",
+    "type": "kind",
+    "handle": "guide",
+    "record": {
+        "title": "Planting guide",
+        "description": "A seasonal how-to for one plant or task.",
+        "collection": "journal",
+        "blueprint": "journal",
+        "where": {
+            "category": "guides"
+        },
+        "defaults": {
+            "featured": false
+        },
+        "examples": [
+            "946d6d06-9812-459f-8a18-08fd0382a421",
+            "0b4c1f5e-1111-4222-8333-944455556666"
+        ],
+        "questions": [
+            {
+                "handle": "subject",
+                "label": "What is the guide about?",
+                "type": "textarea",
+                "required": true
+            },
+            {
+                "handle": "audience",
+                "label": "Who is it for?",
+                "instructions": "One line is enough.",
+                "type": "text"
+            },
+            {
+                "handle": "season",
+                "label": "Season",
+                "type": "select",
+                "options": {
+                    "spring": "Spring",
+                    "autumn": "Autumn"
+                }
+            }
+        ],
+        "guidance": "Open on the moment in the year.\n\nKeep steps short.",
+        "checklist": [
+            "Says when to plant.",
+            "Says how deep."
+        ]
+    }
+}

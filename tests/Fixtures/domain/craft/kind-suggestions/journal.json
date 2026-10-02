@@ -1,0 +1,62 @@
+{
+    "source": "gw-test-craft ghostwriter_state kinds, \"journal\"",
+    "format": "craft",
+    "type": "kind-suggestions",
+    "handle": "journal",
+    "record": {
+        "status": "idle",
+        "error": null,
+        "checkedAt": "2026-10-02T00:19:02+01:00",
+        "entries": 12,
+        "suggestions": [
+            {
+                "id": "2712682ec027",
+                "title": "Project story",
+                "description": "A write-up of a garden the studio designed and built, covering the site, the client's brief, the planting choices and how the garden has turned out.",
+                "why": "Three entries (the Corbridge walled garden revisit, the Prudhoe school garden and the Allendale Mill courtyard) each tell the story of one named Northfold project from site to result.",
+                "examples": [
+                    17,
+                    35,
+                    27
+                ],
+                "entryType": "article"
+            },
+            {
+                "id": "fd6f5dde4198",
+                "title": "Gardening guide",
+                "description": "A practical explainer on one gardening technique or planting idea, telling readers why it is worth doing and how to go about it.",
+                "why": "Three entries (making a meadow, rain gardens and winter-structure plants) each take one topic and give hands-on advice that a reader could apply to their own garden.",
+                "examples": [
+                    25,
+                    33,
+                    29
+                ],
+                "entryType": "article"
+            },
+            {
+                "id": "ab2b864570d3",
+                "title": "Studio news",
+                "description": "A first-person update about Northfold itself, such as an anniversary, a new team member or a first venture, written to share the studio's life with readers.",
+                "why": "Three entries (the ten-year anniversary, the welcome for Hannah and the first show garden) are about the studio rather than a client garden or a technique.",
+                "examples": [
+                    39,
+                    23,
+                    31
+                ],
+                "entryType": "article"
+            },
+            {
+                "id": "969c65e153cb",
+                "title": "Seasonal jobs",
+                "description": "A checklist-style piece setting out which garden jobs to do in a given season, and in what order or priority.",
+                "why": "Two entries (spring jobs and late autumn jobs) are organised around a time of year and work through a list of tasks for that season.",
+                "examples": [
+                    37,
+                    19
+                ],
+                "entryType": "article"
+            }
+        ],
+        "dismissed": []
+    }
+}

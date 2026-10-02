@@ -1,0 +1,17 @@
+{
+    "source": "gw-test-statamic resources/ghostwriter/ideas.yaml, item 8",
+    "format": "statamic",
+    "type": "idea",
+    "record": {
+        "id": "01M3WY1VBTQ8DX1DXACD9QCM5E",
+        "title": "Questions",
+        "collection": "pages",
+        "type": null,
+        "why": "The pages cover who the studio is and what it offers, but nothing gathers the practical questions a prospective client has before getting in touch, such as how far the studio travels, whether it builds as well as designs, and how long projects take.",
+        "notes": "Follow the house page order: a warm tagline, a one-line intro, a call to action, short question-and-answer sections, an image caption, a client quote with attribution, and a closing question with a \"Book a consultation\" button. Talk about cost only in principle. [Need: the studio's real answers on area covered, typical timescales, build partners and aftercare, plus a client quote.]",
+        "status": "open",
+        "source": "suggested",
+        "session": null,
+        "created_at": "2026-10-01"
+    }
+}

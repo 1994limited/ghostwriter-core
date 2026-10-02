@@ -1,0 +1,18 @@
+{
+    "source": "gw-test-craft ghostwriter_documents idea/0949930f396eb270, the body",
+    "format": "craft",
+    "type": "idea",
+    "handle": "0949930f396eb270",
+    "record": {
+        "id": "0949930f396eb270",
+        "title": "The first year after planting",
+        "section": "journal",
+        "type": null,
+        "why": "The site covers designing and building gardens and revisits projects two years on (\"A walled garden in Corbridge, two years on\"), but nothing tells a new client what the first twelve months will look and feel like or what to do in them.",
+        "notes": "This is aftercare advice for people whose garden has just been planted. Be honest that it will look thin and that some plants will sulk or die, and set out the jobs that matter: watering through the first dry spell, weeding before mulch breaks down, and not fussing with plants that look unhappy. Use bold-lead list items. The maxim \"The first year will disappoint you. The second will surprise you.\" fits as the blockquote. [Needs the studio's actual aftercare offer, if there is one, and whether we replace failed plants.]",
+        "status": "open",
+        "source": "suggested",
+        "session": null,
+        "createdAt": "2026-10-02"
+    }
+}

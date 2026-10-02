@@ -1,0 +1,359 @@
+{
+    "source": "gw-test-statamic storage/ghostwriter/sessions/01M3WWM3KKW1FV098209K5HHYE.json",
+    "format": "statamic",
+    "type": "session",
+    "record": {
+        "id": "01M3WWM3KKW1FV098209K5HHYE",
+        "type": "any:journal",
+        "answers": {
+            "subject": "Planting tulip and allium bulbs in October, and why October is the right month for them in northern gardens. A practical how-to for the Journal: when to plant, how deep and how far apart, pots versus borders, and what to do in March when they come up.",
+            "reader": "Home gardeners in the north, mostly people with a small or medium garden who want a spring display and aren't sure when or how to plant. After reading they should go and buy bulbs and get them in the ground or in pots this month. Secondary: people thinking about a planting plan who might get in touch with us.",
+            "points": "- Why October suits tulips and alliums in northern gardens. Soil is cooling but still workable. Planting tulips later, once it's colder, helps avoid tulip fire. Alliums can go in a bit earlier, from September into October.\n- Depth rule of thumb: plant at two to three times the height of the bulb, pointy end up. Tulips go deeper in pots and exposed spots.\n- Spacing rule of thumb: about two bulb-widths apart in borders. Closer in pots for a fuller look.\n- Pots vs borders. Pots need good drainage, gritty compost and somewhere sheltered from waterlogging. Borders: plant in drifts or groups, not single lines, and mark where they are so you don't dig into them later. Tulips in pots are easier to treat as annuals. Alliums are happy to stay in a border for years.\n- One short anecdote from a client garden: [Add: the client garden (no name unless public), what was planted, and what happened. One or two sentences]\n- [Check: could \"Bringing back a walled garden near Corbridge\" or \"A rain garden for a terrace in Headingley\" be the source of the anecdote? Say what we did]\n- End with what to do in March: check pots haven't dried out or waterlogged, watch for shoots and slug damage, feed if needed, and note gaps for next autumn's order.\n- [Check: link to \"What to do in the garden in October\" and \"Ten jobs for the first warm weekend\"]",
+            "shape": "Practical how-to, around 800 to 1,000 words. Short intro on why October, then sections for depth and spacing, pots vs borders, the anecdote as a short aside, and a closing section on March. Depth and spacing could be a short list so people can use it at the potting bench.",
+            "must_not_appear": "Client names and garden addresses that aren't already public. No specific bulb suppliers or prices."
+        },
+        "messages": [
+            {
+                "role": "user",
+                "content": "Here is the brief for a new entry: Something new.\n\n**What is this about?**\nPlanting tulip and allium bulbs in October, and why October is the right month for them in northern gardens. A practical how-to for the Journal: when to plant, how deep and how far apart, pots versus borders, and what to do in March when they come up.\n\n**Who is it for, and what should they do after reading?**\nHome gardeners in the north, mostly people with a small or medium garden who want a spring display and aren't sure when or how to plant. After reading they should go and buy bulbs and get them in the ground or in pots this month. Secondary: people thinking about a planting plan who might get in touch with us.\n\n**What must it say?**\n- Why October suits tulips and alliums in northern gardens. Soil is cooling but still workable. Planting tulips later, once it's colder, helps avoid tulip fire. Alliums can go in a bit earlier, from September into October.\n- Depth rule of thumb: plant at two to three times the height of the bulb, pointy end up. Tulips go deeper in pots and exposed spots.\n- Spacing rule of thumb: about two bulb-widths apart in borders. Closer in pots for a fuller look.\n- Pots vs borders. Pots need good drainage, gritty compost and somewhere sheltered from waterlogging. Borders: plant in drifts or groups, not single lines, and mark where they are so you don't dig into them later. Tulips in pots are easier to treat as annuals. Alliums are happy to stay in a border for years.\n- One short anecdote from a client garden: [Add: the client garden (no name unless public), what was planted, and what happened. One or two sentences]\n- [Check: could \"Bringing back a walled garden near Corbridge\" or \"A rain garden for a terrace in Headingley\" be the source of the anecdote? Say what we did]\n- End with what to do in March: check pots haven't dried out or waterlogged, watch for shoots and slug damage, feed if needed, and note gaps for next autumn's order.\n- [Check: link to \"What to do in the garden in October\" and \"Ten jobs for the first warm weekend\"]\n\n**Anything about its shape or length?**\nPractical how-to, around 800 to 1,000 words. Short intro on why October, then sections for depth and spacing, pots vs borders, the anecdote as a short aside, and a closing section on March. Depth and spacing could be a short list so people can use it at the potting bench.\n\n**What must not appear?**\nClient names and garden addresses that aren't already public. No specific bulb suppliers or prices.",
+                "at": "2026-10-01T23:26:03+00:00"
+            },
+            {
+                "role": "assistant",
+                "content": "Before I draft, I need the client-garden anecdote, since it's the one part I can't write without inventing a project. 1. Which garden is it from: the walled garden near Corbridge, the rain garden in Headingley, or another (described without a name or address)? 2. What did we plant there: tulips, alliums or both, in pots or borders, and the varieties if you know them? 3. What actually happened, in a sentence: what went well or badly, and when?",
+                "at": "2026-10-01T23:26:14+00:00",
+                "asks": true
+            },
+            {
+                "role": "user",
+                "content": "1. The walled garden near Corbridge.\n2. Both, in the borders: 'Ballerina' and 'Queen of Night' tulips, with Allium 'Purple Sensation' between them. Planted in the last week of October.\n3. A wet November rotted about a third of the tulips on the heavy clay; the alliums all came up. The next autumn we added a handful of grit under each bulb and lost almost none.",
+                "at": "2026-10-01T23:29:57+00:00"
+            },
+            {
+                "role": "assistant",
+                "content": "I've written it as a seasonal how-to, using your Corbridge details as the aside. The link entries are mentioned by name near the end, so the links need adding. Things like what tulip fire is, tulips fading after a year, slugs on young leaves and allium seedheads come from general gardening knowledge, with no figures. I've also asked for hero image options.",
+                "at": "2026-10-01T23:31:11+00:00",
+                "asks": false,
+                "draft": {
+                    "change": "written",
+                    "words": 869,
+                    "was": null
+                }
+            },
+            {
+                "role": "user",
+                "content": "Make the opening shorter and add a short bulleted checklist near the end.",
+                "at": "2026-10-01T23:31:48+00:00"
+            },
+            {
+                "role": "assistant",
+                "content": "I've cut the opening to three sentences and added a five-item checklist under \"The short version\", after the March section and before the links. Nothing else has changed, and the hero image request from last time still stands.",
+                "at": "2026-10-01T23:32:09+00:00",
+                "asks": false,
+                "draft": {
+                    "change": "updated",
+                    "words": 897,
+                    "was": 869
+                }
+            },
+            {
+                "role": "user",
+                "content": "This entry already exists on the site. Its content as it stands is the current draft. I will ask for changes to it.",
+                "at": "2026-10-01T23:43:40+00:00"
+            },
+            {
+                "role": "assistant",
+                "content": "I have the entry as it stands. Tell me what to change.",
+                "at": "2026-10-01T23:43:40+00:00",
+                "editing": true
+            },
+            {
+                "role": "user",
+                "content": "Add a short paragraph at the bottom",
+                "at": "2026-10-01T23:44:09+00:00"
+            },
+            {
+                "role": "assistant",
+                "content": "I've added a short closing paragraph for anyone who missed October: tulips can still go in later, as long as the ground isn't frozen. That's general gardening knowledge, with no figures. Nothing else has changed, and the hero image is as it was.",
+                "at": "2026-10-01T23:44:46+00:00",
+                "asks": false,
+                "draft": {
+                    "change": "updated",
+                    "words": 940,
+                    "was": 903
+                }
+            },
+            {
+                "role": "user",
+                "content": "Make the excerpt a single short sentence. Change nothing else.",
+                "at": "2026-10-02T13:22:41+00:00",
+                "by": "a979f014-fd47-4b6a-b57d-a9fd807b911f"
+            },
+            {
+                "role": "assistant",
+                "content": "I've shortened the excerpt to its first sentence, \"Two kinds of bulb, one month and a handful of grit.\" Nothing else has changed. The hero image stays as it is, so it's left out of the draft and there's no images block.",
+                "at": "2026-10-02T13:22:59+00:00",
+                "asks": false,
+                "draft": {
+                    "change": "updated",
+                    "words": 922,
+                    "was": 946
+                }
+            }
+        ],
+        "draft": "title: \"Planting tulips and alliums in October\"\nexcerpt: \"Two kinds of bulb, one month and a handful of grit.\"\nbody: |-\n  Every April, someone looks at our tulips and tells us they meant to plant some this year. What they meant was October. If you're reading this in October, you've still got time.\n\n  ## Why October\n\n  Bulbs want soil that's cooling down but still workable. In the north, October is when those two overlap: the ground has lost its summer warmth, but it isn't yet cold and sodden, and a trowel still goes in without a fight.\n\n  Alliums are the early ones. They're happy to go in from September into October, and the sooner they're in, the sooner they get their roots down.\n\n  Tulips are better a little later. Wait until the weather has properly turned, towards the end of the month. Planting into colder soil helps you avoid tulip fire, a fungal disease that spots and twists the leaves and can spoil a whole planting. There's no prize for getting tulips in early. There's quite a big one for getting them in at all.\n\n  ## How deep, how far apart\n\n  Two rules of thumb cover nearly everything. Write them on the back of an envelope and keep it at the potting bench.\n\n  - Depth: two to three times the height of the bulb\n  - Pointy end up (if you really can't tell, lay it on its side and it'll sort itself out)\n  - Tulips a bit deeper in pots and exposed spots, where the wind rocks tall stems\n  - Spacing in borders: about two bulb-widths apart\n  - Spacing in pots: closer, for a fuller look\n\n  If you're unsure, go deeper rather than shallower. A deep bulb stands steadier when a cold April wind comes through.\n\n  ## Pots or borders\n\n  Both work. They just ask different things of you.\n\n  Pots are mostly about water, and getting rid of it. Make sure there are proper drainage holes, use a gritty compost (or mix a good amount of grit into your usual one), and stand the pots somewhere sheltered from the worst of the winter rain. Lifting them onto pot feet or a couple of bricks stops them sitting in a puddle. A pot that waterlogs in January is a pot of rotten bulbs by March.\n\n  Tulips in pots are easiest treated as annuals. Enjoy them, compost them when they're over and start again next autumn. Plenty of tulips dwindle after their first year anyway, so if yours come back, call it a bonus.\n\n  In borders, plant in drifts or groups, not single lines. A row of tulips along a path looks like a queue. Dig a wide hole, set a group of bulbs in it, then do the same again a little way off, with uneven gaps between. It looks far more like they meant to be there.\n\n  Then mark where they are. A short cane or a label is enough. By July the leaves will have gone and you'll have forgotten, and a spade through a clump of bulbs is a sad way to remember.\n\n  Alliums are happy to stay in a border for years. Allium 'Purple Sensation' earns its keep twice: once in flower in late spring, and again when the seedheads stand on through summer.\n\n  ## A lesson from Corbridge\n\n  In the walled garden we've been bringing back near Corbridge, we planted Tulipa 'Ballerina' and Tulipa 'Queen of Night' in the borders in the last week of October, with Allium 'Purple Sensation' between them. Then November was wet. The ground there is heavy clay, and about a third of the tulips rotted. Every single allium came up.\n\n  The next autumn we put a handful of grit under each tulip bulb. We lost almost none. If your soil is clay, this is the one step we'd never skip.\n\n  ## What to do in March\n\n  March is when you find out how October went. A few things are worth doing:\n\n  - Check pots haven't dried out, or gone the other way and waterlogged\n  - Watch for shoots coming through, and for slugs, which are very fond of young tulip leaves\n  - Feed if they look like they need it, especially anything you're hoping to keep for another year\n  - Note the gaps while you can see them, for next autumn's order\n\n  That last one is the job everyone skips. Take a few photos in April when everything's out. In October you won't remember where the bare patch was, and the photos will.\n\n  ## The short version\n\n  - Alliums in now, tulips towards the end of the month\n  - Two to three times the bulb's height, pointy end up\n  - Grit in the pots, and under the bulbs on clay\n  - Drifts, not lines\n  - A cane where every group went\n\n  For the rest of this month's jobs, our piece on what to do in the garden in October has the list. When the weather finally turns, Ten jobs for the first warm weekend picks up where March leaves off.\n\n  A spring garden is mostly planted in autumn.\n\n  So go and buy some bulbs this month and get them in. And if you'd like a hand with a planting plan for the whole garden, not just the bulbs, it might be worth a conversation.\n\n  And if October gets away from you (it usually does), don't leave the tulips in the shed. They'll still go in through November, and often into December, as long as the ground isn't frozen. They may flower a little late. They'll still flower.\ncategory: seasonal",
+        "status": "idle",
+        "error": null,
+        "entry_id": null,
+        "user_id": "a979f014-fd47-4b6a-b57d-a9fd807b911f",
+        "usage": {
+            "input": 42832,
+            "output": 12088
+        },
+        "examples": [],
+        "images": {
+            "hero_image": {
+                "status": "done",
+                "path": "journal/planting-tulips-and-alliums-in-october-yskqi3.jpg",
+                "url": "/assets/journal/planting-tulips-and-alliums-in-october-yskqi3.jpg",
+                "error": null,
+                "credit": "mkniebes via Openverse",
+                "query": "allium seedheads border; tulip bulbs terracotta pot; trowel autumn soil",
+                "options": [
+                    {
+                        "source": "openverse",
+                        "id": "f848ea4b-7000-412c-979b-9b1c4e459a35",
+                        "thumb": "https://api.openverse.org/v1/images/f848ea4b-7000-412c-979b-9b1c4e459a35/thumb/",
+                        "credit": "Unknown via Openverse",
+                        "credit_url": "https://www.rawpixel.com/image/3294147/free-photo-image-adventure-blue-sky-cc0",
+                        "licence": "CC0",
+                        "term": "minimalist hills sunrise illustration"
+                    },
+                    {
+                        "source": "openverse",
+                        "id": "2a4201be-7d03-45b3-8656-b1cc170fd2d0",
+                        "thumb": "https://api.openverse.org/v1/images/2a4201be-7d03-45b3-8656-b1cc170fd2d0/thumb/",
+                        "credit": "mkniebes via Openverse",
+                        "credit_url": "https://www.flickr.com/photos/76696276@N00/51587288218",
+                        "licence": "CC0",
+                        "term": "muted green hills vector"
+                    },
+                    {
+                        "source": "openverse",
+                        "id": "d96046ae-7a63-49c6-9e21-bb3eea74c85b",
+                        "thumb": "https://api.openverse.org/v1/images/d96046ae-7a63-49c6-9e21-bb3eea74c85b/thumb/",
+                        "credit": "themet via Openverse",
+                        "credit_url": "https://www.rawpixel.com/image/8004535/the-nile-front-the-theban-hills",
+                        "licence": "CC0",
+                        "term": "minimalist hills sunrise illustration"
+                    },
+                    {
+                        "source": "openverse",
+                        "id": "186b5194-c14d-436f-a657-fa105ecf1654",
+                        "thumb": "https://api.openverse.org/v1/images/186b5194-c14d-436f-a657-fa105ecf1654/thumb/",
+                        "credit": "brenkee via Openverse",
+                        "credit_url": "https://www.flickr.com/photos/55128416@N05/36602574621",
+                        "licence": "CC0",
+                        "term": "minimalist hills sunrise illustration"
+                    },
+                    {
+                        "source": "openverse",
+                        "id": "8a006958-f69f-4567-846c-4c63c1441c73",
+                        "thumb": "https://api.openverse.org/v1/images/8a006958-f69f-4567-846c-4c63c1441c73/thumb/",
+                        "credit": "Mustang Joe via Openverse",
+                        "credit_url": "https://www.flickr.com/photos/63234672@N04/54976102304",
+                        "licence": "CC0",
+                        "term": "minimalist hills sunrise illustration"
+                    },
+                    {
+                        "source": "openverse",
+                        "id": "98305e4c-5dad-471f-82b2-2c76775db274",
+                        "thumb": "https://api.openverse.org/v1/images/98305e4c-5dad-471f-82b2-2c76775db274/thumb/",
+                        "credit": "Unknown via Openverse",
+                        "credit_url": "https://www.rawpixel.com/image/18984921/hohensolms-may-19-1866-carl-theodor-reiffenstein",
+                        "licence": "CC0",
+                        "term": "minimalist hills sunrise illustration"
+                    },
+                    {
+                        "source": "openverse",
+                        "id": "b772523b-ebd6-4b23-b49f-87647ce222f3",
+                        "thumb": "https://api.openverse.org/v1/images/b772523b-ebd6-4b23-b49f-87647ce222f3/thumb/",
+                        "credit": "PSDESIRE - photoshopdesire.com via Openverse",
+                        "credit_url": "https://www.flickr.com/photos/145706714@N04/37613534195",
+                        "licence": "CC0",
+                        "term": "flat vector garden landscape"
+                    },
+                    {
+                        "source": "openverse",
+                        "id": "a4b1195a-41d0-4f55-9a67-f7b91e3eaf98",
+                        "thumb": "https://api.openverse.org/v1/images/a4b1195a-41d0-4f55-9a67-f7b91e3eaf98/thumb/",
+                        "credit": "Wonderlane via Openverse",
+                        "credit_url": "https://www.flickr.com/photos/71401718@N00/2131215620",
+                        "licence": "CC0",
+                        "term": "flat vector garden landscape"
+                    },
+                    {
+                        "source": "openverse",
+                        "id": "65046416-f9dc-4c73-9551-1804f905dbfe",
+                        "thumb": "https://api.openverse.org/v1/images/65046416-f9dc-4c73-9551-1804f905dbfe/thumb/",
+                        "credit": "PSDESIRE - photoshopdesire.com via Openverse",
+                        "credit_url": "https://www.flickr.com/photos/145706714@N04/26724433479",
+                        "licence": "CC0",
+                        "term": "flat vector garden landscape"
+                    },
+                    {
+                        "source": "openverse",
+                        "id": "e89460be-91e0-4a51-abdf-d2930481346c",
+                        "thumb": "https://api.openverse.org/v1/images/e89460be-91e0-4a51-abdf-d2930481346c/thumb/",
+                        "credit": "larus10 via Openverse",
+                        "credit_url": "https://www.flickr.com/photos/27846187@N07/7978126073",
+                        "licence": "Public domain",
+                        "term": "flat vector garden landscape"
+                    },
+                    {
+                        "source": "openverse",
+                        "id": "47803b00-361c-4f69-90b8-2cc019e483ff",
+                        "thumb": "https://api.openverse.org/v1/images/47803b00-361c-4f69-90b8-2cc019e483ff/thumb/",
+                        "credit": "ipressthis via Openverse",
+                        "credit_url": "https://www.flickr.com/photos/142187213@N05/29140655195",
+                        "licence": "Public domain",
+                        "term": "flat vector garden landscape"
+                    },
+                    {
+                        "source": "openverse",
+                        "id": "f1228fa4-7c74-4e96-8bf0-5606ecdc4b1c",
+                        "thumb": "https://api.openverse.org/v1/images/f1228fa4-7c74-4e96-8bf0-5606ecdc4b1c/thumb/",
+                        "credit": "Pradana Aumars (talk · contribs) via Openverse",
+                        "credit_url": "https://commons.wikimedia.org/w/index.php?curid=75240786",
+                        "licence": "CC0",
+                        "term": "flat vector garden landscape"
+                    },
+                    {
+                        "source": "openverse",
+                        "id": "abdc77a2-2df6-45c8-8e11-6b7a12acadaa",
+                        "thumb": "https://api.openverse.org/v1/images/abdc77a2-2df6-45c8-8e11-6b7a12acadaa/thumb/",
+                        "credit": "Brandon Zhang via Openverse",
+                        "credit_url": "https://wordpress.org/photos/photo/6186a296e3/",
+                        "licence": "CC0",
+                        "term": "muted green hills vector"
+                    },
+                    {
+                        "source": "openverse",
+                        "id": "a8968622-c547-47f1-9596-680fc0043da2",
+                        "thumb": "https://api.openverse.org/v1/images/a8968622-c547-47f1-9596-680fc0043da2/thumb/",
+                        "credit": "Faisal Ahammad via Openverse",
+                        "credit_url": "https://wordpress.org/photos/photo/75068b5d1c/",
+                        "licence": "CC0",
+                        "term": "muted green hills vector"
+                    },
+                    {
+                        "source": "openverse",
+                        "id": "ff547519-c223-4a0b-9e5e-7f05c3acffcc",
+                        "thumb": "https://api.openverse.org/v1/images/ff547519-c223-4a0b-9e5e-7f05c3acffcc/thumb/",
+                        "credit": "Bernard Spragg via Openverse",
+                        "credit_url": "https://www.flickr.com/photos/88123769@N02/11415901286",
+                        "licence": "CC0",
+                        "term": "muted green hills vector"
+                    },
+                    {
+                        "source": "openverse",
+                        "id": "e99f1d45-7737-4b73-8349-722fb3c722d7",
+                        "thumb": "https://api.openverse.org/v1/images/e99f1d45-7737-4b73-8349-722fb3c722d7/thumb/",
+                        "credit": "Bernard Spragg via Openverse",
+                        "credit_url": "https://www.flickr.com/photos/88123769@N02/10552179665",
+                        "licence": "CC0",
+                        "term": "muted green hills vector"
+                    },
+                    {
+                        "source": "openverse",
+                        "id": "85594bea-f9f2-470b-9498-85ef2ba270ba",
+                        "thumb": "https://api.openverse.org/v1/images/85594bea-f9f2-470b-9498-85ef2ba270ba/thumb/",
+                        "credit": "Queensland State Archives via Openverse",
+                        "credit_url": "https://www.flickr.com/photos/60455048@N02/24085927788",
+                        "licence": "Public domain",
+                        "term": "muted green hills vector"
+                    },
+                    {
+                        "source": "openverse",
+                        "id": "f4c82de9-dca0-4594-b3ed-97b14d6d0523",
+                        "thumb": "https://api.openverse.org/v1/images/f4c82de9-dca0-4594-b3ed-97b14d6d0523/thumb/",
+                        "credit": "Bernard Spragg via Openverse",
+                        "credit_url": "https://www.flickr.com/photos/88123769@N02/23256763930",
+                        "licence": "CC0",
+                        "term": "allium seedheads border"
+                    },
+                    {
+                        "source": "openverse",
+                        "id": "efae0538-777c-494d-8a18-a368e7a16a99",
+                        "thumb": "https://api.openverse.org/v1/images/efae0538-777c-494d-8a18-a368e7a16a99/thumb/",
+                        "credit": "Bernard Spragg. NZ from Christchurch, New Zealand via Openverse",
+                        "credit_url": "https://commons.wikimedia.org/w/index.php?curid=70122404",
+                        "licence": "CC0",
+                        "term": "allium seedheads border"
+                    },
+                    {
+                        "source": "openverse",
+                        "id": "7d9586b2-57f4-4774-881e-1767124f7f49",
+                        "thumb": "https://api.openverse.org/v1/images/7d9586b2-57f4-4774-881e-1767124f7f49/thumb/",
+                        "credit": "Unknown via Openverse",
+                        "credit_url": "https://www.rawpixel.com/image/5939804/export-tulip-bulbs",
+                        "licence": "CC0",
+                        "term": "tulip bulbs terracotta pot"
+                    },
+                    {
+                        "source": "openverse",
+                        "id": "ad85b461-52c3-4a63-8e03-0eead924cce1",
+                        "thumb": "https://api.openverse.org/v1/images/ad85b461-52c3-4a63-8e03-0eead924cce1/thumb/",
+                        "credit": "Bernard Spragg via Openverse",
+                        "credit_url": "https://www.flickr.com/photos/88123769@N02/14985021999",
+                        "licence": "CC0",
+                        "term": "tulip bulbs terracotta pot"
+                    },
+                    {
+                        "source": "openverse",
+                        "id": "e08c0c62-4619-4518-8f63-e58d1b5c15e2",
+                        "thumb": "https://api.openverse.org/v1/images/e08c0c62-4619-4518-8f63-e58d1b5c15e2/thumb/",
+                        "credit": "Bernard Spragg via Openverse",
+                        "credit_url": "https://www.flickr.com/photos/88123769@N02/15217805160",
+                        "licence": "CC0",
+                        "term": "tulip bulbs terracotta pot"
+                    },
+                    {
+                        "source": "openverse",
+                        "id": "53dc34cd-7c7e-4756-b183-c80fdde7342f",
+                        "thumb": "https://api.openverse.org/v1/images/53dc34cd-7c7e-4756-b183-c80fdde7342f/thumb/",
+                        "credit": "Onasill - Bill Badzo - 149 Million Views - Thank Y via Openverse",
+                        "credit_url": "https://www.flickr.com/photos/7156765@N05/51563416719",
+                        "licence": "Public domain",
+                        "term": "tulip bulbs terracotta pot"
+                    },
+                    {
+                        "source": "openverse",
+                        "id": "79cc35bd-5242-44b6-ac2f-2c22f95d022b",
+                        "thumb": "https://api.openverse.org/v1/images/79cc35bd-5242-44b6-ac2f-2c22f95d022b/thumb/",
+                        "credit": "gnuckx via Openverse",
+                        "credit_url": "https://www.flickr.com/photos/34409164@N06/5674127693",
+                        "licence": "CC0",
+                        "term": "tulip bulbs terracotta pot"
+                    },
+                    {
+                        "source": "openverse",
+                        "id": "a3b2103c-cb78-490b-a0f5-7b9072149551",
+                        "thumb": "https://api.openverse.org/v1/images/a3b2103c-cb78-490b-a0f5-7b9072149551/thumb/",
+                        "credit": "Bernard Spragg via Openverse",
+                        "credit_url": "https://www.flickr.com/photos/88123769@N02/19337399592",
+                        "licence": "CC0",
+                        "term": "tulip bulbs terracotta pot"
+                    }
+                ]
+            }
+        },
+        "source": "946d6d06-9812-459f-8a18-08fd0382a421",
+        "blueprint": "journal",
+        "applied_at": null,
+        "touched_by": "a979f014-fd47-4b6a-b57d-a9fd807b911f",
+        "run_by": "a979f014-fd47-4b6a-b57d-a9fd807b911f",
+        "created_at": "2026-10-01T23:26:03+00:00",
+        "updated_at": "2026-10-02T13:22:59+00:00"
+    }
+}

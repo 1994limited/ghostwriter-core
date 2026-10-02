@@ -1,0 +1,312 @@
+{
+    "source": "gw-test-statamic storage/ghostwriter/images/01M3WX5TGAXAJ6FEVED8Q1VPZT.json",
+    "format": "statamic",
+    "type": "image-request",
+    "record": {
+        "id": "01M3WX5TGAXAJ6FEVED8Q1VPZT",
+        "status": "done",
+        "error": null,
+        "created_at": "2026-10-01T23:35:44+00:00",
+        "user": "a979f014-fd47-4b6a-b57d-a9fd807b911f",
+        "slot": [
+            "journal",
+            null,
+            "hero_image",
+            null,
+            "946d6d06-9812-459f-8a18-08fd0382a421",
+            "Planting tulips and alliums in October",
+            "",
+            "Planting tulips and alliums in October\r\nTwo kinds of bulb, one month and a handful of grit. When to plant, how deep, how far apart, and what to do when they come up in March.\r\nEvery April, someone looks at our tulips and tells us they meant to plant some this year. What they meant was October. If you're reading this in October, you've still got time.\r\nWhy October\r\nBulbs want soil that's cooling down but still workable. In the north, October is when those two overlap: the ground has lost its summer warmth, but it isn't yet cold and sodden, and a trowel still goes in without a fight.\r\nAlliums are the early ones. They're happy to go in from September into October, and the sooner they're in, the sooner they get their roots down.\r\nTulips are better a little later. Wait until the weather has properly turned, towards the end of the month. Planting into colder soil helps you avoid tulip fire, a fungal disease that spots and twists the leaves and can spoil a whole planting. There's no prize for getting tulips in early. There's quite a big one for getting them in at all.\r\nHow deep, how far apart\r\nTwo rules of thumb cover nearly everything. Write them on the back of an envelope and keep it at the potting bench.\r\nDepth: two to three times the height of the bulb\r\nPointy end up (if you really can't tell, lay it on its side and it'll sort itself out)\r\nTulips a bit deeper in pots and exposed spots, where the wind rocks tall stems\r\nSpacing in borders: about two bulb-widths apart\r\nSpacing in pots: closer, for a fuller look\r\nIf you're unsure, go deeper rather than shallower. A deep bulb stands steadier when a cold April wind comes through.\r\nPots or borders\r\nBoth work. They just ask different things of you.\r\nPots are mostly about water, and getting rid of it. Make sure there are proper drainage holes, use a gritty compost (or mix a good amount of grit into your usual one), and stand the pots somewhere sheltered from the worst of the winter rain. Lifting them onto pot feet or a couple of bricks stops them sitting in a puddle. A pot that waterlogs in January is a pot of rotten bulbs by March.\r\nTulips in pots are easiest treated as annuals. Enjoy them, compost them when they're over and start again next autumn. Plenty of tulips dwindle after their first year anyway, so if yours come back, call it a bonus.\r\nIn borders, plant in drifts or groups, not single lines. A row of tulips along a path looks like a queue. Dig a wide hole, set a group of bulbs in it, then do the same again a little way off, with uneven gaps between. It looks far more like they meant to be there.\r\nThen mark where they are. A short cane or a label is enough. By July the leaves will have gone and you'll have forgotten, and a spade through a clump of bulbs is a sad way to remember.\r\nAlliums are happy to stay in a border for years. Allium 'Purple Sensation' earns its keep twice: once in flower in late spring, and again when the seedheads stand on through summer.\r\nA lesson from Corbridge\r\nIn the walled garden we've been bringing back near Corbridge, we planted Tulipa 'Ballerina' and Tulipa 'Queen of Night' in the borders in the last week of October, with Allium 'Purple Sensation' between them. Then November was wet. The ground there is heavy clay, and about a third of the tulips rotted. Every single allium came up.\r\nThe next autumn we put a handful of grit under each tulip bulb. We lost almost none. If your soil is clay, this is the one step we'd never skip.\r\nWhat to do in March\r\nMarch is when you find out how October went. A few things are worth doing:\r\nCheck pots haven't dried out, or gone the other way and waterlogged\r\nWatch for shoots coming through, and for slugs, which are very fond of young tulip leaves\r\nFeed if they look like they need it, especially anything you're hoping to keep for another year\r\nNote the gaps while you can see them, for next autumn's order\r\nThat last one is the job everyone skips. Take a few photos in April when everything's out. In October you won't remember where the bare patch was, and the photos will.\r\nThe short version\r\nAlliums in now, tulips towards the end of the month\r\nTwo to three times the bulb's height, pointy end up\r\nGrit in the pots, and under the bulbs on clay\r\nDrifts, not lines\r\nA cane where every group went\r\nFor the rest of this month's jobs, our piece on what to do in the garden in October has the list. When the weather finally turns, Ten jobs for the first warm weekend picks up where March leaves off.\r\nA spring garden is mostly planted in autumn.\r\nSo go and buy some bulbs this month and get them in. And if you'd like a hand with a planting plan for the whole garden, not just the bulbs, it might be worth a conversation.\r\nplanting-tulips-and-alliums-in-october\r\n2026-10-01T23:00:00.000Z\r\nseasonal\r\nassets::ghostwriter/image-placeholder.png"
+        ],
+        "mode": "find",
+        "terms": [
+            "tulip bulbs trowel soil",
+            "walled garden spring tulips",
+            "purple allium flowers"
+        ],
+        "options": [
+            {
+                "source": "openverse",
+                "id": "df3309e0-4d8a-4293-96a3-92e4ae1bb2c7",
+                "thumb": "https://api.openverse.org/v1/images/df3309e0-4d8a-4293-96a3-92e4ae1bb2c7/thumb/",
+                "credit": "Matt Bango via Openverse",
+                "credit_url": "https://stocksnap.io/photo/mountain-nature-6UR8QJCQ9R",
+                "licence": "CC0",
+                "term": "minimal hills vector",
+                "picked": true
+            },
+            {
+                "source": "openverse",
+                "id": "34ab81bc-aaf7-45a5-9f32-dee39539cef4",
+                "thumb": "https://api.openverse.org/v1/images/34ab81bc-aaf7-45a5-9f32-dee39539cef4/thumb/",
+                "credit": "Katsujiro Maekawa via Openverse",
+                "credit_url": "https://www.flickr.com/photos/140296773@N07/48438232326",
+                "licence": "CC0",
+                "term": "pastel sunrise illustration",
+                "picked": true
+            },
+            {
+                "source": "openverse",
+                "id": "d0e68f7b-7b85-40f4-b731-1250156e5bd2",
+                "thumb": "https://api.openverse.org/v1/images/d0e68f7b-7b85-40f4-b731-1250156e5bd2/thumb/",
+                "credit": "Unknown via Openverse",
+                "credit_url": "https://www.rawpixel.com/image/18934879/flat-landscape-ca-1850-carl-theodor-reiffenstein",
+                "licence": "CC0",
+                "term": "flat landscape illustration",
+                "picked": true
+            },
+            {
+                "source": "openverse",
+                "id": "b99a4160-1712-4b37-a22c-ed86c69afd1e",
+                "thumb": "https://api.openverse.org/v1/images/b99a4160-1712-4b37-a22c-ed86c69afd1e/thumb/",
+                "credit": "Unknown via Openverse",
+                "credit_url": "https://www.rawpixel.com/image/18940142/flat-landscape-ca-1852-carl-theodor-reiffenstein",
+                "licence": "CC0",
+                "term": "flat landscape illustration"
+            },
+            {
+                "source": "openverse",
+                "id": "47e9eb24-7b70-437f-a237-d7434476ae23",
+                "thumb": "https://api.openverse.org/v1/images/47e9eb24-7b70-437f-a237-d7434476ae23/thumb/",
+                "credit": "Unknown via Openverse",
+                "credit_url": "https://www.rawpixel.com/image/18982076/flat-landscape-ca-1844-1845-carl-theodor-reiffenstein",
+                "licence": "CC0",
+                "term": "flat landscape illustration"
+            },
+            {
+                "source": "openverse",
+                "id": "f50d3c14-126f-4076-95cd-67bd3936473a",
+                "thumb": "https://api.openverse.org/v1/images/f50d3c14-126f-4076-95cd-67bd3936473a/thumb/",
+                "credit": "Unknown via Openverse",
+                "credit_url": "https://www.rawpixel.com/image/18980449/flat-landscape-ca-1852-carl-theodor-reiffenstein",
+                "licence": "CC0",
+                "term": "flat landscape illustration"
+            },
+            {
+                "source": "openverse",
+                "id": "aa297dc5-15ae-4a25-96a3-3286e0040a22",
+                "thumb": "https://api.openverse.org/v1/images/aa297dc5-15ae-4a25-96a3-3286e0040a22/thumb/",
+                "credit": "Unknown via Openverse",
+                "credit_url": "https://www.rawpixel.com/image/18943818/flat-landscape-null-carl-theodor-reiffenstein",
+                "licence": "CC0",
+                "term": "flat landscape illustration"
+            },
+            {
+                "source": "openverse",
+                "id": "5caf6da2-d8e3-4e34-ab39-a00c50b770ca",
+                "thumb": "https://api.openverse.org/v1/images/5caf6da2-d8e3-4e34-ab39-a00c50b770ca/thumb/",
+                "credit": "Unknown via Openverse",
+                "credit_url": "https://www.rawpixel.com/image/18983154/flat-landscape-near-the-taunus-null-karl-peter-burnitz",
+                "licence": "CC0",
+                "term": "flat landscape illustration"
+            },
+            {
+                "source": "openverse",
+                "id": "7ba7cfbd-45a3-4238-bcce-2a3be2fdb1ac",
+                "thumb": "https://api.openverse.org/v1/images/7ba7cfbd-45a3-4238-bcce-2a3be2fdb1ac/thumb/",
+                "credit": "aeroman3 via Openverse",
+                "credit_url": "https://www.flickr.com/photos/47430793@N08/37763239152",
+                "licence": "Public domain",
+                "term": "minimal hills vector"
+            },
+            {
+                "source": "openverse",
+                "id": "54f46bca-5607-4270-9b20-53b989a0adf1",
+                "thumb": "https://api.openverse.org/v1/images/54f46bca-5607-4270-9b20-53b989a0adf1/thumb/",
+                "credit": "MassDOT via Openverse",
+                "credit_url": "https://www.flickr.com/photos/42009447@N05/4897773720",
+                "licence": "Public domain",
+                "term": "minimal hills vector"
+            },
+            {
+                "source": "openverse",
+                "id": "a09ccc09-13f2-419c-aa2e-bd7c0ea589ac",
+                "thumb": "https://api.openverse.org/v1/images/a09ccc09-13f2-419c-aa2e-bd7c0ea589ac/thumb/",
+                "credit": "Matt Bango via Openverse",
+                "credit_url": "https://stocksnap.io/photo/mountain-nature-9GGDYQXVZK",
+                "licence": "CC0",
+                "term": "minimal hills vector"
+            },
+            {
+                "source": "openverse",
+                "id": "d93b9524-190e-4ff8-9a96-99e431e0bcf5",
+                "thumb": "https://api.openverse.org/v1/images/d93b9524-190e-4ff8-9a96-99e431e0bcf5/thumb/",
+                "credit": "U.S. Army ROTC via Openverse",
+                "credit_url": "https://www.flickr.com/photos/136737541@N05/53885112461",
+                "licence": "Public domain",
+                "term": "minimal hills vector"
+            },
+            {
+                "source": "openverse",
+                "id": "ea05f235-db45-4452-817c-e7fd184c976f",
+                "thumb": "https://api.openverse.org/v1/images/ea05f235-db45-4452-817c-e7fd184c976f/thumb/",
+                "credit": "antefixus21 via Openverse",
+                "credit_url": "https://www.flickr.com/photos/21728045@N08/54998502383",
+                "licence": "CC0",
+                "term": "minimal hills vector"
+            },
+            {
+                "source": "openverse",
+                "id": "294b85da-71db-4ccd-b614-e8a6aa88ba9b",
+                "thumb": "https://api.openverse.org/v1/images/294b85da-71db-4ccd-b614-e8a6aa88ba9b/thumb/",
+                "credit": "GlacierNPS via Openverse",
+                "credit_url": "https://www.flickr.com/photos/43288043@N04/25711252203",
+                "licence": "Public domain",
+                "term": "pastel sunrise illustration"
+            },
+            {
+                "source": "openverse",
+                "id": "0bb2b130-67cd-4640-91eb-4d464587e64c",
+                "thumb": "https://api.openverse.org/v1/images/0bb2b130-67cd-4640-91eb-4d464587e64c/thumb/",
+                "credit": "jeannetteyvonne via Openverse",
+                "credit_url": "https://www.flickr.com/photos/34149402@N02/48872165177",
+                "licence": "Public domain",
+                "term": "pastel sunrise illustration"
+            },
+            {
+                "source": "openverse",
+                "id": "ec0acb7a-44fe-4a2a-9c6f-138f0cc3aa94",
+                "thumb": "https://api.openverse.org/v1/images/ec0acb7a-44fe-4a2a-9c6f-138f0cc3aa94/thumb/",
+                "credit": "National Park Service via Openverse",
+                "credit_url": "https://www.rawpixel.com/image/3311290/free-photo-image-grass-sunset-sky",
+                "licence": "CC0",
+                "term": "pastel sunrise illustration"
+            },
+            {
+                "source": "openverse",
+                "id": "ee075ee5-b093-43f9-a983-9fe28782cd82",
+                "thumb": "https://api.openverse.org/v1/images/ee075ee5-b093-43f9-a983-9fe28782cd82/thumb/",
+                "credit": "mkniebes via Openverse",
+                "credit_url": "https://www.flickr.com/photos/76696276@N00/16844044698",
+                "licence": "CC0",
+                "term": "pastel sunrise illustration"
+            },
+            {
+                "source": "openverse",
+                "id": "c5581837-b8bc-4f02-930f-70cbe8fcc765",
+                "thumb": "https://api.openverse.org/v1/images/c5581837-b8bc-4f02-930f-70cbe8fcc765/thumb/",
+                "credit": "Katsujiro Maekawa via Openverse",
+                "credit_url": "https://www.flickr.com/photos/140296773@N07/49301945796",
+                "licence": "CC0",
+                "term": "pastel sunrise illustration"
+            },
+            {
+                "source": "openverse",
+                "id": "7d9586b2-57f4-4774-881e-1767124f7f49",
+                "thumb": "https://api.openverse.org/v1/images/7d9586b2-57f4-4774-881e-1767124f7f49/thumb/",
+                "credit": "Unknown via Openverse",
+                "credit_url": "https://www.rawpixel.com/image/5939804/export-tulip-bulbs",
+                "licence": "CC0",
+                "term": "tulip bulbs trowel soil"
+            },
+            {
+                "source": "openverse",
+                "id": "ad85b461-52c3-4a63-8e03-0eead924cce1",
+                "thumb": "https://api.openverse.org/v1/images/ad85b461-52c3-4a63-8e03-0eead924cce1/thumb/",
+                "credit": "Bernard Spragg via Openverse",
+                "credit_url": "https://www.flickr.com/photos/88123769@N02/14985021999",
+                "licence": "CC0",
+                "term": "tulip bulbs trowel soil"
+            },
+            {
+                "source": "openverse",
+                "id": "e08c0c62-4619-4518-8f63-e58d1b5c15e2",
+                "thumb": "https://api.openverse.org/v1/images/e08c0c62-4619-4518-8f63-e58d1b5c15e2/thumb/",
+                "credit": "Bernard Spragg via Openverse",
+                "credit_url": "https://www.flickr.com/photos/88123769@N02/15217805160",
+                "licence": "CC0",
+                "term": "tulip bulbs trowel soil"
+            },
+            {
+                "source": "openverse",
+                "id": "53dc34cd-7c7e-4756-b183-c80fdde7342f",
+                "thumb": "https://api.openverse.org/v1/images/53dc34cd-7c7e-4756-b183-c80fdde7342f/thumb/",
+                "credit": "Onasill - Bill Badzo - 149 Million Views - Thank Y via Openverse",
+                "credit_url": "https://www.flickr.com/photos/7156765@N05/51563416719",
+                "licence": "Public domain",
+                "term": "tulip bulbs trowel soil"
+            },
+            {
+                "source": "openverse",
+                "id": "79cc35bd-5242-44b6-ac2f-2c22f95d022b",
+                "thumb": "https://api.openverse.org/v1/images/79cc35bd-5242-44b6-ac2f-2c22f95d022b/thumb/",
+                "credit": "gnuckx via Openverse",
+                "credit_url": "https://www.flickr.com/photos/34409164@N06/5674127693",
+                "licence": "CC0",
+                "term": "tulip bulbs trowel soil"
+            },
+            {
+                "source": "openverse",
+                "id": "a3b2103c-cb78-490b-a0f5-7b9072149551",
+                "thumb": "https://api.openverse.org/v1/images/a3b2103c-cb78-490b-a0f5-7b9072149551/thumb/",
+                "credit": "Bernard Spragg via Openverse",
+                "credit_url": "https://www.flickr.com/photos/88123769@N02/19337399592",
+                "licence": "CC0",
+                "term": "tulip bulbs trowel soil"
+            },
+            {
+                "source": "openverse",
+                "id": "c1732b74-1748-40ca-b2c1-16955e30bb1e",
+                "thumb": "https://api.openverse.org/v1/images/c1732b74-1748-40ca-b2c1-16955e30bb1e/thumb/",
+                "credit": "Onasill - Bill Badzo - 149 Million Views - Thank Y via Openverse",
+                "credit_url": "https://www.flickr.com/photos/7156765@N05/51479978518",
+                "licence": "Public domain",
+                "term": "walled garden spring tulips"
+            },
+            {
+                "source": "openverse",
+                "id": "6968c66a-2535-4344-8a77-bf47865759d1",
+                "thumb": "https://api.openverse.org/v1/images/6968c66a-2535-4344-8a77-bf47865759d1/thumb/",
+                "credit": "creativemz via Openverse",
+                "credit_url": "https://wordpress.org/photos/photo/296639d42d/",
+                "licence": "CC0",
+                "term": "purple allium flowers"
+            },
+            {
+                "source": "openverse",
+                "id": "0c5d1211-3619-481e-b7f7-7c13440d0fda",
+                "thumb": "https://api.openverse.org/v1/images/0c5d1211-3619-481e-b7f7-7c13440d0fda/thumb/",
+                "credit": "creativemz via Openverse",
+                "credit_url": "https://wordpress.org/photos/photo/1526639d64/",
+                "licence": "CC0",
+                "term": "purple allium flowers"
+            },
+            {
+                "source": "openverse",
+                "id": "f4c82de9-dca0-4594-b3ed-97b14d6d0523",
+                "thumb": "https://api.openverse.org/v1/images/f4c82de9-dca0-4594-b3ed-97b14d6d0523/thumb/",
+                "credit": "Bernard Spragg via Openverse",
+                "credit_url": "https://www.flickr.com/photos/88123769@N02/23256763930",
+                "licence": "CC0",
+                "term": "purple allium flowers"
+            },
+            {
+                "source": "openverse",
+                "id": "22de7c18-551c-4819-a10a-15a158a86b18",
+                "thumb": "https://api.openverse.org/v1/images/22de7c18-551c-4819-a10a-15a158a86b18/thumb/",
+                "credit": "lisafree54 via Openverse",
+                "credit_url": "https://www.flickr.com/photos/136594255@N06/23350579913",
+                "licence": "CC0",
+                "term": "purple allium flowers"
+            },
+            {
+                "source": "openverse",
+                "id": "dd2a044e-7c34-4b1b-94ac-d0698c7490d1",
+                "thumb": "https://api.openverse.org/v1/images/dd2a044e-7c34-4b1b-94ac-d0698c7490d1/thumb/",
+                "credit": "carlosfx3d via Openverse",
+                "credit_url": "https://www.flickr.com/photos/27598017@N06/31223168976",
+                "licence": "CC0",
+                "term": "purple allium flowers"
+            },
+            {
+                "source": "openverse",
+                "id": "87ac0ba0-461c-4986-a838-a0dfa30fb208",
+                "thumb": "https://api.openverse.org/v1/images/87ac0ba0-461c-4986-a838-a0dfa30fb208/thumb/",
+                "credit": "carlosfx3d via Openverse",
+                "credit_url": "https://www.flickr.com/photos/27598017@N06/30437832734",
+                "licence": "CC0",
+                "term": "purple allium flowers"
+            }
+        ]
+    }
+}

@@ -1,0 +1,49 @@
+{
+    "source": "synthetic: a new Statamic piece saved straight to an entry (SessionController::entry()), with an image made for a field",
+    "format": "statamic",
+    "type": "session",
+    "record": {
+        "id": "01M3B0000000000000000000BB",
+        "type": "guide",
+        "answers": {
+            "subject": "Pruning roses"
+        },
+        "messages": [
+            {
+                "role": "user",
+                "content": "Here is the brief.",
+                "at": "2026-10-01T10:00:00+00:00",
+                "by": "a979f014-fd47-4b6a-b57d-a9fd807b911f"
+            }
+        ],
+        "draft": "title: Pruning roses",
+        "status": "idle",
+        "error": null,
+        "entry_id": "5d1c7e0a-2222-4333-8444-955566667777",
+        "user_id": "a979f014-fd47-4b6a-b57d-a9fd807b911f",
+        "usage": {
+            "input": 10,
+            "output": 20
+        },
+        "examples": [
+            "946d6d06-9812-459f-8a18-08fd0382a421"
+        ],
+        "images": {
+            "hero_image": {
+                "status": "done",
+                "path": "journal/roses.png",
+                "url": "/assets/journal/roses.png",
+                "error": null,
+                "direction": "secateurs on a frosty morning",
+                "credit": null
+            }
+        },
+        "source": null,
+        "blueprint": null,
+        "applied_at": "2026-10-01T10:05:00+00:00",
+        "touched_by": "b8f00000-0000-4000-8000-000000000002",
+        "run_by": "a979f014-fd47-4b6a-b57d-a9fd807b911f",
+        "created_at": "2026-10-01T10:00:00+00:00",
+        "updated_at": "2026-10-01T10:06:00+00:00"
+    }
+}

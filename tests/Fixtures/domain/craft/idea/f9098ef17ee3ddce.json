@@ -1,0 +1,18 @@
+{
+    "source": "gw-test-craft ghostwriter_documents idea/f9098ef17ee3ddce, the body",
+    "format": "craft",
+    "type": "idea",
+    "handle": "f9098ef17ee3ddce",
+    "record": {
+        "id": "f9098ef17ee3ddce",
+        "title": "A rain garden in [place], a year on",
+        "section": "journal",
+        "type": null,
+        "why": "\"Rain gardens for ordinary front gardens\" makes the case in principle, but no case study shows one working, the way \"Making a meadow from a lawn\" is backed by real projects.",
+        "notes": "Use the case study shape: \"What we were asked for\", \"What we did\", \"What we found\" and \"A year on\". Be specific about the roof area, the size of the planted dip, the plants that coped with wet feet and the ones that didn't, and what happened in the first big storm. Honesty about anything that needed fixing suits the voice. [Needs a completed rain garden project, the client's permission and a quote from them.]",
+        "status": "open",
+        "source": "suggested",
+        "session": null,
+        "createdAt": "2026-10-02"
+    }
+}

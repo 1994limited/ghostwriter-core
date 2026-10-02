@@ -1,0 +1,18 @@
+{
+    "source": "synthetic: a ghostwriter_kinds row as Kinds::save() writes it (definition as Laravel JSON)",
+    "format": "filament",
+    "type": "kind",
+    "handle": "gardening-advice",
+    "record": {
+        "id": 1,
+        "tenant_type": "",
+        "tenant_id": "",
+        "resource": "posts",
+        "handle": "gardening-advice",
+        "title": "Gardening advice",
+        "description": "A practical guide to one technique.",
+        "definition": "{\"title\": \"Gardening advice\", \"description\": \"A practical guide to one technique.\", \"resource\": \"posts\", \"examples\": [\"10\", \"12\"], \"questions\": [{\"handle\": \"subject\", \"label\": \"What is the guide about?\", \"type\": \"textarea\", \"required\": true}, {\"handle\": \"audience\", \"label\": \"Who is it for?\", \"instructions\": \"One line is enough.\", \"type\": \"text\"}], \"guidance\": \"Practical, from the studio's own work.\", \"checklist\": [\"Every fact comes from the brief.\"]}",
+        "created_at": "2026-10-02 02:41:00",
+        "updated_at": "2026-10-02 02:41:00"
+    }
+}

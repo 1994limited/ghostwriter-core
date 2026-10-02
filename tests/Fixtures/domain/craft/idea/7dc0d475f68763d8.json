@@ -1,0 +1,18 @@
+{
+    "source": "gw-test-craft ghostwriter_documents idea/7dc0d475f68763d8, the body",
+    "format": "craft",
+    "type": "idea",
+    "handle": "7dc0d475f68763d8",
+    "record": {
+        "id": "7dc0d475f68763d8",
+        "title": "Questions we are often asked",
+        "section": "pages",
+        "type": null,
+        "why": "The pages explain the approach and the services but don't answer practical questions about timing, area covered, fees, whether we build as well as design, and whether we work on small gardens.",
+        "notes": "Use question headings with short, straight answers in the house voice, and link out to the Approach, Services and Contact pages. Keep the humour dry and brief. Close with \"Not sure where to start?\" and a \"Book a first visit\" button. [Needs the studio's real answers on area covered, lead times, fees and building.]",
+        "status": "open",
+        "source": "suggested",
+        "session": null,
+        "createdAt": "2026-10-02"
+    }
+}

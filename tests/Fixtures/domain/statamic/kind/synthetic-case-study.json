@@ -1,0 +1,21 @@
+{
+    "source": "synthetic: the YAML Statamic TypeRepository::save() writes for a kind with no blueprint, where, defaults or examples (array_filter drops them)",
+    "format": "statamic",
+    "type": "kind",
+    "handle": "case-study",
+    "record": {
+        "title": "Case study",
+        "description": "One garden, from brief to two winters in.",
+        "collection": "journal",
+        "questions": [
+            {
+                "handle": "subject",
+                "label": "What is the guide about?",
+                "type": "textarea",
+                "required": true
+            }
+        ],
+        "guidance": "Tell it in order.",
+        "checklist": []
+    }
+}

@@ -1,0 +1,63 @@
+{
+    "source": "gw-test-statamic storage/ghostwriter/kinds.json, \"journal\"",
+    "format": "statamic",
+    "type": "kind-suggestions",
+    "handle": "journal",
+    "record": {
+        "status": "idle",
+        "error": null,
+        "checked_at": "2026-10-01T23:18:50+00:00",
+        "entries": 12,
+        "suggestions": [
+            {
+                "id": "penzf82xftyk",
+                "title": "Project story",
+                "description": "A first-person account of one garden project the studio carried out, from the site and the brief through the work to how the space is used now, showing the studio's approach in practice.",
+                "why": "Four entries tell the story of a single named project in a named place, opening with a vivid detail of the site and the problem before following the work through.",
+                "examples": [
+                    "bfa1c8af-2691-4d03-b65a-e74a263e9efd",
+                    "3eef1772-6216-48ba-bd10-d1c87ec32f53",
+                    "8c67a59b-24cc-4f08-8766-d68d4c14642f",
+                    "074d50ca-0e36-415a-bdb4-2a5946c42d7f"
+                ],
+                "blueprint": "journal"
+            },
+            {
+                "id": "urjlcunp7ysq",
+                "title": "Advice piece",
+                "description": "An evergreen piece in the studio's own voice that explains a gardening practice, recommendation or way of working and why the studio approaches it that way.",
+                "why": "Four entries take one question clients often raise, such as seedheads, meadows, small-garden trees or what a planting plan involves, and answer it with reasoning drawn from the studio's experience.",
+                "examples": [
+                    "4a6e13d8-484a-4e47-bd9c-78d592dcd002",
+                    "1f6c4ed9-a855-452e-ac80-fa685f15ba12",
+                    "ff8c37e2-451e-4ae1-983a-e5fb507ee800",
+                    "df2e7b81-f342-40d8-b8ed-2d3fc363a2b5"
+                ],
+                "blueprint": "journal"
+            },
+            {
+                "id": "ucxqevnyczyd",
+                "title": "Seasonal jobs guide",
+                "description": "A practical list of garden tasks for a particular month or moment in the year, telling readers where to put their time.",
+                "why": "Two entries are tied to a point in the calendar, October and the first warm weekend, and set out a run of jobs to do then.",
+                "examples": [
+                    "371d0030-b799-4f07-a461-8f1ce3565dcc",
+                    "c5fb0cf7-efb3-45dc-8b1e-a4c2233cbdeb"
+                ],
+                "blueprint": "journal"
+            },
+            {
+                "id": "o7a6rk1l3mf3",
+                "title": "Studio news",
+                "description": "A short, warm announcement of a change at the studio itself, such as a new team member or a move to new premises.",
+                "why": "Two entries report news about the business rather than gardens, one welcoming a new designer and one announcing the move to the old dairy.",
+                "examples": [
+                    "47a61fba-2b8d-4ccd-8958-498ba8c3b68d",
+                    "1e6b1a72-a8d5-46cb-a5ea-9aca73f99795"
+                ],
+                "blueprint": "journal"
+            }
+        ],
+        "dismissed": []
+    }
+}

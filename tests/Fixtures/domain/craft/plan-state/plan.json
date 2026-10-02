@@ -1,0 +1,14 @@
+{
+    "source": "gw-test-craft ghostwriter_state plan",
+    "format": "craft",
+    "type": "plan-state",
+    "handle": "plan",
+    "record": {
+        "status": "idle",
+        "error": null,
+        "task": null,
+        "messages": [],
+        "scanned": [],
+        "pending": []
+    }
+}

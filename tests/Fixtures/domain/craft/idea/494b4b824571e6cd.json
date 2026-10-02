@@ -1,0 +1,18 @@
+{
+    "source": "gw-test-craft ghostwriter_documents idea/494b4b824571e6cd, the body",
+    "format": "craft",
+    "type": "idea",
+    "handle": "494b4b824571e6cd",
+    "record": {
+        "id": "494b4b824571e6cd",
+        "title": "How to brief a garden designer",
+        "section": "journal",
+        "type": null,
+        "why": "Nothing helps the reader prepare for working with us. The Contact page asks people to \"tell us a little about your garden\" but never says what is useful to tell.",
+        "notes": "Write it as a how-to with numbered steps. Cover what to gather before the first visit: how you use the garden now, what you'd miss, photos across the seasons, drainage and boundary quirks, and a budget even if it's rough. Include the things people forget, such as access for machinery, who mows, and the neighbour's tree. End with \"Is it worth it?\" on whether to spend time on a written brief, then a quiet invitation. [A real example of a short, good brief from a client, used with permission, would help.]",
+        "status": "open",
+        "source": "suggested",
+        "session": null,
+        "createdAt": "2026-10-02"
+    }
+}
