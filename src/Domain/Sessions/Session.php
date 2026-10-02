@@ -51,6 +51,7 @@ final class Session
      * @param  string|null  $group  The collection, section or resource, where the record keeps it (Filament).
      * @param  string|null  $variant  The blueprint or entry type of the record being edited (Statamic, Craft).
      * @param  int|null  $siteId  The site the record is in (Craft).
+     * @param  array<int, array<string, string>>  $gaps  What the draft left for a person when it was applied (Gaps\SessionGaps::toArray()). Stored only once there is something in it, under `gaps` (Filament: a JSON column the addon adds).
      */
     public function __construct(
         public readonly Format $format,
@@ -78,6 +79,7 @@ final class Session
         public ?string $variant = null,
         public ?int $siteId = null,
         public bool $editing = false,
+        public array $gaps = [],
     ) {
         $this->editing = $editing || $source !== null;
     }
@@ -434,6 +436,13 @@ final class Session
             ],
         };
 
+        // Written only once there is something in it (or the record has it,
+        // so it can be emptied), so a store with no place for it yet
+        // (Filament's table) is never sent the key.
+        if ($this->gaps !== [] || array_key_exists('gaps', $this->stored)) {
+            $data['gaps'] = $format !== Format::Filament ? $this->gaps : ($this->gaps === [] ? null : $format->json($this->gaps));
+        }
+
         // Kept where the record has room for it; Filament's table has no
         // column, and falls back on updated_at, which a claim also sets.
         if ($this->startedWorkingAt !== null && $format !== Format::Filament) {
@@ -470,6 +479,7 @@ final class Session
             updatedAt: self::nullableText($data['updated_at'] ?? null),
             startedWorkingAt: self::nullableText($data['started_working_at'] ?? null),
             variant: self::nullableText($data['blueprint'] ?? null),
+            gaps: self::gaps($data['gaps'] ?? []),
         );
     }
 
@@ -501,6 +511,7 @@ final class Session
             startedWorkingAt: self::nullableText($data['started_working_at'] ?? null),
             variant: self::nullableText($data['entry_type'] ?? null),
             siteId: self::int($data['site_id'] ?? null),
+            gaps: self::gaps($data['gaps'] ?? []),
         );
     }
 
@@ -535,6 +546,7 @@ final class Session
             key: self::ref($row['id'] ?? null),
             group: self::nullableText($row['resource'] ?? null),
             editing: $editing,
+            gaps: self::gaps(self::decoded($row['gaps'] ?? null)),
         );
     }
 
@@ -580,6 +592,32 @@ final class Session
     {
         /** @var array<string, array<string, mixed>> */
         return array_filter(is_array($images) ? $images : [], 'is_array');
+    }
+
+    /**
+     * @return array<int, array<string, string>>
+     */
+    private static function gaps(mixed $gaps): array
+    {
+        $out = [];
+
+        foreach (is_array($gaps) ? $gaps : [] as $gap) {
+            if (! is_array($gap)) {
+                continue;
+            }
+
+            $entry = [];
+
+            foreach ($gap as $key => $value) {
+                if (is_string($key) && is_scalar($value)) {
+                    $entry[$key] = (string) $value;
+                }
+            }
+
+            $out[] = $entry;
+        }
+
+        return $out;
     }
 
     private static function text(mixed $value): string
