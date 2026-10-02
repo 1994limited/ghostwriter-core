@@ -528,8 +528,8 @@ final class StockImage
         $seen = [$from => true];
         $queue = [$from];
 
-        while ($queue !== []) {
-            foreach (self::TRANSITIONS[array_shift($queue)] ?? [] as $next) {
+        while (($state = array_shift($queue)) !== null) {
+            foreach (self::next($state) as $next) {
                 if ($next === $to) {
                     return true;
                 }
@@ -659,7 +659,15 @@ final class StockImage
 
     private function may(string $state): bool
     {
-        return in_array($state, self::TRANSITIONS[$this->state], true);
+        return in_array($state, self::next($this->state), true);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function next(string $state): array
+    {
+        return self::TRANSITIONS[$state] ?? [];
     }
 
     /**
