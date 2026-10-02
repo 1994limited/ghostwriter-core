@@ -2,7 +2,7 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. While the version is `0.x`, a minor release may contain breaking changes.
 
-## 0.3.0 - Unreleased
+## 0.3.0 - 2026-10-02
 
 The Studio: every model call the addons make for writing, planning and learning a site, unified from the three addons' `Studio` classes. See [docs/studio.md](docs/studio.md) for how an addon wires it, and [docs/studio-unification.md](docs/studio-unification.md) for what differed and what core does.
 
