@@ -172,6 +172,7 @@ $stock = new StockSearch($http, $credentials, libraries: [$shutterstock]);
 - Editorial images are off unless `editorial: true`. An editorial photo's quotes are marked editorial, and only such a quote sends `editorial_acknowledgement`.
 - `sandbox: true` points every API call at `api-sandbox.shutterstock.com`: licensing charges nothing and returns a watermarked file, and editorial licensing isn't available there.
 - `mayRank` is false and `noModelInput` true: no model sees its photos, metadata or files until counsel clears it.
+- `php tools/smoke/shutterstock.php [.env] [words]` runs one live search, look-up and preview against the sandbox on a developer's machine (default `.env`: `~/Dev/gw-test-filament/.env`). It never prints the key or secret, saves nothing, and doesn't license. `tools/` isn't shipped; never commit what it shows.
 
 `Libraries\Testing\FakeLibrary` is a scripted paid library: photos, quotes and licence outcomes (`SUCCEED`, `UNCERTAIN_CHARGED`, `UNCERTAIN_NOT_CHARGED`, or an exception), GD-drawn comps, and a record of every call (`licenceCalls($id)`). It is also the addons' demo library. `Domain\Testing\MemoryAssetReplacer` and `Libraries\Testing\InMemoryLibraryTokens` go with it.
 
