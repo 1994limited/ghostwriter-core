@@ -1,0 +1,47 @@
+title: 'Project story'
+description: 'A first-person account of one garden we designed and built: the site and the brief, the work, and how the garden is used now.'
+collection: journal
+blueprint: journal
+questions:
+  -
+    handle: garden
+    label: 'Which garden is it, and where?'
+    type: text
+    instructions: 'The place, and what kind of garden it is.'
+    required: true
+  -
+    handle: brief
+    label: 'What did the client ask for, and what was the problem?'
+    type: textarea
+    required: true
+  -
+    handle: work
+    label: 'What did we do?'
+    type: textarea
+    instructions: 'The main decisions: layout, materials, plants. Name the plants.'
+    required: true
+  -
+    handle: since
+    label: 'How is it doing now?'
+    type: textarea
+    instructions: 'A season or two on: what worked, what we would change.'
+  -
+    handle: quote
+    label: 'A line from the client, if there is one'
+    type: text
+guidance: |-
+  Open on one concrete detail of the site or the problem, in a sentence or two. Then follow the work in order under short headings: what they asked for, what we did, and a look back.
+
+  Name the plants and materials. Keep the client anonymous unless the brief names them, and never invent a quote.
+
+  End on a short line set on its own, then a quiet offer of help.
+checklist:
+  - 'Opens on a concrete detail, not a summary.'
+  - 'Has a look back: how the garden is doing now.'
+  - 'Every plant, place and quote comes from the brief.'
+  - 'Ends on a short line, then a low-key offer.'
+# Slugs, turned into this site's entry IDs by the seeder.
+examples:
+  - bringing-back-a-walled-garden-near-corbridge
+  - a-rain-garden-for-a-terrace-in-headingley
+  - replanting-a-community-orchard-in-hebden-bridge

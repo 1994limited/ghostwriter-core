@@ -1,0 +1,35 @@
+title: About
+pageBuilder:
+  -
+    type: hero
+    heading: 'A small garden design studio in the Tyne valley'
+    subheading: 'We design gardens and outdoor spaces across the north of England, and we come back to see how they grow.'
+  -
+    type: text
+    text: |-
+      ## Who we are
+
+      Northfold is a garden design studio near Corbridge in Northumberland. There are five of us: landscape architects, horticulturists, a nursery grower and a former geography teacher. Ellie founded the studio in 2016.
+
+      We work on private gardens, schools and community spaces within a couple of hours of the studio, close enough to know the soil and the weather, and to call in.
+  -
+    type: imageBlock
+    caption: 'The studio, in a converted byre near Corbridge.'
+  -
+    type: quoteBlock
+    quote: 'They listened more than they talked, which is rare. The garden feels like ours, not like theirs.'
+    attribution: 'Ruth, Corbridge'
+  -
+    type: text
+    text: |-
+      ## What we believe
+
+      - The best gardens are the ones people use.
+      - Plants should suit the place they are planted, not the other way round.
+      - A healthy garden should rarely be ripped out to make way for a fashionable one.
+      - Rain is worth keeping: every garden we design slows water down before it leaves.
+      - A designer should still turn up five years later to see how it's going.
+  -
+    type: cta
+    heading: 'Have a garden in mind?'
+    ctaText: 'Tell us a little about it. We reply to everyone within a few days.'

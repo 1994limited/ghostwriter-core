@@ -1,0 +1,36 @@
+title: About
+status: published
+content:
+  -
+    type: hero
+    heading: 'A small studio for gardens that last'
+    subheading: 'We are six people in an old joinery workshop on Wharf Lane, designing gardens, courtyards and school grounds across the North East.'
+    button_label: 'See our work'
+    button_url: /journal
+  -
+    type: text
+    body: |-
+      ## Who we are
+
+      Northfold began in 2019 in two rooms above a bike shop. Six years on, there are six of us, and we work from a converted joinery workshop on Wharf Lane, a few minutes' walk from the river. Clients are always welcome to come by: there is a big table, a plan chest and usually a pot of tea.
+
+      We design private gardens, school grounds, courtyards and the occasional public space. Most of our work is within an hour or two of the studio, because we like to visit often and see how a place changes through the year.
+
+      ## What we care about
+
+      - Gardens that suit the people who use them, not just the drawing.
+      - Planting that earns its space in every season.
+      - Local materials, reused where we can.
+      - Going back after the first year to see what worked.
+  -
+    type: image
+    caption: 'The hillside garden above Riding Mill, three summers after planting.'
+  -
+    type: quote
+    text: 'They listened more than they talked, and the garden is better for it.'
+    attribution: 'A client in Hexham'
+  -
+    type: cta
+    heading: 'Thinking about a garden?'
+    text: 'Every project starts with a site walk. Tell us a little about yours and we will arrange one.'
+    url: /contact

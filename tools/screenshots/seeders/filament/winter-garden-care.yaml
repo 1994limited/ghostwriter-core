@@ -1,0 +1,41 @@
+title: Winter garden care
+status: draft
+content:
+  -
+    type: hero
+    heading: 'Winter garden care'
+    subheading: 'A garden is not asleep in winter. A few visits between November and February set it up for the whole year.'
+    button_label: 'Book a winter visit'
+    button_url: /contact
+  -
+    type: text
+    body: |-
+      ## What we do on a winter visit
+
+      Winter is when a garden shows its bones. With the borders cut back to what is worth keeping, we can see the paths, the walls and the hedges clearly, and put right anything that has slipped.
+
+      A visit takes most of a morning. We walk round with you first, then get on with the work:
+
+      - Cut back what has collapsed, and leave seedheads and hollow stems standing for birds and insects.
+      - Mulch the borders with five centimetres of compost or leaf mould, on damp soil.
+      - Prune apples, pears and summer shrubs while they are dormant.
+      - Plant bare-root hedging and trees, which arrive from November.
+      - Check stakes, ties and edging after the autumn gales.
+
+      ## Why winter matters
+
+      Most of what goes wrong in a garden in July was set in motion in January. Roots planted now have months to settle before the dry weather, and a border mulched in winter needs far less weeding and watering in summer.
+
+      We also write down what we see, so you have a one-page note of what to do before spring.
+  -
+    type: image
+    caption: 'Frost on the grasses at the Tyne Valley hillside garden, early January.'
+  -
+    type: quote
+    text: 'The winter visit is the one I would keep if I could only have one. Everything after it is easier.'
+    attribution: 'A client in Corbridge'
+  -
+    type: cta
+    heading: 'Book a winter visit'
+    text: 'We have a few mornings free between November and February. Tell us a little about your garden and we will find one.'
+    url: /contact

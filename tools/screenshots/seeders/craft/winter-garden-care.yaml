@@ -1,0 +1,37 @@
+title: 'Winter garden care'
+pageBuilder:
+  -
+    type: hero
+    heading: 'Winter garden care, from November to February'
+    subheading: 'A visit a month through the cold months, so your garden comes into spring in good heart.'
+  -
+    type: text
+    text: |-
+      ## What we do
+
+      Winter is when a garden is easiest to read and kindest to work on. The soil is resting, the structure is plain to see, and most of the jobs that make the biggest difference to next year are best done now.
+
+      From November to February we visit once a month. Each visit is a morning for two of us. We plant bare-root hedging and trees while the ground allows, lift and divide tired perennials, mulch the borders and prune what needs pruning, and nothing that doesn't.
+
+      We leave seed heads and hollow stems standing for the birds and insects that overwinter in them, and cut them back in spring.
+  -
+    type: imageBlock
+    caption: 'A border in January, with the grasses and seed heads left standing.'
+  -
+    type: quoteBlock
+    quote: 'We used to dread the garden in winter. Now it is the part of the year we look forward to.'
+    attribution: 'Jean, Hexham'
+  -
+    type: text
+    text: |-
+      ## How it works
+
+      - **A first visit in October.** We walk the garden with you, agree what matters most and write it down.
+      - **Four winter visits.** One a month, with a short note afterwards of what we did and what we noticed.
+      - **A plan for spring.** In February we leave you a list of what to do, in the order we would do it.
+
+      The season costs £[price] for most gardens, including the mulch. Larger gardens, or ones with a lot of hedging, we price after the first visit.
+  -
+    type: cta
+    heading: 'Would you like a winter visit?'
+    ctaText: 'Tell us a little about your garden and we will come and have a look. We reply to everyone within a few days.'

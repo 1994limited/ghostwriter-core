@@ -1,0 +1,53 @@
+title: 'Project story'
+description: 'A write-up of a garden we designed and built: the place, what the client asked for, what we did, and how it has grown since.'
+section: journal
+entryType: article
+examples:
+  - 17
+  - 35
+  - 27
+questions:
+  -
+    handle: place
+    label: 'Where is the garden, and what was it like before?'
+    instructions: 'The town or village, the size, the soil, the aspect, what was there.'
+    type: textarea
+    required: true
+  -
+    handle: brief
+    label: 'What did the client ask for?'
+    instructions: 'In their words if you have them. First names only.'
+    type: textarea
+    required: true
+  -
+    handle: work
+    label: 'What did we do?'
+    instructions: 'The main moves, the plants, anything unusual about the build.'
+    type: textarea
+    required: true
+  -
+    handle: since
+    label: 'How has it turned out?'
+    instructions: 'What has thrived, what has sulked, and what the client says now.'
+    type: textarea
+    required: false
+  -
+    handle: leave_out
+    label: 'Anything that must not appear?'
+    type: text
+    required: false
+guidance: |-
+  The reader is someone thinking about a garden of their own. They want to see how we work, not be sold to.
+
+  Open with a one-line standfirst that names the place and the result. Then set the scene: the garden as we found it, in a short paragraph.
+
+  Use three headed sections, in this order: "The brief", "What we did", and "A year on" (or "Two years on"). Keep each to two or three short paragraphs. Name the plants that matter, with botanical names in italics.
+
+  Be honest about what didn't work. Include one short quote from the client near the end, signed with a first name and place.
+
+  End with a quiet invitation to get in touch. Between 500 and 800 words.
+checklist:
+  - 'The place and the client are named only as the brief allows.'
+  - 'Every plant, number and date comes from the brief.'
+  - 'It has the three headed sections, in order.'
+  - 'There is one client quote, signed with a first name and place.'
