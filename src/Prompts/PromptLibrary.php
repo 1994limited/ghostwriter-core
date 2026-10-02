@@ -23,6 +23,7 @@ final class PromptLibrary
     /** Every prompt core ships. The name is also the agent name a request is sent under. */
     public const NAMES = [
         'brief-writer',
+        'gap-filler',
         'image',
         'imagery-analyst',
         'kind-finder',

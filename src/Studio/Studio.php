@@ -12,8 +12,11 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextResponse;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Usage;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Stock\ModelInputGuard;
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\GapRefused;
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\Markers;
 use NineteenNinetyFour\Ghostwriter\Core\Prompts\PromptLibrary;
 use NineteenNinetyFour\Ghostwriter\Core\Text\LenientYaml;
+use NineteenNinetyFour\Ghostwriter\Core\Text\Slug;
 use NineteenNinetyFour\Ghostwriter\Core\Text\TaggedResponse;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -510,6 +513,78 @@ final class Studio
         $words = mb_strtolower(trim((string) preg_replace('/[^\p{L}\p{N} -]+/u', ' ', $response->text)));
 
         return new Result($words !== '' && str_word_count($words) <= self::PHOTO_QUERY_WORDS ? $words : $title, $response->usage);
+    }
+
+    /**
+     * One "fix that writes" for a gap in an entry (Finish this page), made
+     * only when an editor presses a button that says it uses Ghostwriter:
+     * a summary, a shorter text, a sentence written around a missing fact,
+     * or alt text. The answer goes into the form, never straight into the
+     * saved entry.
+     *
+     * Facts come only from the editor: GapRequest refuses to be made for
+     * one, the prompt forbids adding any, and an answer that still holds a
+     * marker, or (except alt text) has a figure the given text doesn't, is
+     * not used.
+     *
+     * @return Result<string>
+     *
+     * @throws GapRefused when the image's library allows no model to see it.
+     * @throws UnreadableReply when the answer can't be used.
+     * @throws ProviderException
+     */
+    public function fillGap(GapRequest $request): Result
+    {
+        $images = [];
+
+        if ($request->image !== null) {
+            if (! $this->guard->allowsImage($request->image, $request->asset, $request->filename)) {
+                throw GapRefused::image();
+            }
+
+            $images[] = $request->image;
+        }
+
+        $response = $this->ask('gap-filler', $request->prompt(), images: $images);
+        $text = preg_match('/<result>(.*?)(?:<\/result>|$)/s', $response->text, $match) === 1 ? $match[1] : $response->text;
+        $text = trim($text, " \t\n\r\0\x0B\"'“”‘’");
+
+        if (in_array($request->task, [GapRequest::SUMMARY, GapRequest::ALT, GapRequest::WRITE_AROUND], true)) {
+            $text = trim((string) preg_replace('/\s+/u', ' ', $text));
+        }
+
+        $failed = 'Ghostwriter\'s answer couldn\'t be used. Try again, or write it yourself.';
+
+        if (Markers::has($text) || Markers::leftovers($text) !== [] || str_contains($text, '[[')) {
+            $this->unreadable('the answer held a marker', 'gap-filler', $response->text, ['task' => $request->task]);
+
+            throw new UnreadableReply($failed, 'gap-filler', 'the answer held a marker');
+        }
+
+        if ($request->task !== GapRequest::ALT && ($added = self::newFigures($text, $request->text)) !== []) {
+            $this->unreadable('the answer added a figure ('.implode(', ', $added).')', 'gap-filler', $response->text, ['task' => $request->task]);
+
+            throw new UnreadableReply($failed, 'gap-filler', 'the answer added a figure the text did not have');
+        }
+
+        if ($request->limit !== null && mb_strlen($text) > $request->limit) {
+            $text = Slug::clip($text, $request->limit);
+        }
+
+        return new Result($text, $response->usage);
+    }
+
+    /**
+     * Figures in an answer that the text it came from doesn't have.
+     *
+     * @return list<string>
+     */
+    private static function newFigures(string $answer, string $source): array
+    {
+        $figures = fn (string $text) => preg_match_all('/\d+(?:[.,]\d+)*/u', $text, $found) > 0 ? array_map(fn (string $figure) => str_replace(',', '', $figure), $found[0]) : [];
+        $known = $figures(Markers::withoutAsks($source));
+
+        return array_values(array_unique(array_diff($figures($answer), $known)));
     }
 
     /**

@@ -27,6 +27,7 @@ final class Agents
         'photo-picker' => 2000,
         'photo-query' => 2000,
         'photo-scout' => 2000,
+        'gap-filler' => 1500,
     ];
 
     /** Agents with an effort of their own; the rest leave it to the provider. */
@@ -35,6 +36,7 @@ final class Agents
         'photo-picker' => 'low',
         'photo-query' => 'low',
         'photo-scout' => 'low',
+        'gap-filler' => 'low',
     ];
 
     public static function maxTokens(string $agent): int
