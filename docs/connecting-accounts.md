@@ -1,6 +1,6 @@
 # Connecting a library account ("Connect account")
 
-Some paid libraries license only for a person's own signed-in account, through an OAuth user token (Shutterstock, once its adapter lands; Adobe Stock's user auth later). Their `Capabilities::$needsOAuth` is true, and they implement `Images\Libraries\ConnectsAccount`. Each addon builds three control panel routes on it; core does everything the provider sees.
+Some paid libraries license only for a person's own signed-in account, through an OAuth user token (Shutterstock today; Adobe Stock's user auth later). Their `Capabilities::$needsOAuth` is true, and they implement `Images\Libraries\ConnectsAccount`. Each addon builds three control panel routes on it; core does everything the provider sees.
 
 ## The interface
 
@@ -65,6 +65,7 @@ Rules:
 
 | Library | What the customer registers | PKCE | Tokens |
 |---|---|---|---|
+| Shutterstock | In their app at shutterstock.com/account/developers/apps, the **Callback URL** field is a comma-separated list of **host names and paths, not full URLs**, such as `cms.example.com/cp/ghostwriter/libraries/shutterstock/callback`. The `redirect_uri` sent "must use a host name that you set up in your application". `localhost` is the default, for testing. The settings row should show the host-and-path to paste. | Not documented, so not used. | Asked for with `expires=true`: an hour, then renewed with the refresh token and the secret, so a leaked token store alone gives an hour at most. Shutterstock has no revoke endpoint: Disconnect forgets the tokens, and the customer can delete the app to revoke them. Scopes: `user.view licenses.create licenses.view purchases.view`. Sign-in always goes to `api.shutterstock.com`, even in sandbox mode. |
 | Demo (`FakeLibrary`) | Nothing. `authorizationUrl()` returns the callback itself with `code` and `state`, as if the person had allowed access, so the whole flow runs in a browser. | Yes: the code is bound to the state and the callback address, so a different state or address is refused. | An hour, refreshed; `refusesRefresh` and `refusesConnect` script a revoked or refused connection. |
 
 ## Testing it in an addon

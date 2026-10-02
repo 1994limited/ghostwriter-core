@@ -150,6 +150,29 @@ All the licensing errors extend `PhotoUnavailable`, so existing catches still wo
 
 A library that needs the customer's own signed-in account (`Capabilities::$needsOAuth`) also implements `Libraries\ConnectsAccount`: `authorizationUrl($state, $redirectUri)`, `connect($code, $redirectUri, $state)`, `refresh($tokens)`, `connected()` and `disconnect()`, keeping its tokens through `LibraryTokens`. The addons' "Connect account" routes and their rules are in [connecting-accounts.md](connecting-accounts.md).
 
+### Shutterstock (`Libraries\Paid\Shutterstock`)
+
+```php
+$shutterstock = new Shutterstock(
+    $http,
+    key: env('SHUTTERSTOCK_API_KEY', ''),         // the addon reads the environment; core never does
+    secret: env('SHUTTERSTOCK_API_SECRET', ''),
+    tokens: $libraryTokens,                        // the site's encrypted LibraryTokens
+    sandbox: (bool) env('SHUTTERSTOCK_SANDBOX', false),
+    editorial: $settings->includeEditorial,        // off by default
+);
+$stock = new StockSearch($http, $credentials, libraries: [$shutterstock]);
+```
+
+- The customer needs a Shutterstock **API** subscription (a shutterstock.com web plan can't license through the API) and their own app at shutterstock.com/account/developers/apps, whose consumer key and secret go in `.env`.
+- **Search** needs only the key and secret (basic auth). **Licensing** needs a connected account: it is a `ConnectsAccount` ([connecting-accounts.md](connecting-accounts.md)).
+- **No comp is ever stored.** `preview()` returns `Preview::linked()` with Shutterstock's own watermarked preview address (`previewStorage: none`); the CP comp route redirects to it, for signed-in users only. Shutterstock's licence has no comp licence for still images. Its archived API terms also asked for "Powered by Shutterstock" wherever previews are shown; show it beside Shutterstock results and previews.
+- Costs are the subscription's allotment ("1 download"); `account()` and `quotes()` read `/v2/user/subscriptions`. Each quote is a subscription and a JPEG size (`huge`, `medium`, `small`), largest first.
+- `license()` sends the ledger ID as `metadata.customer_id` (Shutterstock has no idempotency key) and is never retried; `findLicences()` reads the licence history, so `reconcile()` matches an uncertain call by that ID. The download address (8 hours) is kept only in memory; `download()` later asks for a redownload, which doesn't charge.
+- Editorial images are off unless `editorial: true`. An editorial photo's quotes are marked editorial, and only such a quote sends `editorial_acknowledgement`.
+- `sandbox: true` points every API call at `api-sandbox.shutterstock.com`: licensing charges nothing and returns a watermarked file, and editorial licensing isn't available there.
+- `mayRank` is false and `noModelInput` true: no model sees its photos, metadata or files until counsel clears it.
+
 `Libraries\Testing\FakeLibrary` is a scripted paid library: photos, quotes and licence outcomes (`SUCCEED`, `UNCERTAIN_CHARGED`, `UNCERTAIN_NOT_CHARGED`, or an exception), GD-drawn comps, and a record of every call (`licenceCalls($id)`). It is also the addons' demo library. `Domain\Testing\MemoryAssetReplacer` and `Libraries\Testing\InMemoryLibraryTokens` go with it.
 
 ## Testing
