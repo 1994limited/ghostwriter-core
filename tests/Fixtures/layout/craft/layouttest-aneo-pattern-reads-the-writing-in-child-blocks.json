@@ -1,0 +1,439 @@
+{
+    "addon": "craft",
+    "source": "Test: nineteenninetyfour\\ghostwriter\\tests\\unit\\LayoutTest::testANeoPatternReadsTheWritingInChildBlocks",
+    "schemas": {
+        "e1039e258ddd": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "required": true,
+                "type": "title"
+            },
+            {
+                "handle": "newsBuilder",
+                "kind": "blocks",
+                "label": "NewsBuilder",
+                "type": "benf\\neo\\Field",
+                "engine": "neo",
+                "sets": {
+                    "textWithAsset": {
+                        "label": "Text With Asset",
+                        "fields": [
+                            {
+                                "handle": "paddingTop",
+                                "kind": "number",
+                                "label": "PaddingTop",
+                                "type": "craft\\fields\\Number"
+                            },
+                            {
+                                "handle": "reverse",
+                                "kind": "toggle",
+                                "label": "Reverse",
+                                "type": "craft\\fields\\Lightswitch"
+                            },
+                            {
+                                "handle": "children",
+                                "kind": "blocks",
+                                "label": "Blocks inside",
+                                "type": "neo-children",
+                                "engine": "neo-children",
+                                "sets": {
+                                    "text": {
+                                        "label": "Text",
+                                        "fields": [
+                                            {
+                                                "handle": "richText",
+                                                "kind": "richtext",
+                                                "label": "RichText",
+                                                "type": "craft\\ckeditor\\Field"
+                                            }
+                                        ]
+                                    },
+                                    "button": {
+                                        "label": "Button",
+                                        "fields": [
+                                            {
+                                                "handle": "linkTo",
+                                                "kind": "reference",
+                                                "label": "LinkTo",
+                                                "type": "craft\\fields\\Entries"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "spacer": {
+                        "label": "Spacer",
+                        "fields": [
+                            {
+                                "handle": "height",
+                                "kind": "number",
+                                "label": "Height",
+                                "type": "craft\\fields\\Number"
+                            }
+                        ]
+                    },
+                    "assetSingle": {
+                        "label": "Asset Single",
+                        "fields": [
+                            {
+                                "handle": "picture",
+                                "kind": "reference",
+                                "label": "Picture",
+                                "type": "craft\\fields\\Entries"
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "learn",
+            "schema": "e1039e258ddd",
+            "input": {
+                "entries": [
+                    {
+                        "id": 971,
+                        "values": {
+                            "title": "Launch",
+                            "newsBuilder": [
+                                {
+                                    "id": 972,
+                                    "type": "assetSingle",
+                                    "enabled": true,
+                                    "picture": []
+                                },
+                                {
+                                    "id": 973,
+                                    "type": "textWithAsset",
+                                    "enabled": true,
+                                    "paddingTop": 40,
+                                    "reverse": false,
+                                    "children": [
+                                        {
+                                            "id": 974,
+                                            "type": "text",
+                                            "enabled": true,
+                                            "richText": "<h3>Launch</h3><p>We launched a fabric collection with a partner we admire.</p>"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": 975,
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": 80
+                                },
+                                {
+                                    "id": 976,
+                                    "type": "textWithAsset",
+                                    "enabled": true,
+                                    "paddingTop": 40,
+                                    "reverse": false,
+                                    "children": [
+                                        {
+                                            "id": 977,
+                                            "type": "text",
+                                            "enabled": true,
+                                            "richText": "<h3>Launch</h3><p>It goes on sale in spring.</p>"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": 978,
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": 80
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": 987,
+                        "values": {
+                            "title": "Award",
+                            "newsBuilder": [
+                                {
+                                    "id": 988,
+                                    "type": "assetSingle",
+                                    "enabled": true,
+                                    "picture": []
+                                },
+                                {
+                                    "id": 989,
+                                    "type": "textWithAsset",
+                                    "enabled": true,
+                                    "paddingTop": 40,
+                                    "reverse": false,
+                                    "children": [
+                                        {
+                                            "id": 990,
+                                            "type": "text",
+                                            "enabled": true,
+                                            "richText": "<h3>Award</h3><p>Our founder received a lifetime achievement award.</p>"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": 991,
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": 80
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "positions": {
+                    "newsBuilder/textWithAsset#0": {
+                        "paddingTop": 40,
+                        "reverse": false
+                    },
+                    "newsBuilder/spacer#0": {
+                        "height": 80
+                    }
+                },
+                "sequences": {
+                    "newsBuilder/textWithAsset#0/children": [
+                        "text"
+                    ]
+                },
+                "markup": [],
+                "links": []
+            }
+        },
+        {
+            "algorithm": "pattern",
+            "schema": "e1039e258ddd",
+            "input": {
+                "entries": [
+                    {
+                        "id": 971,
+                        "values": {
+                            "title": "Launch",
+                            "newsBuilder": [
+                                {
+                                    "id": 972,
+                                    "type": "assetSingle",
+                                    "enabled": true,
+                                    "picture": []
+                                },
+                                {
+                                    "id": 973,
+                                    "type": "textWithAsset",
+                                    "enabled": true,
+                                    "paddingTop": 40,
+                                    "reverse": false,
+                                    "children": [
+                                        {
+                                            "id": 974,
+                                            "type": "text",
+                                            "enabled": true,
+                                            "richText": "<h3>Launch</h3><p>We launched a fabric collection with a partner we admire.</p>"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": 975,
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": 80
+                                },
+                                {
+                                    "id": 976,
+                                    "type": "textWithAsset",
+                                    "enabled": true,
+                                    "paddingTop": 40,
+                                    "reverse": false,
+                                    "children": [
+                                        {
+                                            "id": 977,
+                                            "type": "text",
+                                            "enabled": true,
+                                            "richText": "<h3>Launch</h3><p>It goes on sale in spring.</p>"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": 978,
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": 80
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": 987,
+                        "values": {
+                            "title": "Award",
+                            "newsBuilder": [
+                                {
+                                    "id": 988,
+                                    "type": "assetSingle",
+                                    "enabled": true,
+                                    "picture": []
+                                },
+                                {
+                                    "id": 989,
+                                    "type": "textWithAsset",
+                                    "enabled": true,
+                                    "paddingTop": 40,
+                                    "reverse": false,
+                                    "children": [
+                                        {
+                                            "id": 990,
+                                            "type": "text",
+                                            "enabled": true,
+                                            "richText": "<h3>Award</h3><p>Our founder received a lifetime achievement award.</p>"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": 991,
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": 80
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "entries": 2,
+                "words": 49,
+                "blocks": {
+                    "newsBuilder": {
+                        "sequence": [
+                            "assetSingle",
+                            "textWithAsset",
+                            "spacer",
+                            "textWithAsset",
+                            "spacer"
+                        ],
+                        "usage": {
+                            "assetSingle": 1.0,
+                            "textWithAsset": 1.0,
+                            "spacer": 1.0
+                        },
+                        "fixed": {
+                            "textWithAsset": {
+                                "paddingTop": 40,
+                                "reverse": false
+                            },
+                            "spacer": {
+                                "height": 80
+                            }
+                        },
+                        "used": {
+                            "assetSingle": [],
+                            "textWithAsset": [
+                                "paddingTop",
+                                "reverse",
+                                "children"
+                            ],
+                            "spacer": [
+                                "height"
+                            ]
+                        },
+                        "boilerplate": [
+                            "assetSingle",
+                            "spacer"
+                        ]
+                    }
+                },
+                "fixed": [],
+                "examples": [
+                    {
+                        "title": "Launch",
+                        "newsBuilder": [
+                            {
+                                "type": "assetSingle"
+                            },
+                            {
+                                "type": "textWithAsset",
+                                "children": [
+                                    {
+                                        "type": "text",
+                                        "richText": "### Launch\n\nWe launched a fabric collection with a partner we admire."
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "spacer"
+                            },
+                            {
+                                "type": "textWithAsset",
+                                "children": [
+                                    {
+                                        "type": "text",
+                                        "richText": "### Launch\n\nIt goes on sale in spring."
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "spacer"
+                            }
+                        ]
+                    },
+                    {
+                        "title": "Award",
+                        "newsBuilder": [
+                            {
+                                "type": "assetSingle"
+                            },
+                            {
+                                "type": "textWithAsset",
+                                "children": [
+                                    {
+                                        "type": "text",
+                                        "richText": "### Award\n\nOur founder received a lifetime achievement award."
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "spacer"
+                            }
+                        ]
+                    }
+                ],
+                "filled": {
+                    "title": 1.0,
+                    "newsBuilder": 1.0,
+                    "assetSingle.picture": 0.0,
+                    "textWithAsset.paddingTop": 1.0,
+                    "textWithAsset.reverse": 1.0,
+                    "textWithAsset.children": 1.0,
+                    "text.richText": 1.0,
+                    "spacer.height": 1.0
+                },
+                "house": {
+                    "positions": {
+                        "newsBuilder/textWithAsset#0": {
+                            "paddingTop": 40,
+                            "reverse": false
+                        },
+                        "newsBuilder/spacer#0": {
+                            "height": 80
+                        }
+                    },
+                    "sequences": {
+                        "newsBuilder/textWithAsset#0/children": [
+                            "text"
+                        ]
+                    },
+                    "markup": [],
+                    "links": []
+                }
+            }
+        }
+    ]
+}

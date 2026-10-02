@@ -1,0 +1,197 @@
+{
+    "addon": "filament",
+    "source": "Test: NineteenNinetyFour\\Ghostwriter\\Filament\\Tests\\Feature\\QueueWaitingTest::test_a_job_is_marked_while_it_waits_for_a_worker",
+    "schemas": {
+        "bbe59390bab9": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "required": true,
+                "type": "Filament\\Forms\\Components\\TextInput",
+                "path": "title",
+                "meta": {
+                    "max_length": null
+                }
+            },
+            {
+                "handle": "slug",
+                "kind": "text",
+                "label": "Slug",
+                "required": true,
+                "type": "Filament\\Forms\\Components\\TextInput",
+                "path": "slug",
+                "meta": {
+                    "max_length": null
+                }
+            },
+            {
+                "handle": "content",
+                "kind": "blocks",
+                "label": "Content",
+                "type": "Filament\\Forms\\Components\\Builder",
+                "engine": "builder",
+                "path": "content",
+                "sets": {
+                    "hero": {
+                        "label": "Hero",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "required": true,
+                                "type": "Filament\\Forms\\Components\\TextInput",
+                                "path": "heading",
+                                "meta": {
+                                    "max_length": null
+                                }
+                            },
+                            {
+                                "handle": "image",
+                                "kind": "reference",
+                                "label": "Image",
+                                "type": "Filament\\Forms\\Components\\FileUpload",
+                                "files": true,
+                                "path": "image",
+                                "meta": {
+                                    "images": true,
+                                    "multiple": false,
+                                    "max_files": null,
+                                    "disk": "public",
+                                    "directory": "heroes",
+                                    "alt": "image_alt"
+                                }
+                            },
+                            {
+                                "handle": "image_alt",
+                                "kind": "reference",
+                                "label": "Alt text",
+                                "type": "Filament\\Forms\\Components\\TextInput",
+                                "path": "image_alt",
+                                "meta": {
+                                    "max_length": null,
+                                    "skipped": true
+                                }
+                            }
+                        ]
+                    },
+                    "text": {
+                        "label": "Text",
+                        "fields": [
+                            {
+                                "handle": "body",
+                                "kind": "richtext",
+                                "label": "Body",
+                                "type": "Filament\\Forms\\Components\\RichEditor",
+                                "path": "body",
+                                "meta": {
+                                    "format": "html"
+                                }
+                            },
+                            {
+                                "handle": "width",
+                                "kind": "choice",
+                                "label": "Width",
+                                "options": {
+                                    "narrow": "Narrow",
+                                    "wide": "Wide"
+                                },
+                                "type": "Filament\\Forms\\Components\\Select",
+                                "path": "width"
+                            }
+                        ]
+                    },
+                    "spacer": {
+                        "label": "Spacer",
+                        "fields": [
+                            {
+                                "handle": "height",
+                                "kind": "number",
+                                "label": "Height",
+                                "type": "Filament\\Forms\\Components\\TextInput",
+                                "path": "height",
+                                "meta": {
+                                    "max_length": null
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "learn",
+            "schema": "bbe59390bab9",
+            "input": {
+                "entries": []
+            },
+            "expected": {
+                "positions": [],
+                "sequences": [],
+                "markup": [],
+                "links": []
+            }
+        },
+        {
+            "algorithm": "pattern",
+            "schema": "bbe59390bab9",
+            "input": {
+                "entries": []
+            },
+            "expected": {
+                "entries": 0,
+                "words": 0,
+                "blocks": {
+                    "content": {
+                        "sequence": [],
+                        "usage": [],
+                        "fixed": [],
+                        "used": [],
+                        "boilerplate": []
+                    }
+                },
+                "fixed": [],
+                "examples": [],
+                "filled": [],
+                "house": {
+                    "positions": [],
+                    "sequences": [],
+                    "markup": [],
+                    "links": []
+                }
+            }
+        },
+        {
+            "algorithm": "describe",
+            "schema": "bbe59390bab9",
+            "input": {
+                "pattern": {
+                    "entries": 0,
+                    "words": 0,
+                    "blocks": {
+                        "content": {
+                            "sequence": [],
+                            "usage": [],
+                            "fixed": [],
+                            "used": [],
+                            "boilerplate": []
+                        }
+                    },
+                    "fixed": [],
+                    "examples": [],
+                    "filled": [],
+                    "house": {
+                        "positions": [],
+                        "sequences": [],
+                        "markup": [],
+                        "links": []
+                    }
+                }
+            },
+            "expected": "- `title` (short text, required)\n- `slug` (short text, required)\n- `content` (list of blocks)\n  Each block is written as `type: <block>` followed by that block's fields. Blocks:\n  - `hero`: Hero\n      - `heading` (short text, required)\n  - `text`: Text\n      - `body` (markdown)\n      - `width` (one of narrow, wide)\n  - `spacer`: Spacer\n      - `height` (number)"
+        }
+    ]
+}

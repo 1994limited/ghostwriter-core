@@ -1,0 +1,956 @@
+{
+    "addon": "statamic",
+    "source": "Test: NineteenNinetyFour\\Ghostwriter\\Tests\\Feature\\HouseStyleTest::test_a_link_to_the_page_itself_is_found_whatever_each_page_calls_it_and_unopposed_links_count",
+    "schemas": {
+        "b4f204b607ee": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "required": true,
+                "type": "text"
+            },
+            {
+                "handle": "featured_image",
+                "kind": "reference",
+                "label": "Featured Image",
+                "type": "assets",
+                "files": true,
+                "meta": {
+                    "container": "assets",
+                    "folder": "",
+                    "max_files": 1,
+                    "images": true
+                }
+            },
+            {
+                "handle": "brochure",
+                "kind": "reference",
+                "label": "Brochure",
+                "type": "assets",
+                "files": true,
+                "meta": {
+                    "container": "assets",
+                    "folder": "",
+                    "max_files": 1,
+                    "images": false
+                }
+            },
+            {
+                "handle": "page_builder",
+                "kind": "blocks",
+                "label": "Page Builder",
+                "type": "replicator",
+                "sets": {
+                    "spacer": {
+                        "label": "Spacer",
+                        "fields": [
+                            {
+                                "handle": "height",
+                                "kind": "text",
+                                "label": "Height",
+                                "type": "text"
+                            }
+                        ]
+                    },
+                    "hero": {
+                        "label": "Hero",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "richtext",
+                                "label": "Heading",
+                                "type": "bard",
+                                "meta": {
+                                    "save_html": false
+                                }
+                            },
+                            {
+                                "handle": "image",
+                                "kind": "reference",
+                                "label": "Image",
+                                "type": "assets",
+                                "files": true,
+                                "meta": {
+                                    "container": "assets",
+                                    "folder": "",
+                                    "max_files": 1,
+                                    "images": true
+                                }
+                            },
+                            {
+                                "handle": "background",
+                                "kind": "reference",
+                                "label": "Background",
+                                "type": "assets",
+                                "files": true,
+                                "meta": {
+                                    "container": "assets",
+                                    "folder": "",
+                                    "max_files": 1,
+                                    "images": true
+                                }
+                            },
+                            {
+                                "handle": "button_text",
+                                "kind": "text",
+                                "label": "Button Text",
+                                "type": "text"
+                            },
+                            {
+                                "handle": "button_link",
+                                "kind": "reference",
+                                "label": "Button Link",
+                                "type": "link"
+                            }
+                        ]
+                    },
+                    "breadcrumbs": {
+                        "label": "Breadcrumbs",
+                        "fields": [
+                            {
+                                "handle": "crumbs",
+                                "kind": "blocks",
+                                "label": "Crumbs",
+                                "type": "replicator",
+                                "sets": {
+                                    "crumb": {
+                                        "label": "Crumb",
+                                        "fields": [
+                                            {
+                                                "handle": "label",
+                                                "kind": "text",
+                                                "label": "Label",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "handle": "link",
+                                                "kind": "reference",
+                                                "label": "Link",
+                                                "type": "link"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "learn",
+            "schema": "b4f204b607ee",
+            "input": {
+                "entries": [
+                    {
+                        "id": "p1",
+                        "values": {
+                            "title": "Yacht Studio",
+                            "featured_image": "pages/p1.png",
+                            "page_builder": [
+                                {
+                                    "id": "s1",
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": "45/65"
+                                },
+                                {
+                                    "id": "h1",
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "heading": [
+                                        {
+                                            "type": "heading",
+                                            "attrs": {
+                                                "level": 1,
+                                                "textAlign": "center"
+                                            },
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "Yacht Studio",
+                                                    "marks": [
+                                                        {
+                                                            "type": "bold"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "image": "heroes/p1.png",
+                                    "button_text": "Talk to us",
+                                    "button_link": "entry::contact"
+                                },
+                                {
+                                    "id": "b1",
+                                    "type": "breadcrumbs",
+                                    "enabled": true,
+                                    "crumbs": [
+                                        {
+                                            "id": "c1",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Home",
+                                            "link": "entry::home"
+                                        },
+                                        {
+                                            "id": "c2",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Studio",
+                                            "link": "entry::studio"
+                                        },
+                                        {
+                                            "id": "c3",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Yacht Studio",
+                                            "link": "entry::p1"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "s2",
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": "60/100"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "p2",
+                        "values": {
+                            "title": "Architecture Studio",
+                            "featured_image": "pages/p2.png",
+                            "page_builder": [
+                                {
+                                    "id": "s1",
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": "45/65"
+                                },
+                                {
+                                    "id": "h1",
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "heading": [
+                                        {
+                                            "type": "heading",
+                                            "attrs": {
+                                                "level": 1,
+                                                "textAlign": "center"
+                                            },
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "Architecture Studio",
+                                                    "marks": [
+                                                        {
+                                                            "type": "bold"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "image": "heroes/p2.png",
+                                    "button_text": "Talk to us",
+                                    "button_link": "entry::contact"
+                                },
+                                {
+                                    "id": "b1",
+                                    "type": "breadcrumbs",
+                                    "enabled": true,
+                                    "crumbs": [
+                                        {
+                                            "id": "c1",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Home",
+                                            "link": "entry::home"
+                                        },
+                                        {
+                                            "id": "c2",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Studio",
+                                            "link": "entry::studio"
+                                        },
+                                        {
+                                            "id": "c3",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Architecture",
+                                            "link": "entry::p2"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "s2",
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": "60/100"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "p3",
+                        "values": {
+                            "title": "Visualisation Studio",
+                            "featured_image": "pages/p3.png",
+                            "page_builder": [
+                                {
+                                    "id": "s1",
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": "45/65"
+                                },
+                                {
+                                    "id": "h1",
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "heading": [
+                                        {
+                                            "type": "heading",
+                                            "attrs": {
+                                                "level": 1,
+                                                "textAlign": "center"
+                                            },
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "Visualisation Studio",
+                                                    "marks": [
+                                                        {
+                                                            "type": "bold"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "image": "heroes/p3.png",
+                                    "button_text": "Talk to us",
+                                    "button_link": "entry::contact"
+                                },
+                                {
+                                    "id": "b1",
+                                    "type": "breadcrumbs",
+                                    "enabled": true,
+                                    "crumbs": [
+                                        {
+                                            "id": "c1",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Home",
+                                            "link": "entry::home"
+                                        },
+                                        {
+                                            "id": "c2",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Studio",
+                                            "link": "entry::studio"
+                                        },
+                                        {
+                                            "id": "c3",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Visualisation Studio"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "s2",
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": "60/100"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "p4",
+                        "values": {
+                            "title": "Procurement",
+                            "featured_image": "pages/p4.png",
+                            "page_builder": [
+                                {
+                                    "id": "s1",
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": "45/65"
+                                },
+                                {
+                                    "id": "h1",
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "heading": [
+                                        {
+                                            "type": "heading",
+                                            "attrs": {
+                                                "level": 1,
+                                                "textAlign": "center"
+                                            },
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "Procurement",
+                                                    "marks": [
+                                                        {
+                                                            "type": "bold"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "image": "heroes/p4.png",
+                                    "button_text": "Talk to us",
+                                    "button_link": "entry::contact"
+                                },
+                                {
+                                    "id": "b1",
+                                    "type": "breadcrumbs",
+                                    "enabled": true,
+                                    "crumbs": [
+                                        {
+                                            "id": "c1",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Home",
+                                            "link": "entry::home"
+                                        },
+                                        {
+                                            "id": "c2",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Studio",
+                                            "link": "entry::studio"
+                                        },
+                                        {
+                                            "id": "c3",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Procurement"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "s2",
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": "60/100"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "positions": {
+                    "page_builder/spacer#0": {
+                        "height": "45/65"
+                    },
+                    "page_builder/hero#0": {
+                        "button_text": "Talk to us",
+                        "button_link": "entry::contact"
+                    },
+                    "page_builder/breadcrumbs#0/crumbs/crumb#0": {
+                        "label": "Home",
+                        "link": "entry::home"
+                    },
+                    "page_builder/breadcrumbs#0/crumbs/crumb#1": {
+                        "label": "Studio",
+                        "link": "entry::studio"
+                    },
+                    "page_builder/breadcrumbs#0/crumbs/crumb#2": {
+                        "label": "@title",
+                        "link": "@self"
+                    },
+                    "page_builder/spacer#1": {
+                        "height": "60/100"
+                    }
+                },
+                "sequences": {
+                    "page_builder/breadcrumbs#0/crumbs": [
+                        "crumb",
+                        "crumb",
+                        "crumb"
+                    ]
+                },
+                "markup": {
+                    "page_builder/hero.heading": {
+                        "heading1": {
+                            "attrs": {
+                                "textAlign": "center"
+                            },
+                            "marks": [
+                                {
+                                    "type": "bold"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "links": {
+                    "page_builder/hero.button_link": 1,
+                    "page_builder/breadcrumbs/crumbs/crumb.link": 0.8333333333333334
+                }
+            }
+        },
+        {
+            "algorithm": "learn",
+            "schema": "b4f204b607ee",
+            "input": {
+                "entries": [
+                    {
+                        "id": "p1",
+                        "values": {
+                            "title": "Yacht Studio",
+                            "featured_image": "pages/p1.png",
+                            "page_builder": [
+                                {
+                                    "id": "s1",
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": "45/65"
+                                },
+                                {
+                                    "id": "h1",
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "heading": [
+                                        {
+                                            "type": "heading",
+                                            "attrs": {
+                                                "level": 1,
+                                                "textAlign": "center"
+                                            },
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "Yacht Studio",
+                                                    "marks": [
+                                                        {
+                                                            "type": "bold"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "image": "heroes/p1.png",
+                                    "button_text": "Talk to us",
+                                    "button_link": "entry::contact"
+                                },
+                                {
+                                    "id": "b1",
+                                    "type": "breadcrumbs",
+                                    "enabled": true,
+                                    "crumbs": [
+                                        {
+                                            "id": "c1",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Home",
+                                            "link": "entry::home"
+                                        },
+                                        {
+                                            "id": "c2",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Studio",
+                                            "link": "entry::studio"
+                                        },
+                                        {
+                                            "id": "c3",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Yacht Studio",
+                                            "link": "entry::p1"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "s2",
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": "60/100"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "p2",
+                        "values": {
+                            "title": "Architecture Studio",
+                            "featured_image": "pages/p2.png",
+                            "page_builder": [
+                                {
+                                    "id": "s1",
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": "45/65"
+                                },
+                                {
+                                    "id": "h1",
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "heading": [
+                                        {
+                                            "type": "heading",
+                                            "attrs": {
+                                                "level": 1,
+                                                "textAlign": "center"
+                                            },
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "Architecture Studio",
+                                                    "marks": [
+                                                        {
+                                                            "type": "bold"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "image": "heroes/p2.png",
+                                    "button_text": "Talk to us",
+                                    "button_link": "entry::contact"
+                                },
+                                {
+                                    "id": "b1",
+                                    "type": "breadcrumbs",
+                                    "enabled": true,
+                                    "crumbs": [
+                                        {
+                                            "id": "c1",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Home",
+                                            "link": "entry::home"
+                                        },
+                                        {
+                                            "id": "c2",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Studio",
+                                            "link": "entry::studio"
+                                        },
+                                        {
+                                            "id": "c3",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Architecture",
+                                            "link": "entry::p2"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "s2",
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": "60/100"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "p3",
+                        "values": {
+                            "title": "Visualisation Studio",
+                            "featured_image": "pages/p3.png",
+                            "page_builder": [
+                                {
+                                    "id": "s1",
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": "45/65"
+                                },
+                                {
+                                    "id": "h1",
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "heading": [
+                                        {
+                                            "type": "heading",
+                                            "attrs": {
+                                                "level": 1,
+                                                "textAlign": "center"
+                                            },
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "Visualisation Studio",
+                                                    "marks": [
+                                                        {
+                                                            "type": "bold"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "image": "heroes/p3.png",
+                                    "button_text": "Talk to us",
+                                    "button_link": "entry::contact"
+                                },
+                                {
+                                    "id": "b1",
+                                    "type": "breadcrumbs",
+                                    "enabled": true,
+                                    "crumbs": [
+                                        {
+                                            "id": "c1",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Home",
+                                            "link": "entry::home"
+                                        },
+                                        {
+                                            "id": "c2",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Studio",
+                                            "link": "entry::studio"
+                                        },
+                                        {
+                                            "id": "c3",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Visualisation Studio"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "s2",
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": "60/100"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "p4",
+                        "values": {
+                            "title": "Procurement",
+                            "featured_image": "pages/p4.png",
+                            "page_builder": [
+                                {
+                                    "id": "s1",
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": "45/65"
+                                },
+                                {
+                                    "id": "h1",
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "heading": [
+                                        {
+                                            "type": "heading",
+                                            "attrs": {
+                                                "level": 1,
+                                                "textAlign": "center"
+                                            },
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "Procurement",
+                                                    "marks": [
+                                                        {
+                                                            "type": "bold"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "image": "heroes/p4.png",
+                                    "button_text": "Talk to us",
+                                    "button_link": "entry::pricing"
+                                },
+                                {
+                                    "id": "b1",
+                                    "type": "breadcrumbs",
+                                    "enabled": true,
+                                    "crumbs": [
+                                        {
+                                            "id": "c1",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Home",
+                                            "link": "entry::home"
+                                        },
+                                        {
+                                            "id": "c2",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Studio",
+                                            "link": "entry::studio"
+                                        },
+                                        {
+                                            "id": "c3",
+                                            "type": "crumb",
+                                            "enabled": true,
+                                            "label": "Procurement"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "s2",
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": "60/100"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "positions": {
+                    "page_builder/spacer#0": {
+                        "height": "45/65"
+                    },
+                    "page_builder/hero#0": {
+                        "button_text": "Talk to us"
+                    },
+                    "page_builder/breadcrumbs#0/crumbs/crumb#0": {
+                        "label": "Home",
+                        "link": "entry::home"
+                    },
+                    "page_builder/breadcrumbs#0/crumbs/crumb#1": {
+                        "label": "Studio",
+                        "link": "entry::studio"
+                    },
+                    "page_builder/breadcrumbs#0/crumbs/crumb#2": {
+                        "label": "@title",
+                        "link": "@self"
+                    },
+                    "page_builder/spacer#1": {
+                        "height": "60/100"
+                    }
+                },
+                "sequences": {
+                    "page_builder/breadcrumbs#0/crumbs": [
+                        "crumb",
+                        "crumb",
+                        "crumb"
+                    ]
+                },
+                "markup": {
+                    "page_builder/hero.heading": {
+                        "heading1": {
+                            "attrs": {
+                                "textAlign": "center"
+                            },
+                            "marks": [
+                                {
+                                    "type": "bold"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "links": {
+                    "page_builder/hero.button_link": 1,
+                    "page_builder/breadcrumbs/crumbs/crumb.link": 0.8333333333333334
+                }
+            }
+        },
+        {
+            "algorithm": "apply",
+            "schema": "b4f204b607ee",
+            "input": {
+                "data": {
+                    "title": "New",
+                    "page_builder": [
+                        {
+                            "type": "hero"
+                        }
+                    ]
+                },
+                "style": {
+                    "positions": {
+                        "page_builder/spacer#0": {
+                            "height": "45/65"
+                        },
+                        "page_builder/hero#0": {
+                            "button_text": "Talk to us"
+                        },
+                        "page_builder/breadcrumbs#0/crumbs/crumb#0": {
+                            "label": "Home",
+                            "link": "entry::home"
+                        },
+                        "page_builder/breadcrumbs#0/crumbs/crumb#1": {
+                            "label": "Studio",
+                            "link": "entry::studio"
+                        },
+                        "page_builder/breadcrumbs#0/crumbs/crumb#2": {
+                            "label": "@title",
+                            "link": "@self"
+                        },
+                        "page_builder/spacer#1": {
+                            "height": "60/100"
+                        }
+                    },
+                    "sequences": {
+                        "page_builder/breadcrumbs#0/crumbs": [
+                            "crumb",
+                            "crumb",
+                            "crumb"
+                        ]
+                    },
+                    "markup": {
+                        "page_builder/hero.heading": {
+                            "heading1": {
+                                "attrs": {
+                                    "textAlign": "center"
+                                },
+                                "marks": [
+                                    {
+                                        "type": "bold"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "links": {
+                        "page_builder/hero.button_link": 1,
+                        "page_builder/breadcrumbs/crumbs/crumb.link": 0.8333333333333334
+                    }
+                },
+                "self": {
+                    "id": null,
+                    "title": ""
+                }
+            },
+            "expected": {
+                "data": {
+                    "title": "New",
+                    "page_builder": [
+                        {
+                            "type": "hero",
+                            "button_text": "Talk to us",
+                            "button_link": "https://example.com"
+                        }
+                    ]
+                },
+                "toFill": [
+                    "Hero (links to example.com for now)"
+                ]
+            }
+        }
+    ]
+}

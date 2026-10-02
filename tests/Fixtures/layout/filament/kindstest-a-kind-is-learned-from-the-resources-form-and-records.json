@@ -1,0 +1,234 @@
+{
+    "addon": "filament",
+    "source": "Test: NineteenNinetyFour\\Ghostwriter\\Filament\\Tests\\Feature\\KindsTest::test_a_kind_is_learned_from_the_resources_form_and_records",
+    "schemas": {
+        "6705b8879a61": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "required": true,
+                "type": "Filament\\Forms\\Components\\TextInput",
+                "path": "title",
+                "meta": {
+                    "max_length": 120
+                }
+            },
+            {
+                "handle": "summary",
+                "kind": "longtext",
+                "label": "Summary",
+                "instructions": "One or two sentences, shown in lists. Never more than two sentences.",
+                "type": "Filament\\Forms\\Components\\Textarea",
+                "path": "summary",
+                "meta": {
+                    "max_length": null
+                }
+            },
+            {
+                "handle": "body",
+                "kind": "richtext",
+                "label": "Body",
+                "type": "Filament\\Forms\\Components\\RichEditor",
+                "path": "body",
+                "meta": {
+                    "format": "html"
+                }
+            },
+            {
+                "handle": "status",
+                "kind": "choice",
+                "label": "Status",
+                "required": true,
+                "options": {
+                    "draft": "Draft",
+                    "published": "Published"
+                },
+                "type": "Filament\\Forms\\Components\\Select",
+                "path": "status"
+            },
+            {
+                "handle": "published_at",
+                "kind": "reference",
+                "label": "Published at",
+                "type": "Filament\\Forms\\Components\\DateTimePicker",
+                "path": "published_at"
+            },
+            {
+                "handle": "seo_title",
+                "kind": "reference",
+                "label": "Seo title",
+                "type": "Filament\\Forms\\Components\\TextInput",
+                "path": "seo_title",
+                "meta": {
+                    "max_length": null,
+                    "skipped": true
+                }
+            },
+            {
+                "handle": "cover",
+                "kind": "reference",
+                "label": "Cover",
+                "type": "Filament\\Forms\\Components\\FileUpload",
+                "files": true,
+                "path": "cover",
+                "meta": {
+                    "images": true,
+                    "multiple": false,
+                    "max_files": null,
+                    "disk": "public",
+                    "directory": "covers"
+                }
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "learn",
+            "schema": "6705b8879a61",
+            "input": {
+                "entries": [
+                    {
+                        "id": 1,
+                        "values": {
+                            "title": "Small gardens",
+                            "summary": "About Small gardens.",
+                            "body": "<p>Advice about Small gardens.</p>",
+                            "status": "published",
+                            "published_at": null,
+                            "seo_title": null,
+                            "cover": null
+                        }
+                    },
+                    {
+                        "id": 3,
+                        "values": {
+                            "title": "Shady corners",
+                            "summary": "About Shady corners.",
+                            "body": "<p>Advice about Shady corners.</p>",
+                            "status": "published",
+                            "published_at": null,
+                            "seo_title": null,
+                            "cover": null
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "positions": [],
+                "sequences": [],
+                "markup": [],
+                "links": []
+            }
+        },
+        {
+            "algorithm": "pattern",
+            "schema": "6705b8879a61",
+            "input": {
+                "entries": [
+                    {
+                        "id": 1,
+                        "values": {
+                            "title": "Small gardens",
+                            "summary": "About Small gardens.",
+                            "body": "<p>Advice about Small gardens.</p>",
+                            "status": "published",
+                            "published_at": null,
+                            "seo_title": null,
+                            "cover": null
+                        }
+                    },
+                    {
+                        "id": 3,
+                        "values": {
+                            "title": "Shady corners",
+                            "summary": "About Shady corners.",
+                            "body": "<p>Advice about Shady corners.</p>",
+                            "status": "published",
+                            "published_at": null,
+                            "seo_title": null,
+                            "cover": null
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "entries": 2,
+                "words": 14,
+                "blocks": [],
+                "fixed": [],
+                "examples": [
+                    {
+                        "title": "Small gardens",
+                        "summary": "About Small gardens.",
+                        "body": "Advice about Small gardens.",
+                        "status": "published"
+                    },
+                    {
+                        "title": "Shady corners",
+                        "summary": "About Shady corners.",
+                        "body": "Advice about Shady corners.",
+                        "status": "published"
+                    }
+                ],
+                "filled": {
+                    "title": 1.0,
+                    "summary": 1.0,
+                    "body": 1.0,
+                    "status": 1.0,
+                    "published_at": 0.0,
+                    "seo_title": 0.0,
+                    "cover": 0.0
+                },
+                "house": {
+                    "positions": [],
+                    "sequences": [],
+                    "markup": [],
+                    "links": []
+                }
+            }
+        },
+        {
+            "algorithm": "describe",
+            "schema": "6705b8879a61",
+            "input": {
+                "pattern": {
+                    "entries": 2,
+                    "words": 14,
+                    "blocks": [],
+                    "fixed": [],
+                    "examples": [
+                        {
+                            "title": "Small gardens",
+                            "summary": "About Small gardens.",
+                            "body": "Advice about Small gardens.",
+                            "status": "published"
+                        },
+                        {
+                            "title": "Shady corners",
+                            "summary": "About Shady corners.",
+                            "body": "Advice about Shady corners.",
+                            "status": "published"
+                        }
+                    ],
+                    "filled": {
+                        "title": 1.0,
+                        "summary": 1.0,
+                        "body": 1.0,
+                        "status": 1.0,
+                        "published_at": 0.0,
+                        "seo_title": 0.0,
+                        "cover": 0.0
+                    },
+                    "house": {
+                        "positions": [],
+                        "sequences": [],
+                        "markup": [],
+                        "links": []
+                    }
+                }
+            },
+            "expected": "- `title` (short text, required)\n- `summary` (plain text). One or two sentences, shown in lists. Never more than two sentences\n- `body` (markdown)\n- `status` (one of draft, published, required)"
+        }
+    ]
+}

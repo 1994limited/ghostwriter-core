@@ -1,0 +1,486 @@
+{
+    "addon": "craft",
+    "source": "Test: nineteenninetyfour\\ghostwriter\\tests\\unit\\ImageryTest::testPlaceholdersCanBeSwitchedOff",
+    "schemas": {
+        "08a993e41ce0": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "required": true,
+                "type": "title"
+            },
+            {
+                "handle": "cover",
+                "kind": "reference",
+                "label": "Cover",
+                "type": "craft\\fields\\Assets",
+                "files": true,
+                "meta": {
+                    "max_files": 1,
+                    "sources": [
+                        "volume:f65bc7ac-50cc-4e17-86e6-c33f6fca3dd4"
+                    ],
+                    "source": null,
+                    "images": true
+                }
+            },
+            {
+                "handle": "storyBuilder",
+                "kind": "blocks",
+                "label": "StoryBuilder",
+                "type": "benf\\neo\\Field",
+                "engine": "neo",
+                "sets": {
+                    "banner": {
+                        "label": "Banner",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "type": "craft\\fields\\PlainText"
+                            },
+                            {
+                                "handle": "media",
+                                "kind": "reference",
+                                "label": "Media",
+                                "type": "craft\\fields\\Matrix",
+                                "engine": "matrix",
+                                "sets": {
+                                    "mediaItem": {
+                                        "label": "MediaItem",
+                                        "fields": [
+                                            {
+                                                "handle": "picture",
+                                                "kind": "reference",
+                                                "label": "Picture",
+                                                "type": "craft\\fields\\Assets",
+                                                "files": true,
+                                                "meta": {
+                                                    "max_files": 1,
+                                                    "sources": [
+                                                        "volume:f65bc7ac-50cc-4e17-86e6-c33f6fca3dd4"
+                                                    ],
+                                                    "source": null,
+                                                    "images": true
+                                                }
+                                            }
+                                        ]
+                                    }
+                                }
+                            },
+                            {
+                                "handle": "background",
+                                "kind": "reference",
+                                "label": "Background",
+                                "type": "craft\\fields\\Assets",
+                                "files": true,
+                                "meta": {
+                                    "max_files": 1,
+                                    "sources": [
+                                        "volume:f65bc7ac-50cc-4e17-86e6-c33f6fca3dd4"
+                                    ],
+                                    "source": null,
+                                    "images": true
+                                }
+                            }
+                        ]
+                    },
+                    "footnote": {
+                        "label": "Footnote",
+                        "fields": [
+                            {
+                                "handle": "note",
+                                "kind": "text",
+                                "label": "Note",
+                                "type": "craft\\fields\\PlainText"
+                            },
+                            {
+                                "handle": "noteIcon",
+                                "kind": "reference",
+                                "label": "NoteIcon",
+                                "required": true,
+                                "type": "craft\\fields\\Assets",
+                                "files": true,
+                                "meta": {
+                                    "max_files": 1,
+                                    "sources": [
+                                        "volume:f65bc7ac-50cc-4e17-86e6-c33f6fca3dd4"
+                                    ],
+                                    "source": null,
+                                    "images": true
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "learn",
+            "schema": "08a993e41ce0",
+            "input": {
+                "entries": [
+                    {
+                        "id": 481,
+                        "values": {
+                            "title": "Three",
+                            "cover": [
+                                479
+                            ],
+                            "storyBuilder": [
+                                {
+                                    "id": 482,
+                                    "type": "banner",
+                                    "enabled": true,
+                                    "heading": "Hi three",
+                                    "media": [
+                                        {
+                                            "id": 483,
+                                            "type": "mediaItem",
+                                            "enabled": true,
+                                            "picture": [
+                                                480
+                                            ]
+                                        }
+                                    ],
+                                    "background": []
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": 473,
+                        "values": {
+                            "title": "Two",
+                            "cover": [
+                                471
+                            ],
+                            "storyBuilder": [
+                                {
+                                    "id": 474,
+                                    "type": "banner",
+                                    "enabled": true,
+                                    "heading": "Hi two",
+                                    "media": [
+                                        {
+                                            "id": 475,
+                                            "type": "mediaItem",
+                                            "enabled": true,
+                                            "picture": [
+                                                472
+                                            ]
+                                        }
+                                    ],
+                                    "background": []
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": 465,
+                        "values": {
+                            "title": "One",
+                            "cover": [
+                                463
+                            ],
+                            "storyBuilder": [
+                                {
+                                    "id": 466,
+                                    "type": "banner",
+                                    "enabled": true,
+                                    "heading": "Hi one",
+                                    "media": [
+                                        {
+                                            "id": 467,
+                                            "type": "mediaItem",
+                                            "enabled": true,
+                                            "picture": [
+                                                464
+                                            ]
+                                        }
+                                    ],
+                                    "background": []
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "positions": [],
+                "sequences": {
+                    "storyBuilder/banner#0/media": [
+                        "mediaItem"
+                    ]
+                },
+                "markup": [],
+                "links": []
+            }
+        },
+        {
+            "algorithm": "pattern",
+            "schema": "08a993e41ce0",
+            "input": {
+                "entries": [
+                    {
+                        "id": 481,
+                        "values": {
+                            "title": "Three",
+                            "cover": [
+                                479
+                            ],
+                            "storyBuilder": [
+                                {
+                                    "id": 482,
+                                    "type": "banner",
+                                    "enabled": true,
+                                    "heading": "Hi three",
+                                    "media": [
+                                        {
+                                            "id": 483,
+                                            "type": "mediaItem",
+                                            "enabled": true,
+                                            "picture": [
+                                                480
+                                            ]
+                                        }
+                                    ],
+                                    "background": []
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": 473,
+                        "values": {
+                            "title": "Two",
+                            "cover": [
+                                471
+                            ],
+                            "storyBuilder": [
+                                {
+                                    "id": 474,
+                                    "type": "banner",
+                                    "enabled": true,
+                                    "heading": "Hi two",
+                                    "media": [
+                                        {
+                                            "id": 475,
+                                            "type": "mediaItem",
+                                            "enabled": true,
+                                            "picture": [
+                                                472
+                                            ]
+                                        }
+                                    ],
+                                    "background": []
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": 465,
+                        "values": {
+                            "title": "One",
+                            "cover": [
+                                463
+                            ],
+                            "storyBuilder": [
+                                {
+                                    "id": 466,
+                                    "type": "banner",
+                                    "enabled": true,
+                                    "heading": "Hi one",
+                                    "media": [
+                                        {
+                                            "id": 467,
+                                            "type": "mediaItem",
+                                            "enabled": true,
+                                            "picture": [
+                                                464
+                                            ]
+                                        }
+                                    ],
+                                    "background": []
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "entries": 3,
+                "words": 8,
+                "blocks": {
+                    "storyBuilder": {
+                        "sequence": [
+                            "banner"
+                        ],
+                        "usage": {
+                            "banner": 1.0
+                        },
+                        "fixed": [],
+                        "used": {
+                            "banner": [
+                                "heading",
+                                "media"
+                            ]
+                        },
+                        "boilerplate": []
+                    }
+                },
+                "fixed": [],
+                "examples": [
+                    {
+                        "title": "Three",
+                        "storyBuilder": [
+                            {
+                                "type": "banner",
+                                "heading": "Hi three"
+                            }
+                        ]
+                    },
+                    {
+                        "title": "Two",
+                        "storyBuilder": [
+                            {
+                                "type": "banner",
+                                "heading": "Hi two"
+                            }
+                        ]
+                    }
+                ],
+                "filled": {
+                    "title": 1.0,
+                    "cover": 1.0,
+                    "storyBuilder": 1.0,
+                    "banner.heading": 1.0,
+                    "banner.media": 1.0,
+                    "mediaItem.picture": 1.0,
+                    "banner.background": 0.0
+                },
+                "house": {
+                    "positions": [],
+                    "sequences": {
+                        "storyBuilder/banner#0/media": [
+                            "mediaItem"
+                        ]
+                    },
+                    "markup": [],
+                    "links": []
+                }
+            }
+        },
+        {
+            "algorithm": "build",
+            "schema": "08a993e41ce0",
+            "input": {
+                "draft": {
+                    "title": "A New Story"
+                },
+                "pattern": {
+                    "entries": 3,
+                    "words": 8,
+                    "blocks": {
+                        "storyBuilder": {
+                            "sequence": [
+                                "banner"
+                            ],
+                            "usage": {
+                                "banner": 1.0
+                            },
+                            "fixed": [],
+                            "used": {
+                                "banner": [
+                                    "heading",
+                                    "media"
+                                ]
+                            },
+                            "boilerplate": []
+                        }
+                    },
+                    "fixed": [],
+                    "examples": [
+                        {
+                            "title": "Three",
+                            "storyBuilder": [
+                                {
+                                    "type": "banner",
+                                    "heading": "Hi three"
+                                }
+                            ]
+                        },
+                        {
+                            "title": "Two",
+                            "storyBuilder": [
+                                {
+                                    "type": "banner",
+                                    "heading": "Hi two"
+                                }
+                            ]
+                        }
+                    ],
+                    "filled": {
+                        "title": 1.0,
+                        "cover": 1.0,
+                        "storyBuilder": 1.0,
+                        "banner.heading": 1.0,
+                        "banner.media": 1.0,
+                        "mediaItem.picture": 1.0,
+                        "banner.background": 0.0
+                    },
+                    "house": {
+                        "positions": [],
+                        "sequences": {
+                            "storyBuilder/banner#0/media": [
+                                "mediaItem"
+                            ]
+                        },
+                        "markup": [],
+                        "links": []
+                    }
+                },
+                "defaults": []
+            },
+            "expected": {
+                "data": {
+                    "title": "A New Story"
+                },
+                "notes": []
+            }
+        },
+        {
+            "algorithm": "apply",
+            "schema": "08a993e41ce0",
+            "input": {
+                "data": {
+                    "title": "A New Story"
+                },
+                "style": {
+                    "positions": [],
+                    "sequences": {
+                        "storyBuilder/banner#0/media": [
+                            "mediaItem"
+                        ]
+                    },
+                    "markup": [],
+                    "links": []
+                },
+                "self": {
+                    "id": 488,
+                    "title": "A New Story"
+                }
+            },
+            "expected": {
+                "data": {
+                    "title": "A New Story"
+                },
+                "toFill": []
+            }
+        }
+    ]
+}

@@ -1,0 +1,1021 @@
+{
+    "addon": "statamic",
+    "source": "Test: NineteenNinetyFour\\Ghostwriter\\Tests\\Feature\\WritingTest::test_learning_a_collection_saves_a_content_type",
+    "schemas": {
+        "64c3faab1a68": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "required": true,
+                "type": "text"
+            },
+            {
+                "handle": "summary",
+                "kind": "longtext",
+                "label": "Summary",
+                "instructions": "Shown in lists.",
+                "type": "textarea"
+            },
+            {
+                "handle": "featured_image",
+                "kind": "reference",
+                "label": "Featured Image",
+                "type": "video"
+            },
+            {
+                "handle": "author",
+                "kind": "reference",
+                "label": "Author",
+                "type": "users"
+            },
+            {
+                "handle": "page_builder",
+                "kind": "blocks",
+                "label": "Page Builder",
+                "type": "replicator",
+                "sets": {
+                    "hero": {
+                        "label": "Hero",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "type": "text"
+                            },
+                            {
+                                "handle": "image",
+                                "kind": "reference",
+                                "label": "Image",
+                                "type": "video"
+                            }
+                        ]
+                    },
+                    "long_form": {
+                        "label": "Long Form",
+                        "instructions": "Prose column.",
+                        "fields": [
+                            {
+                                "handle": "content",
+                                "kind": "richtext",
+                                "label": "Content",
+                                "type": "bard",
+                                "meta": {
+                                    "save_html": false
+                                },
+                                "sets": {
+                                    "pullquote": {
+                                        "label": "Pull Quote",
+                                        "fields": [
+                                            {
+                                                "handle": "text",
+                                                "kind": "longtext",
+                                                "label": "Text",
+                                                "type": "textarea"
+                                            }
+                                        ]
+                                    }
+                                }
+                            },
+                            {
+                                "handle": "numbered",
+                                "kind": "toggle",
+                                "label": "Numbered",
+                                "type": "toggle"
+                            },
+                            {
+                                "handle": "width",
+                                "kind": "choice",
+                                "label": "Width",
+                                "options": {
+                                    "narrow": "Narrow",
+                                    "wide": "Wide"
+                                },
+                                "type": "button_group"
+                            }
+                        ]
+                    },
+                    "cards": {
+                        "label": "Card Grid",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "type": "text"
+                            },
+                            {
+                                "handle": "items",
+                                "kind": "rows",
+                                "label": "Items",
+                                "type": "grid",
+                                "fields": [
+                                    {
+                                        "handle": "text",
+                                        "kind": "text",
+                                        "label": "Text",
+                                        "type": "text"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    "related": {
+                        "label": "Related",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "type": "text"
+                            },
+                            {
+                                "handle": "limit",
+                                "kind": "number",
+                                "label": "Limit",
+                                "type": "integer"
+                            }
+                        ]
+                    },
+                    "gallery": {
+                        "label": "Gallery",
+                        "fields": [
+                            {
+                                "handle": "caption",
+                                "kind": "text",
+                                "label": "Caption",
+                                "type": "text"
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "learn",
+            "schema": "64c3faab1a68",
+            "input": {
+                "entries": [
+                    {
+                        "id": "f71695d7-352e-4aa0-a33b-005795c5059c",
+                        "values": {
+                            "title": "One",
+                            "summary": "A summary line about One that is long enough to count.",
+                            "author": "user-1",
+                            "featured_image": "articles/one.jpg",
+                            "page_builder": [
+                                {
+                                    "id": "a1",
+                                    "type": "hero",
+                                    "enabled": true
+                                },
+                                {
+                                    "id": "a2",
+                                    "type": "long_form",
+                                    "enabled": true,
+                                    "numbered": true,
+                                    "width": "narrow",
+                                    "content": [
+                                        {
+                                            "type": "heading",
+                                            "attrs": {
+                                                "level": 2
+                                            },
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "The Problem"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "paragraph",
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "A paragraph about one that says something specific enough to be worth reading twice over."
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "set",
+                                            "attrs": {
+                                                "id": "s1",
+                                                "values": {
+                                                    "type": "pullquote",
+                                                    "text": "Challenge accepted."
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "a3",
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Broader uses",
+                                    "items": [
+                                        {
+                                            "id": "r1",
+                                            "text": "Property searches"
+                                        },
+                                        {
+                                            "id": "r2",
+                                            "text": "Recipe selection"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "a4",
+                                    "type": "related",
+                                    "enabled": true,
+                                    "heading": "More articles",
+                                    "limit": 3
+                                },
+                                {
+                                    "id": "a5",
+                                    "type": "gallery",
+                                    "enabled": false,
+                                    "caption": "Switched off"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "b4d0002c-6fa6-4eaf-8268-540ce5cc2cc7",
+                        "values": {
+                            "title": "Two",
+                            "summary": "A summary line about Two that is long enough to count.",
+                            "author": "user-1",
+                            "featured_image": "articles/two.jpg",
+                            "page_builder": [
+                                {
+                                    "id": "a1",
+                                    "type": "hero",
+                                    "enabled": true
+                                },
+                                {
+                                    "id": "a2",
+                                    "type": "long_form",
+                                    "enabled": true,
+                                    "numbered": true,
+                                    "width": "narrow",
+                                    "content": [
+                                        {
+                                            "type": "heading",
+                                            "attrs": {
+                                                "level": 2
+                                            },
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "The Problem"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "paragraph",
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "A paragraph about two that says something specific enough to be worth reading twice over."
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "set",
+                                            "attrs": {
+                                                "id": "s1",
+                                                "values": {
+                                                    "type": "pullquote",
+                                                    "text": "Challenge accepted."
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "a3",
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Broader uses",
+                                    "items": [
+                                        {
+                                            "id": "r1",
+                                            "text": "Property searches"
+                                        },
+                                        {
+                                            "id": "r2",
+                                            "text": "Recipe selection"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "a4",
+                                    "type": "related",
+                                    "enabled": true,
+                                    "heading": "More articles",
+                                    "limit": 3
+                                },
+                                {
+                                    "id": "a5",
+                                    "type": "gallery",
+                                    "enabled": false,
+                                    "caption": "Switched off"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "d763b67c-fd73-4e9d-aea7-6191877aa9d6",
+                        "values": {
+                            "title": "Three",
+                            "summary": "A summary line about Three that is long enough to count.",
+                            "author": "user-1",
+                            "featured_image": "articles/three.jpg",
+                            "page_builder": [
+                                {
+                                    "id": "a1",
+                                    "type": "hero",
+                                    "enabled": true
+                                },
+                                {
+                                    "id": "a2",
+                                    "type": "long_form",
+                                    "enabled": true,
+                                    "numbered": true,
+                                    "width": "narrow",
+                                    "content": [
+                                        {
+                                            "type": "heading",
+                                            "attrs": {
+                                                "level": 2
+                                            },
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "The Problem"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "paragraph",
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "A paragraph about three that says something specific enough to be worth reading twice over."
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "set",
+                                            "attrs": {
+                                                "id": "s1",
+                                                "values": {
+                                                    "type": "pullquote",
+                                                    "text": "Challenge accepted."
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "a3",
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Broader uses",
+                                    "items": [
+                                        {
+                                            "id": "r1",
+                                            "text": "Property searches"
+                                        },
+                                        {
+                                            "id": "r2",
+                                            "text": "Recipe selection"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "a4",
+                                    "type": "related",
+                                    "enabled": true,
+                                    "heading": "More articles",
+                                    "limit": 3
+                                },
+                                {
+                                    "id": "a5",
+                                    "type": "gallery",
+                                    "enabled": false,
+                                    "caption": "Switched off"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "positions": {
+                    "page_builder/long_form#0": {
+                        "numbered": true,
+                        "width": "narrow"
+                    },
+                    "page_builder/cards#0": {
+                        "heading": "Broader uses",
+                        "items": [
+                            {
+                                "id": "r1",
+                                "text": "Property searches"
+                            },
+                            {
+                                "id": "r2",
+                                "text": "Recipe selection"
+                            }
+                        ]
+                    },
+                    "page_builder/related#0": {
+                        "heading": "More articles",
+                        "limit": 3
+                    }
+                },
+                "sequences": [],
+                "markup": [],
+                "links": []
+            }
+        },
+        {
+            "algorithm": "pattern",
+            "schema": "64c3faab1a68",
+            "input": {
+                "entries": [
+                    {
+                        "id": "f71695d7-352e-4aa0-a33b-005795c5059c",
+                        "values": {
+                            "title": "One",
+                            "summary": "A summary line about One that is long enough to count.",
+                            "author": "user-1",
+                            "featured_image": "articles/one.jpg",
+                            "page_builder": [
+                                {
+                                    "id": "a1",
+                                    "type": "hero",
+                                    "enabled": true
+                                },
+                                {
+                                    "id": "a2",
+                                    "type": "long_form",
+                                    "enabled": true,
+                                    "numbered": true,
+                                    "width": "narrow",
+                                    "content": [
+                                        {
+                                            "type": "heading",
+                                            "attrs": {
+                                                "level": 2
+                                            },
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "The Problem"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "paragraph",
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "A paragraph about one that says something specific enough to be worth reading twice over."
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "set",
+                                            "attrs": {
+                                                "id": "s1",
+                                                "values": {
+                                                    "type": "pullquote",
+                                                    "text": "Challenge accepted."
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "a3",
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Broader uses",
+                                    "items": [
+                                        {
+                                            "id": "r1",
+                                            "text": "Property searches"
+                                        },
+                                        {
+                                            "id": "r2",
+                                            "text": "Recipe selection"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "a4",
+                                    "type": "related",
+                                    "enabled": true,
+                                    "heading": "More articles",
+                                    "limit": 3
+                                },
+                                {
+                                    "id": "a5",
+                                    "type": "gallery",
+                                    "enabled": false,
+                                    "caption": "Switched off"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "b4d0002c-6fa6-4eaf-8268-540ce5cc2cc7",
+                        "values": {
+                            "title": "Two",
+                            "summary": "A summary line about Two that is long enough to count.",
+                            "author": "user-1",
+                            "featured_image": "articles/two.jpg",
+                            "page_builder": [
+                                {
+                                    "id": "a1",
+                                    "type": "hero",
+                                    "enabled": true
+                                },
+                                {
+                                    "id": "a2",
+                                    "type": "long_form",
+                                    "enabled": true,
+                                    "numbered": true,
+                                    "width": "narrow",
+                                    "content": [
+                                        {
+                                            "type": "heading",
+                                            "attrs": {
+                                                "level": 2
+                                            },
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "The Problem"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "paragraph",
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "A paragraph about two that says something specific enough to be worth reading twice over."
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "set",
+                                            "attrs": {
+                                                "id": "s1",
+                                                "values": {
+                                                    "type": "pullquote",
+                                                    "text": "Challenge accepted."
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "a3",
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Broader uses",
+                                    "items": [
+                                        {
+                                            "id": "r1",
+                                            "text": "Property searches"
+                                        },
+                                        {
+                                            "id": "r2",
+                                            "text": "Recipe selection"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "a4",
+                                    "type": "related",
+                                    "enabled": true,
+                                    "heading": "More articles",
+                                    "limit": 3
+                                },
+                                {
+                                    "id": "a5",
+                                    "type": "gallery",
+                                    "enabled": false,
+                                    "caption": "Switched off"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "d763b67c-fd73-4e9d-aea7-6191877aa9d6",
+                        "values": {
+                            "title": "Three",
+                            "summary": "A summary line about Three that is long enough to count.",
+                            "author": "user-1",
+                            "featured_image": "articles/three.jpg",
+                            "page_builder": [
+                                {
+                                    "id": "a1",
+                                    "type": "hero",
+                                    "enabled": true
+                                },
+                                {
+                                    "id": "a2",
+                                    "type": "long_form",
+                                    "enabled": true,
+                                    "numbered": true,
+                                    "width": "narrow",
+                                    "content": [
+                                        {
+                                            "type": "heading",
+                                            "attrs": {
+                                                "level": 2
+                                            },
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "The Problem"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "paragraph",
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "A paragraph about three that says something specific enough to be worth reading twice over."
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "set",
+                                            "attrs": {
+                                                "id": "s1",
+                                                "values": {
+                                                    "type": "pullquote",
+                                                    "text": "Challenge accepted."
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "a3",
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Broader uses",
+                                    "items": [
+                                        {
+                                            "id": "r1",
+                                            "text": "Property searches"
+                                        },
+                                        {
+                                            "id": "r2",
+                                            "text": "Recipe selection"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "a4",
+                                    "type": "related",
+                                    "enabled": true,
+                                    "heading": "More articles",
+                                    "limit": 3
+                                },
+                                {
+                                    "id": "a5",
+                                    "type": "gallery",
+                                    "enabled": false,
+                                    "caption": "Switched off"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "entries": 3,
+                "words": 66,
+                "blocks": {
+                    "page_builder": {
+                        "sequence": [
+                            "hero",
+                            "long_form",
+                            "cards",
+                            "related"
+                        ],
+                        "usage": {
+                            "hero": 1.0,
+                            "long_form": 1.0,
+                            "cards": 1.0,
+                            "related": 1.0
+                        },
+                        "fixed": {
+                            "long_form": {
+                                "numbered": true,
+                                "width": "narrow"
+                            },
+                            "cards": {
+                                "heading": "Broader uses",
+                                "items": [
+                                    {
+                                        "id": "r1",
+                                        "text": "Property searches"
+                                    },
+                                    {
+                                        "id": "r2",
+                                        "text": "Recipe selection"
+                                    }
+                                ]
+                            },
+                            "related": {
+                                "heading": "More articles",
+                                "limit": 3
+                            }
+                        },
+                        "used": {
+                            "hero": [],
+                            "long_form": [
+                                "numbered",
+                                "width",
+                                "content"
+                            ],
+                            "cards": [
+                                "heading",
+                                "items"
+                            ],
+                            "related": [
+                                "heading",
+                                "limit"
+                            ]
+                        },
+                        "boilerplate": [
+                            "hero",
+                            "cards",
+                            "related"
+                        ]
+                    }
+                },
+                "fixed": {
+                    "author": "user-1"
+                },
+                "examples": [
+                    {
+                        "title": "One",
+                        "summary": "A summary line about One that is long enough to count.",
+                        "page_builder": [
+                            {
+                                "type": "hero"
+                            },
+                            {
+                                "type": "long_form",
+                                "content": "## The Problem\n\nA paragraph about one that says something specific enough to be worth reading twice over.\n\n> Challenge accepted."
+                            },
+                            {
+                                "type": "cards"
+                            },
+                            {
+                                "type": "related"
+                            }
+                        ]
+                    },
+                    {
+                        "title": "Two",
+                        "summary": "A summary line about Two that is long enough to count.",
+                        "page_builder": [
+                            {
+                                "type": "hero"
+                            },
+                            {
+                                "type": "long_form",
+                                "content": "## The Problem\n\nA paragraph about two that says something specific enough to be worth reading twice over.\n\n> Challenge accepted."
+                            },
+                            {
+                                "type": "cards"
+                            },
+                            {
+                                "type": "related"
+                            }
+                        ]
+                    }
+                ],
+                "filled": {
+                    "title": 1.0,
+                    "summary": 1.0,
+                    "featured_image": 1.0,
+                    "author": 1.0,
+                    "page_builder": 1.0,
+                    "hero.heading": 0.0,
+                    "hero.image": 0.0,
+                    "long_form.content": 1.0,
+                    "long_form.numbered": 1.0,
+                    "long_form.width": 1.0,
+                    "cards.heading": 1.0,
+                    "cards.items": 1.0,
+                    "related.heading": 1.0,
+                    "related.limit": 1.0
+                },
+                "house": {
+                    "positions": {
+                        "page_builder/long_form#0": {
+                            "numbered": true,
+                            "width": "narrow"
+                        },
+                        "page_builder/cards#0": {
+                            "heading": "Broader uses",
+                            "items": [
+                                {
+                                    "id": "r1",
+                                    "text": "Property searches"
+                                },
+                                {
+                                    "id": "r2",
+                                    "text": "Recipe selection"
+                                }
+                            ]
+                        },
+                        "page_builder/related#0": {
+                            "heading": "More articles",
+                            "limit": 3
+                        }
+                    },
+                    "sequences": [],
+                    "markup": [],
+                    "links": []
+                }
+            }
+        },
+        {
+            "algorithm": "describe",
+            "schema": "64c3faab1a68",
+            "input": {
+                "pattern": {
+                    "entries": 3,
+                    "words": 66,
+                    "blocks": {
+                        "page_builder": {
+                            "sequence": [
+                                "hero",
+                                "long_form",
+                                "cards",
+                                "related"
+                            ],
+                            "usage": {
+                                "hero": 1.0,
+                                "long_form": 1.0,
+                                "cards": 1.0,
+                                "related": 1.0
+                            },
+                            "fixed": {
+                                "long_form": {
+                                    "numbered": true,
+                                    "width": "narrow"
+                                },
+                                "cards": {
+                                    "heading": "Broader uses",
+                                    "items": [
+                                        {
+                                            "id": "r1",
+                                            "text": "Property searches"
+                                        },
+                                        {
+                                            "id": "r2",
+                                            "text": "Recipe selection"
+                                        }
+                                    ]
+                                },
+                                "related": {
+                                    "heading": "More articles",
+                                    "limit": 3
+                                }
+                            },
+                            "used": {
+                                "hero": [],
+                                "long_form": [
+                                    "numbered",
+                                    "width",
+                                    "content"
+                                ],
+                                "cards": [
+                                    "heading",
+                                    "items"
+                                ],
+                                "related": [
+                                    "heading",
+                                    "limit"
+                                ]
+                            },
+                            "boilerplate": [
+                                "hero",
+                                "cards",
+                                "related"
+                            ]
+                        }
+                    },
+                    "fixed": {
+                        "author": "user-1"
+                    },
+                    "examples": [
+                        {
+                            "title": "One",
+                            "summary": "A summary line about One that is long enough to count.",
+                            "page_builder": [
+                                {
+                                    "type": "hero"
+                                },
+                                {
+                                    "type": "long_form",
+                                    "content": "## The Problem\n\nA paragraph about one that says something specific enough to be worth reading twice over.\n\n> Challenge accepted."
+                                },
+                                {
+                                    "type": "cards"
+                                },
+                                {
+                                    "type": "related"
+                                }
+                            ]
+                        },
+                        {
+                            "title": "Two",
+                            "summary": "A summary line about Two that is long enough to count.",
+                            "page_builder": [
+                                {
+                                    "type": "hero"
+                                },
+                                {
+                                    "type": "long_form",
+                                    "content": "## The Problem\n\nA paragraph about two that says something specific enough to be worth reading twice over.\n\n> Challenge accepted."
+                                },
+                                {
+                                    "type": "cards"
+                                },
+                                {
+                                    "type": "related"
+                                }
+                            ]
+                        }
+                    ],
+                    "filled": {
+                        "title": 1.0,
+                        "summary": 1.0,
+                        "featured_image": 1.0,
+                        "author": 1.0,
+                        "page_builder": 1.0,
+                        "hero.heading": 0.0,
+                        "hero.image": 0.0,
+                        "long_form.content": 1.0,
+                        "long_form.numbered": 1.0,
+                        "long_form.width": 1.0,
+                        "cards.heading": 1.0,
+                        "cards.items": 1.0,
+                        "related.heading": 1.0,
+                        "related.limit": 1.0
+                    },
+                    "house": {
+                        "positions": {
+                            "page_builder/long_form#0": {
+                                "numbered": true,
+                                "width": "narrow"
+                            },
+                            "page_builder/cards#0": {
+                                "heading": "Broader uses",
+                                "items": [
+                                    {
+                                        "id": "r1",
+                                        "text": "Property searches"
+                                    },
+                                    {
+                                        "id": "r2",
+                                        "text": "Recipe selection"
+                                    }
+                                ]
+                            },
+                            "page_builder/related#0": {
+                                "heading": "More articles",
+                                "limit": 3
+                            }
+                        },
+                        "sequences": [],
+                        "markup": [],
+                        "links": []
+                    }
+                }
+            },
+            "expected": "- `title` (short text, required)\n- `summary` (plain text). Shown in lists\n- `page_builder` (list of blocks)\n  Each block is written as `type: <block>` followed by that block's fields. Blocks:\n  - `hero`: Hero, on 100% of entries\n      (the same on every entry; write `type: hero` and nothing else)\n  - `long_form`: Long Form. Prose column, on 100% of entries\n      - `content` (markdown)\n  - `cards`: Card Grid, on 100% of entries\n      (the same on every entry; write `type: cards` and nothing else)\n  - `related`: Related, on 100% of entries\n      (the same on every entry; write `type: related` and nothing else)\n  Also available but not normally used here: `gallery` (Gallery).\n\nEntries in this collection usually build `page_builder` from these blocks, in this order: hero, long_form, cards, related. Follow that order unless the brief gives a reason not to.\nThese blocks are the same on every entry. Include each with its `type` alone, in its usual place, and its content is copied in for you. Never ask for their text: hero, cards, related."
+        }
+    ]
+}

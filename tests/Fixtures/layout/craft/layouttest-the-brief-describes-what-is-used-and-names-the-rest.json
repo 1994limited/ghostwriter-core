@@ -1,0 +1,833 @@
+{
+    "addon": "craft",
+    "source": "Test: nineteenninetyfour\\ghostwriter\\tests\\unit\\LayoutTest::testTheBriefDescribesWhatIsUsedAndNamesTheRest",
+    "schemas": {
+        "9e5885395eca": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "required": true,
+                "type": "title"
+            },
+            {
+                "handle": "summary",
+                "kind": "longtext",
+                "label": "Summary",
+                "instructions": "Shown in lists.",
+                "type": "craft\\fields\\PlainText"
+            },
+            {
+                "handle": "relatedEntry",
+                "kind": "reference",
+                "label": "RelatedEntry",
+                "type": "craft\\fields\\Entries"
+            },
+            {
+                "handle": "theme",
+                "kind": "choice",
+                "label": "Theme",
+                "options": {
+                    "light": "Light",
+                    "dark": "Dark"
+                },
+                "type": "craft\\fields\\Dropdown"
+            },
+            {
+                "handle": "kind",
+                "kind": "choice",
+                "label": "Kind",
+                "options": {
+                    "project": "Project",
+                    "guide": "Guide"
+                },
+                "type": "craft\\fields\\Dropdown"
+            },
+            {
+                "handle": "pageBuilder",
+                "kind": "blocks",
+                "label": "PageBuilder",
+                "type": "craft\\fields\\Matrix",
+                "engine": "matrix",
+                "sets": {
+                    "hero": {
+                        "label": "Hero",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "type": "craft\\fields\\PlainText"
+                            },
+                            {
+                                "handle": "relatedEntry",
+                                "kind": "reference",
+                                "label": "RelatedEntry",
+                                "type": "craft\\fields\\Entries"
+                            }
+                        ]
+                    },
+                    "longForm": {
+                        "label": "LongForm",
+                        "fields": [
+                            {
+                                "handle": "content",
+                                "kind": "richtext",
+                                "label": "Content",
+                                "type": "craft\\ckeditor\\Field"
+                            },
+                            {
+                                "handle": "numbered",
+                                "kind": "toggle",
+                                "label": "Numbered",
+                                "type": "craft\\fields\\Lightswitch"
+                            },
+                            {
+                                "handle": "width",
+                                "kind": "choice",
+                                "label": "Width",
+                                "options": {
+                                    "narrow": "Narrow",
+                                    "wide": "Wide"
+                                },
+                                "type": "craft\\fields\\ButtonGroup"
+                            }
+                        ]
+                    },
+                    "cards": {
+                        "label": "Cards",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "type": "craft\\fields\\PlainText"
+                            },
+                            {
+                                "handle": "items",
+                                "kind": "rows",
+                                "label": "Items",
+                                "type": "craft\\fields\\Table",
+                                "meta": {
+                                    "columns": {
+                                        "text": "col1"
+                                    }
+                                },
+                                "fields": [
+                                    {
+                                        "handle": "text",
+                                        "kind": "text",
+                                        "label": "Text",
+                                        "type": "table:singleline",
+                                        "meta": {
+                                            "id": "col1"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    "related": {
+                        "label": "Related",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "type": "craft\\fields\\PlainText"
+                            },
+                            {
+                                "handle": "limit",
+                                "kind": "number",
+                                "label": "Limit",
+                                "type": "craft\\fields\\Number"
+                            }
+                        ]
+                    },
+                    "gallery": {
+                        "label": "Gallery",
+                        "fields": [
+                            {
+                                "handle": "caption",
+                                "kind": "text",
+                                "label": "Caption",
+                                "type": "craft\\fields\\PlainText"
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "learn",
+            "schema": "9e5885395eca",
+            "input": {
+                "entries": [
+                    {
+                        "id": 1103,
+                        "values": {
+                            "title": "Three",
+                            "summary": "A summary line about Three that is long enough to count.",
+                            "relatedEntry": [],
+                            "theme": "light",
+                            "kind": null,
+                            "pageBuilder": [
+                                {
+                                    "id": 1104,
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "heading": null,
+                                    "relatedEntry": []
+                                },
+                                {
+                                    "id": 1105,
+                                    "type": "longForm",
+                                    "enabled": true,
+                                    "content": "<h2>The Problem</h2><p>When on-site search is done right it helps your customers find what they need and nudges them towards a decision. Offer up a complex range badly and those high end sales vanish. Three.</p><blockquote><p>Challenge accepted.</p></blockquote>",
+                                    "numbered": true,
+                                    "width": "narrow"
+                                },
+                                {
+                                    "id": 1106,
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Broader uses",
+                                    "items": [
+                                        {
+                                            "text": "Property searches"
+                                        },
+                                        {
+                                            "text": "Recipe selection"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": 1107,
+                                    "type": "related",
+                                    "enabled": true,
+                                    "heading": "More articles",
+                                    "limit": 3
+                                },
+                                {
+                                    "id": 1108,
+                                    "type": "gallery",
+                                    "enabled": false,
+                                    "caption": "Switched off"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": 1091,
+                        "values": {
+                            "title": "Two",
+                            "summary": "A summary line about Two that is long enough to count.",
+                            "relatedEntry": [],
+                            "theme": "light",
+                            "kind": null,
+                            "pageBuilder": [
+                                {
+                                    "id": 1092,
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "heading": null,
+                                    "relatedEntry": []
+                                },
+                                {
+                                    "id": 1093,
+                                    "type": "longForm",
+                                    "enabled": true,
+                                    "content": "<h2>The Problem</h2><p>When on-site search is done right it helps your customers find what they need and nudges them towards a decision. Offer up a complex range badly and those high end sales vanish. Two.</p><blockquote><p>Challenge accepted.</p></blockquote>",
+                                    "numbered": true,
+                                    "width": "narrow"
+                                },
+                                {
+                                    "id": 1094,
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Broader uses",
+                                    "items": [
+                                        {
+                                            "text": "Property searches"
+                                        },
+                                        {
+                                            "text": "Recipe selection"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": 1095,
+                                    "type": "related",
+                                    "enabled": true,
+                                    "heading": "More articles",
+                                    "limit": 3
+                                },
+                                {
+                                    "id": 1096,
+                                    "type": "gallery",
+                                    "enabled": false,
+                                    "caption": "Switched off"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": 1079,
+                        "values": {
+                            "title": "One",
+                            "summary": "A summary line about One that is long enough to count.",
+                            "relatedEntry": [],
+                            "theme": "light",
+                            "kind": null,
+                            "pageBuilder": [
+                                {
+                                    "id": 1080,
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "heading": null,
+                                    "relatedEntry": []
+                                },
+                                {
+                                    "id": 1081,
+                                    "type": "longForm",
+                                    "enabled": true,
+                                    "content": "<h2>The Problem</h2><p>When on-site search is done right it helps your customers find what they need and nudges them towards a decision. Offer up a complex range badly and those high end sales vanish. One.</p><blockquote><p>Challenge accepted.</p></blockquote>",
+                                    "numbered": true,
+                                    "width": "narrow"
+                                },
+                                {
+                                    "id": 1082,
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Broader uses",
+                                    "items": [
+                                        {
+                                            "text": "Property searches"
+                                        },
+                                        {
+                                            "text": "Recipe selection"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": 1083,
+                                    "type": "related",
+                                    "enabled": true,
+                                    "heading": "More articles",
+                                    "limit": 3
+                                },
+                                {
+                                    "id": 1084,
+                                    "type": "gallery",
+                                    "enabled": false,
+                                    "caption": "Switched off"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "positions": {
+                    "pageBuilder/longForm#0": {
+                        "numbered": true,
+                        "width": "narrow"
+                    },
+                    "pageBuilder/cards#0": {
+                        "heading": "Broader uses",
+                        "items": [
+                            {
+                                "text": "Property searches"
+                            },
+                            {
+                                "text": "Recipe selection"
+                            }
+                        ]
+                    },
+                    "pageBuilder/related#0": {
+                        "heading": "More articles",
+                        "limit": 3
+                    }
+                },
+                "sequences": [],
+                "markup": [],
+                "links": []
+            }
+        },
+        {
+            "algorithm": "pattern",
+            "schema": "9e5885395eca",
+            "input": {
+                "entries": [
+                    {
+                        "id": 1103,
+                        "values": {
+                            "title": "Three",
+                            "summary": "A summary line about Three that is long enough to count.",
+                            "relatedEntry": [],
+                            "theme": "light",
+                            "kind": null,
+                            "pageBuilder": [
+                                {
+                                    "id": 1104,
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "heading": null,
+                                    "relatedEntry": []
+                                },
+                                {
+                                    "id": 1105,
+                                    "type": "longForm",
+                                    "enabled": true,
+                                    "content": "<h2>The Problem</h2><p>When on-site search is done right it helps your customers find what they need and nudges them towards a decision. Offer up a complex range badly and those high end sales vanish. Three.</p><blockquote><p>Challenge accepted.</p></blockquote>",
+                                    "numbered": true,
+                                    "width": "narrow"
+                                },
+                                {
+                                    "id": 1106,
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Broader uses",
+                                    "items": [
+                                        {
+                                            "text": "Property searches"
+                                        },
+                                        {
+                                            "text": "Recipe selection"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": 1107,
+                                    "type": "related",
+                                    "enabled": true,
+                                    "heading": "More articles",
+                                    "limit": 3
+                                },
+                                {
+                                    "id": 1108,
+                                    "type": "gallery",
+                                    "enabled": false,
+                                    "caption": "Switched off"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": 1091,
+                        "values": {
+                            "title": "Two",
+                            "summary": "A summary line about Two that is long enough to count.",
+                            "relatedEntry": [],
+                            "theme": "light",
+                            "kind": null,
+                            "pageBuilder": [
+                                {
+                                    "id": 1092,
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "heading": null,
+                                    "relatedEntry": []
+                                },
+                                {
+                                    "id": 1093,
+                                    "type": "longForm",
+                                    "enabled": true,
+                                    "content": "<h2>The Problem</h2><p>When on-site search is done right it helps your customers find what they need and nudges them towards a decision. Offer up a complex range badly and those high end sales vanish. Two.</p><blockquote><p>Challenge accepted.</p></blockquote>",
+                                    "numbered": true,
+                                    "width": "narrow"
+                                },
+                                {
+                                    "id": 1094,
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Broader uses",
+                                    "items": [
+                                        {
+                                            "text": "Property searches"
+                                        },
+                                        {
+                                            "text": "Recipe selection"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": 1095,
+                                    "type": "related",
+                                    "enabled": true,
+                                    "heading": "More articles",
+                                    "limit": 3
+                                },
+                                {
+                                    "id": 1096,
+                                    "type": "gallery",
+                                    "enabled": false,
+                                    "caption": "Switched off"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": 1079,
+                        "values": {
+                            "title": "One",
+                            "summary": "A summary line about One that is long enough to count.",
+                            "relatedEntry": [],
+                            "theme": "light",
+                            "kind": null,
+                            "pageBuilder": [
+                                {
+                                    "id": 1080,
+                                    "type": "hero",
+                                    "enabled": true,
+                                    "heading": null,
+                                    "relatedEntry": []
+                                },
+                                {
+                                    "id": 1081,
+                                    "type": "longForm",
+                                    "enabled": true,
+                                    "content": "<h2>The Problem</h2><p>When on-site search is done right it helps your customers find what they need and nudges them towards a decision. Offer up a complex range badly and those high end sales vanish. One.</p><blockquote><p>Challenge accepted.</p></blockquote>",
+                                    "numbered": true,
+                                    "width": "narrow"
+                                },
+                                {
+                                    "id": 1082,
+                                    "type": "cards",
+                                    "enabled": true,
+                                    "heading": "Broader uses",
+                                    "items": [
+                                        {
+                                            "text": "Property searches"
+                                        },
+                                        {
+                                            "text": "Recipe selection"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": 1083,
+                                    "type": "related",
+                                    "enabled": true,
+                                    "heading": "More articles",
+                                    "limit": 3
+                                },
+                                {
+                                    "id": 1084,
+                                    "type": "gallery",
+                                    "enabled": false,
+                                    "caption": "Switched off"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "entries": 3,
+                "words": 84,
+                "blocks": {
+                    "pageBuilder": {
+                        "sequence": [
+                            "hero",
+                            "longForm",
+                            "cards",
+                            "related"
+                        ],
+                        "usage": {
+                            "hero": 1.0,
+                            "longForm": 1.0,
+                            "cards": 1.0,
+                            "related": 1.0
+                        },
+                        "fixed": {
+                            "longForm": {
+                                "numbered": true,
+                                "width": "narrow"
+                            },
+                            "cards": {
+                                "heading": "Broader uses",
+                                "items": [
+                                    {
+                                        "text": "Property searches"
+                                    },
+                                    {
+                                        "text": "Recipe selection"
+                                    }
+                                ]
+                            },
+                            "related": {
+                                "heading": "More articles",
+                                "limit": 3
+                            }
+                        },
+                        "used": {
+                            "hero": [],
+                            "longForm": [
+                                "content",
+                                "numbered",
+                                "width"
+                            ],
+                            "cards": [
+                                "heading",
+                                "items"
+                            ],
+                            "related": [
+                                "heading",
+                                "limit"
+                            ]
+                        },
+                        "boilerplate": [
+                            "hero",
+                            "cards",
+                            "related"
+                        ]
+                    }
+                },
+                "fixed": [],
+                "examples": [
+                    {
+                        "title": "Three",
+                        "summary": "A summary line about Three that is long enough to count.",
+                        "theme": "light",
+                        "pageBuilder": [
+                            {
+                                "type": "hero"
+                            },
+                            {
+                                "type": "longForm",
+                                "content": "## The Problem\n\nWhen on-site search is done right it helps your customers find what they need and nudges them towards a decision. Offer up a complex range badly and those high end sales vanish. Three.\n\n> Challenge accepted."
+                            },
+                            {
+                                "type": "cards"
+                            },
+                            {
+                                "type": "related"
+                            }
+                        ]
+                    },
+                    {
+                        "title": "Two",
+                        "summary": "A summary line about Two that is long enough to count.",
+                        "theme": "light",
+                        "pageBuilder": [
+                            {
+                                "type": "hero"
+                            },
+                            {
+                                "type": "longForm",
+                                "content": "## The Problem\n\nWhen on-site search is done right it helps your customers find what they need and nudges them towards a decision. Offer up a complex range badly and those high end sales vanish. Two.\n\n> Challenge accepted."
+                            },
+                            {
+                                "type": "cards"
+                            },
+                            {
+                                "type": "related"
+                            }
+                        ]
+                    }
+                ],
+                "filled": {
+                    "title": 1.0,
+                    "summary": 1.0,
+                    "relatedEntry": 0.0,
+                    "theme": 1.0,
+                    "kind": 0.0,
+                    "pageBuilder": 1.0,
+                    "hero.heading": 0.0,
+                    "hero.relatedEntry": 0.0,
+                    "longForm.content": 1.0,
+                    "longForm.numbered": 1.0,
+                    "longForm.width": 1.0,
+                    "cards.heading": 1.0,
+                    "cards.items": 1.0,
+                    "related.heading": 1.0,
+                    "related.limit": 1.0
+                },
+                "house": {
+                    "positions": {
+                        "pageBuilder/longForm#0": {
+                            "numbered": true,
+                            "width": "narrow"
+                        },
+                        "pageBuilder/cards#0": {
+                            "heading": "Broader uses",
+                            "items": [
+                                {
+                                    "text": "Property searches"
+                                },
+                                {
+                                    "text": "Recipe selection"
+                                }
+                            ]
+                        },
+                        "pageBuilder/related#0": {
+                            "heading": "More articles",
+                            "limit": 3
+                        }
+                    },
+                    "sequences": [],
+                    "markup": [],
+                    "links": []
+                }
+            }
+        },
+        {
+            "algorithm": "describe",
+            "schema": "9e5885395eca",
+            "input": {
+                "pattern": {
+                    "entries": 3,
+                    "words": 84,
+                    "blocks": {
+                        "pageBuilder": {
+                            "sequence": [
+                                "hero",
+                                "longForm",
+                                "cards",
+                                "related"
+                            ],
+                            "usage": {
+                                "hero": 1.0,
+                                "longForm": 1.0,
+                                "cards": 1.0,
+                                "related": 1.0
+                            },
+                            "fixed": {
+                                "longForm": {
+                                    "numbered": true,
+                                    "width": "narrow"
+                                },
+                                "cards": {
+                                    "heading": "Broader uses",
+                                    "items": [
+                                        {
+                                            "text": "Property searches"
+                                        },
+                                        {
+                                            "text": "Recipe selection"
+                                        }
+                                    ]
+                                },
+                                "related": {
+                                    "heading": "More articles",
+                                    "limit": 3
+                                }
+                            },
+                            "used": {
+                                "hero": [],
+                                "longForm": [
+                                    "content",
+                                    "numbered",
+                                    "width"
+                                ],
+                                "cards": [
+                                    "heading",
+                                    "items"
+                                ],
+                                "related": [
+                                    "heading",
+                                    "limit"
+                                ]
+                            },
+                            "boilerplate": [
+                                "hero",
+                                "cards",
+                                "related"
+                            ]
+                        }
+                    },
+                    "fixed": [],
+                    "examples": [
+                        {
+                            "title": "Three",
+                            "summary": "A summary line about Three that is long enough to count.",
+                            "theme": "light",
+                            "pageBuilder": [
+                                {
+                                    "type": "hero"
+                                },
+                                {
+                                    "type": "longForm",
+                                    "content": "## The Problem\n\nWhen on-site search is done right it helps your customers find what they need and nudges them towards a decision. Offer up a complex range badly and those high end sales vanish. Three.\n\n> Challenge accepted."
+                                },
+                                {
+                                    "type": "cards"
+                                },
+                                {
+                                    "type": "related"
+                                }
+                            ]
+                        },
+                        {
+                            "title": "Two",
+                            "summary": "A summary line about Two that is long enough to count.",
+                            "theme": "light",
+                            "pageBuilder": [
+                                {
+                                    "type": "hero"
+                                },
+                                {
+                                    "type": "longForm",
+                                    "content": "## The Problem\n\nWhen on-site search is done right it helps your customers find what they need and nudges them towards a decision. Offer up a complex range badly and those high end sales vanish. Two.\n\n> Challenge accepted."
+                                },
+                                {
+                                    "type": "cards"
+                                },
+                                {
+                                    "type": "related"
+                                }
+                            ]
+                        }
+                    ],
+                    "filled": {
+                        "title": 1.0,
+                        "summary": 1.0,
+                        "relatedEntry": 0.0,
+                        "theme": 1.0,
+                        "kind": 0.0,
+                        "pageBuilder": 1.0,
+                        "hero.heading": 0.0,
+                        "hero.relatedEntry": 0.0,
+                        "longForm.content": 1.0,
+                        "longForm.numbered": 1.0,
+                        "longForm.width": 1.0,
+                        "cards.heading": 1.0,
+                        "cards.items": 1.0,
+                        "related.heading": 1.0,
+                        "related.limit": 1.0
+                    },
+                    "house": {
+                        "positions": {
+                            "pageBuilder/longForm#0": {
+                                "numbered": true,
+                                "width": "narrow"
+                            },
+                            "pageBuilder/cards#0": {
+                                "heading": "Broader uses",
+                                "items": [
+                                    {
+                                        "text": "Property searches"
+                                    },
+                                    {
+                                        "text": "Recipe selection"
+                                    }
+                                ]
+                            },
+                            "pageBuilder/related#0": {
+                                "heading": "More articles",
+                                "limit": 3
+                            }
+                        },
+                        "sequences": [],
+                        "markup": [],
+                        "links": []
+                    }
+                }
+            },
+            "expected": "- `title` (short text, required)\n- `summary` (plain text). Shown in lists\n- `theme` (one of light, dark)\n- `kind` (one of project, guide)\n- `pageBuilder` (list of blocks)\n  Each block is written as `type: <block>` followed by that block's fields. Blocks:\n  - `hero`: Hero, on 100% of entries\n      (the same on every entry; write `type: hero` and nothing else)\n  - `longForm`: LongForm, on 100% of entries\n      - `content` (markdown)\n  - `cards`: Cards, on 100% of entries\n      (the same on every entry; write `type: cards` and nothing else)\n  - `related`: Related, on 100% of entries\n      (the same on every entry; write `type: related` and nothing else)\n  Also available but not normally used here: `gallery` (Gallery).\n\nEntries in this section usually build `pageBuilder` from these blocks, in this order: hero, longForm, cards, related. Follow that order unless the brief gives a reason not to.\nThese blocks are the same on every entry. Include each with its `type` alone, in its usual place, and its content is copied in for you. Never ask for their text: hero, cards, related."
+        }
+    ]
+}

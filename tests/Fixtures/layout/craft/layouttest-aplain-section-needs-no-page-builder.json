@@ -1,0 +1,116 @@
+{
+    "addon": "craft",
+    "source": "Test: nineteenninetyfour\\ghostwriter\\tests\\unit\\LayoutTest::testAPlainSectionNeedsNoPageBuilder",
+    "schemas": {
+        "f06eb785f5c2": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "required": true,
+                "type": "title"
+            },
+            {
+                "handle": "subheading",
+                "kind": "text",
+                "label": "Subheading",
+                "type": "craft\\fields\\PlainText"
+            },
+            {
+                "handle": "thumbnail",
+                "kind": "reference",
+                "label": "Thumbnail",
+                "type": "craft\\fields\\Entries"
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "learn",
+            "schema": "f06eb785f5c2",
+            "input": {
+                "entries": []
+            },
+            "expected": {
+                "positions": [],
+                "sequences": [],
+                "markup": [],
+                "links": []
+            }
+        },
+        {
+            "algorithm": "pattern",
+            "schema": "f06eb785f5c2",
+            "input": {
+                "entries": []
+            },
+            "expected": {
+                "entries": 0,
+                "words": 0,
+                "blocks": [],
+                "fixed": [],
+                "examples": [],
+                "filled": [],
+                "house": {
+                    "positions": [],
+                    "sequences": [],
+                    "markup": [],
+                    "links": []
+                }
+            }
+        },
+        {
+            "algorithm": "build",
+            "schema": "f06eb785f5c2",
+            "input": {
+                "draft": {
+                    "title": "BOAT International",
+                    "subheading": "Fitness afloat:\nthe yachts"
+                },
+                "pattern": {
+                    "entries": 0,
+                    "words": 0,
+                    "blocks": [],
+                    "fixed": [],
+                    "examples": [],
+                    "filled": [],
+                    "house": {
+                        "positions": [],
+                        "sequences": [],
+                        "markup": [],
+                        "links": []
+                    }
+                },
+                "defaults": []
+            },
+            "expected": {
+                "data": {
+                    "title": "BOAT International",
+                    "subheading": "Fitness afloat: the yachts"
+                },
+                "notes": []
+            }
+        },
+        {
+            "algorithm": "describe",
+            "schema": "f06eb785f5c2",
+            "input": {
+                "pattern": {
+                    "entries": 0,
+                    "words": 0,
+                    "blocks": [],
+                    "fixed": [],
+                    "examples": [],
+                    "filled": [],
+                    "house": {
+                        "positions": [],
+                        "sequences": [],
+                        "markup": [],
+                        "links": []
+                    }
+                }
+            },
+            "expected": "- `title` (short text, required)\n- `subheading` (short text)"
+        }
+    ]
+}

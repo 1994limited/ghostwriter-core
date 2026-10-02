@@ -1,0 +1,68 @@
+{
+    "addon": "statamic",
+    "source": "Test: NineteenNinetyFour\\Ghostwriter\\Tests\\Feature\\ImageTest::test_an_image_field_tied_to_a_folder_is_a_choice_the_writer_can_make",
+    "schemas": {
+        "597d7df658bd": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "type": "text"
+            },
+            {
+                "handle": "logo",
+                "kind": "choice",
+                "label": "Logo",
+                "options": {
+                    "logos/acme.svg": "acme.svg",
+                    "logos/globex.svg": "globex.svg"
+                },
+                "type": "assets",
+                "files": true,
+                "meta": {
+                    "container": "assets",
+                    "folder": "logos",
+                    "max_files": 1,
+                    "images": true
+                }
+            },
+            {
+                "handle": "tint",
+                "kind": "text",
+                "label": "Tint",
+                "type": "color"
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "describe",
+            "schema": "597d7df658bd",
+            "input": {
+                "pattern": []
+            },
+            "expected": "- `title` (short text)\n- `logo` (one of logos/acme.svg, logos/globex.svg)\n- `tint` (short text)"
+        },
+        {
+            "algorithm": "build",
+            "schema": "597d7df658bd",
+            "input": {
+                "draft": {
+                    "title": "Globex",
+                    "logo": "globex.svg",
+                    "tint": "#ff2d20"
+                },
+                "pattern": [],
+                "defaults": []
+            },
+            "expected": {
+                "data": {
+                    "title": "Globex",
+                    "logo": "logos/globex.svg",
+                    "tint": "#ff2d20"
+                },
+                "notes": []
+            }
+        }
+    ]
+}

@@ -1,0 +1,176 @@
+{
+    "addon": "statamic",
+    "source": "Test: NineteenNinetyFour\\Ghostwriter\\Tests\\Feature\\BlueprintTest::test_a_plain_collection_needs_no_page_builder",
+    "schemas": {
+        "748cb5d460ed": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "required": true,
+                "type": "text"
+            },
+            {
+                "handle": "intro",
+                "kind": "richtext",
+                "label": "Intro",
+                "type": "markdown"
+            },
+            {
+                "handle": "content",
+                "kind": "richtext",
+                "label": "Content",
+                "type": "bard",
+                "meta": {
+                    "save_html": false
+                }
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "learn",
+            "schema": "748cb5d460ed",
+            "input": {
+                "entries": []
+            },
+            "expected": {
+                "positions": [],
+                "sequences": [],
+                "markup": [],
+                "links": []
+            }
+        },
+        {
+            "algorithm": "pattern",
+            "schema": "748cb5d460ed",
+            "input": {
+                "entries": []
+            },
+            "expected": {
+                "entries": 0,
+                "words": 0,
+                "blocks": [],
+                "fixed": [],
+                "examples": [],
+                "filled": [],
+                "house": {
+                    "positions": [],
+                    "sequences": [],
+                    "markup": [],
+                    "links": []
+                }
+            }
+        },
+        {
+            "algorithm": "build",
+            "schema": "748cb5d460ed",
+            "input": {
+                "draft": {
+                    "title": "A Post",
+                    "intro": "Stays **markdown**.",
+                    "content": "## Heading\n\nA paragraph.\n\n- one\n- two"
+                },
+                "pattern": {
+                    "entries": 0,
+                    "words": 0,
+                    "blocks": [],
+                    "fixed": [],
+                    "examples": [],
+                    "filled": [],
+                    "house": {
+                        "positions": [],
+                        "sequences": [],
+                        "markup": [],
+                        "links": []
+                    }
+                },
+                "defaults": []
+            },
+            "expected": {
+                "data": {
+                    "title": "A Post",
+                    "intro": "Stays **markdown**.",
+                    "content": [
+                        {
+                            "type": "heading",
+                            "attrs": {
+                                "level": 2
+                            },
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": "Heading"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "paragraph",
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": "A paragraph."
+                                }
+                            ]
+                        },
+                        {
+                            "type": "bulletList",
+                            "content": [
+                                {
+                                    "type": "listItem",
+                                    "content": [
+                                        {
+                                            "type": "paragraph",
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "one"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "listItem",
+                                    "content": [
+                                        {
+                                            "type": "paragraph",
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "two"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "notes": []
+            }
+        },
+        {
+            "algorithm": "describe",
+            "schema": "748cb5d460ed",
+            "input": {
+                "pattern": {
+                    "entries": 0,
+                    "words": 0,
+                    "blocks": [],
+                    "fixed": [],
+                    "examples": [],
+                    "filled": [],
+                    "house": {
+                        "positions": [],
+                        "sequences": [],
+                        "markup": [],
+                        "links": []
+                    }
+                }
+            },
+            "expected": "- `title` (short text, required)\n- `intro` (markdown)\n- `content` (markdown)"
+        }
+    ]
+}

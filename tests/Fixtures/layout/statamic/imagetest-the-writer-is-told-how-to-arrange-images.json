@@ -1,0 +1,353 @@
+{
+    "addon": "statamic",
+    "source": "Test: NineteenNinetyFour\\Ghostwriter\\Tests\\Feature\\ImageTest::test_the_writer_is_told_how_to_arrange_images",
+    "schemas": {
+        "a564c7333930": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "required": true,
+                "type": "text"
+            },
+            {
+                "handle": "summary",
+                "kind": "longtext",
+                "label": "Summary",
+                "type": "textarea"
+            },
+            {
+                "handle": "cover",
+                "kind": "reference",
+                "label": "Cover",
+                "type": "assets",
+                "files": true,
+                "meta": {
+                    "container": "assets",
+                    "folder": "",
+                    "max_files": 1,
+                    "images": true
+                }
+            },
+            {
+                "handle": "blocks",
+                "kind": "blocks",
+                "label": "Blocks",
+                "type": "replicator",
+                "sets": {
+                    "banner": {
+                        "label": "Banner",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "type": "text"
+                            },
+                            {
+                                "handle": "picture",
+                                "kind": "reference",
+                                "label": "Picture",
+                                "type": "assets",
+                                "files": true,
+                                "meta": {
+                                    "container": "assets",
+                                    "folder": "",
+                                    "max_files": 1,
+                                    "images": true
+                                }
+                            }
+                        ]
+                    },
+                    "text": {
+                        "label": "Text",
+                        "fields": [
+                            {
+                                "handle": "body",
+                                "kind": "longtext",
+                                "label": "Body",
+                                "type": "textarea"
+                            },
+                            {
+                                "handle": "aside",
+                                "kind": "reference",
+                                "label": "Aside",
+                                "type": "assets",
+                                "files": true,
+                                "meta": {
+                                    "container": "assets",
+                                    "folder": "",
+                                    "max_files": null,
+                                    "images": true
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "learn",
+            "schema": "a564c7333930",
+            "input": {
+                "entries": [
+                    {
+                        "id": "8bd7c2bf-a712-411d-a77b-401fd3e70aca",
+                        "values": {
+                            "title": "One",
+                            "cover": "stories/one.png",
+                            "blocks": [
+                                {
+                                    "id": "b",
+                                    "type": "banner",
+                                    "enabled": true,
+                                    "heading": "Hi one",
+                                    "picture": "banners/one.png"
+                                },
+                                {
+                                    "id": "t",
+                                    "type": "text",
+                                    "enabled": true,
+                                    "body": "Body of one"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "a23a8bb2-3467-4645-8d83-4e51a7967696",
+                        "values": {
+                            "title": "Two",
+                            "cover": "stories/two.png",
+                            "blocks": [
+                                {
+                                    "id": "b",
+                                    "type": "banner",
+                                    "enabled": true,
+                                    "heading": "Hi two",
+                                    "picture": "banners/two.png"
+                                },
+                                {
+                                    "id": "t",
+                                    "type": "text",
+                                    "enabled": true,
+                                    "body": "Body of two"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "positions": [],
+                "sequences": [],
+                "markup": [],
+                "links": []
+            }
+        },
+        {
+            "algorithm": "pattern",
+            "schema": "a564c7333930",
+            "input": {
+                "entries": [
+                    {
+                        "id": "8bd7c2bf-a712-411d-a77b-401fd3e70aca",
+                        "values": {
+                            "title": "One",
+                            "cover": "stories/one.png",
+                            "blocks": [
+                                {
+                                    "id": "b",
+                                    "type": "banner",
+                                    "enabled": true,
+                                    "heading": "Hi one",
+                                    "picture": "banners/one.png"
+                                },
+                                {
+                                    "id": "t",
+                                    "type": "text",
+                                    "enabled": true,
+                                    "body": "Body of one"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "a23a8bb2-3467-4645-8d83-4e51a7967696",
+                        "values": {
+                            "title": "Two",
+                            "cover": "stories/two.png",
+                            "blocks": [
+                                {
+                                    "id": "b",
+                                    "type": "banner",
+                                    "enabled": true,
+                                    "heading": "Hi two",
+                                    "picture": "banners/two.png"
+                                },
+                                {
+                                    "id": "t",
+                                    "type": "text",
+                                    "enabled": true,
+                                    "body": "Body of two"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "entries": 2,
+                "words": 14,
+                "blocks": {
+                    "blocks": {
+                        "sequence": [
+                            "banner",
+                            "text"
+                        ],
+                        "usage": {
+                            "banner": 1.0,
+                            "text": 1.0
+                        },
+                        "fixed": [],
+                        "used": {
+                            "banner": [
+                                "heading",
+                                "picture"
+                            ],
+                            "text": [
+                                "body"
+                            ]
+                        },
+                        "boilerplate": []
+                    }
+                },
+                "fixed": [],
+                "examples": [
+                    {
+                        "title": "One",
+                        "blocks": [
+                            {
+                                "type": "banner",
+                                "heading": "Hi one"
+                            },
+                            {
+                                "type": "text",
+                                "body": "Body of one"
+                            }
+                        ]
+                    },
+                    {
+                        "title": "Two",
+                        "blocks": [
+                            {
+                                "type": "banner",
+                                "heading": "Hi two"
+                            },
+                            {
+                                "type": "text",
+                                "body": "Body of two"
+                            }
+                        ]
+                    }
+                ],
+                "filled": {
+                    "title": 1.0,
+                    "summary": 0.0,
+                    "cover": 1.0,
+                    "blocks": 1.0,
+                    "banner.heading": 1.0,
+                    "banner.picture": 1.0,
+                    "text.body": 1.0,
+                    "text.aside": 0.0
+                },
+                "house": {
+                    "positions": [],
+                    "sequences": [],
+                    "markup": [],
+                    "links": []
+                }
+            }
+        },
+        {
+            "algorithm": "describe",
+            "schema": "a564c7333930",
+            "input": {
+                "pattern": {
+                    "entries": 2,
+                    "words": 14,
+                    "blocks": {
+                        "blocks": {
+                            "sequence": [
+                                "banner",
+                                "text"
+                            ],
+                            "usage": {
+                                "banner": 1.0,
+                                "text": 1.0
+                            },
+                            "fixed": [],
+                            "used": {
+                                "banner": [
+                                    "heading",
+                                    "picture"
+                                ],
+                                "text": [
+                                    "body"
+                                ]
+                            },
+                            "boilerplate": []
+                        }
+                    },
+                    "fixed": [],
+                    "examples": [
+                        {
+                            "title": "One",
+                            "blocks": [
+                                {
+                                    "type": "banner",
+                                    "heading": "Hi one"
+                                },
+                                {
+                                    "type": "text",
+                                    "body": "Body of one"
+                                }
+                            ]
+                        },
+                        {
+                            "title": "Two",
+                            "blocks": [
+                                {
+                                    "type": "banner",
+                                    "heading": "Hi two"
+                                },
+                                {
+                                    "type": "text",
+                                    "body": "Body of two"
+                                }
+                            ]
+                        }
+                    ],
+                    "filled": {
+                        "title": 1.0,
+                        "summary": 0.0,
+                        "cover": 1.0,
+                        "blocks": 1.0,
+                        "banner.heading": 1.0,
+                        "banner.picture": 1.0,
+                        "text.body": 1.0,
+                        "text.aside": 0.0
+                    },
+                    "house": {
+                        "positions": [],
+                        "sequences": [],
+                        "markup": [],
+                        "links": []
+                    }
+                }
+            },
+            "expected": "- `title` (short text, required)\n- `summary` (plain text)\n- `blocks` (list of blocks)\n  Each block is written as `type: <block>` followed by that block's fields. Blocks:\n  - `banner`: Banner, on 100% of entries\n      - `heading` (short text)\n  - `text`: Text, on 100% of entries\n      - `body` (plain text)\n\nEntries in this collection usually build `blocks` from these blocks, in this order: banner, text. Follow that order unless the brief gives a reason not to."
+        }
+    ]
+}

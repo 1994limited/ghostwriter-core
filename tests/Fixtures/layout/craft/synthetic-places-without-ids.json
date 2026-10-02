@@ -1,0 +1,489 @@
+{
+    "addon": "craft",
+    "source": "Inputs made to tell the addons apart, run through the addon's own code: places-without-ids",
+    "schemas": {
+        "4e36c45b63a8": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "type": "craft\\fields\\PlainText"
+            },
+            {
+                "handle": "page_builder",
+                "kind": "blocks",
+                "label": "Page builder",
+                "type": "craft\\fields\\Matrix",
+                "engine": "matrix",
+                "sets": {
+                    "feature": {
+                        "label": "Feature",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "type": "craft\\fields\\PlainText"
+                            },
+                            {
+                                "handle": "label",
+                                "kind": "text",
+                                "label": "Label",
+                                "type": "craft\\fields\\PlainText"
+                            },
+                            {
+                                "handle": "intro",
+                                "kind": "richtext",
+                                "label": "Intro",
+                                "type": "craft\\ckeditor\\Field"
+                            },
+                            {
+                                "handle": "image",
+                                "kind": "reference",
+                                "label": "Image",
+                                "type": "craft\\fields\\Assets",
+                                "files": true,
+                                "meta": {
+                                    "images": true,
+                                    "max_files": 1
+                                }
+                            },
+                            {
+                                "handle": "author",
+                                "kind": "reference",
+                                "label": "Author",
+                                "type": "craft\\fields\\Users"
+                            },
+                            {
+                                "handle": "published_on",
+                                "kind": "reference",
+                                "label": "Published on",
+                                "type": "craft\\fields\\Date"
+                            },
+                            {
+                                "handle": "related",
+                                "kind": "reference",
+                                "label": "Related",
+                                "type": "craft\\fields\\Entries"
+                            },
+                            {
+                                "handle": "button_link",
+                                "kind": "reference",
+                                "label": "Button link",
+                                "type": "craft\\fields\\Link"
+                            },
+                            {
+                                "handle": "button_text",
+                                "kind": "text",
+                                "label": "Button text",
+                                "type": "craft\\fields\\PlainText"
+                            },
+                            {
+                                "handle": "cards",
+                                "kind": "blocks",
+                                "label": "Cards",
+                                "type": "craft\\fields\\Matrix",
+                                "engine": "matrix",
+                                "sets": {
+                                    "card": {
+                                        "label": "Card",
+                                        "fields": [
+                                            {
+                                                "handle": "words",
+                                                "kind": "text",
+                                                "label": "Words",
+                                                "type": "craft\\fields\\PlainText"
+                                            },
+                                            {
+                                                "handle": "photo",
+                                                "kind": "reference",
+                                                "label": "Photo",
+                                                "type": "craft\\fields\\Assets",
+                                                "files": true,
+                                                "meta": {
+                                                    "images": true,
+                                                    "max_files": 1
+                                                }
+                                            },
+                                            {
+                                                "handle": "owner",
+                                                "kind": "reference",
+                                                "label": "Owner",
+                                                "type": "craft\\fields\\Users"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "spacer": {
+                        "label": "Spacer",
+                        "fields": [
+                            {
+                                "handle": "height",
+                                "kind": "number",
+                                "label": "Height",
+                                "type": "craft\\fields\\Number"
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "learn",
+            "schema": "4e36c45b63a8",
+            "input": {
+                "entries": [
+                    {
+                        "id": null,
+                        "values": {
+                            "title": "Orchards",
+                            "page_builder": [
+                                {
+                                    "id": "f1",
+                                    "type": "feature",
+                                    "enabled": true,
+                                    "heading": "About Orchards",
+                                    "label": "Orchards",
+                                    "intro": "<p class=\"lead\"><em>Gardens for the north</em></p>",
+                                    "image": [
+                                        101
+                                    ],
+                                    "author": [
+                                        1
+                                    ],
+                                    "published_on": "2026-01-01",
+                                    "related": [
+                                        11
+                                    ],
+                                    "button_link": {
+                                        "type": "entry",
+                                        "value": [
+                                            21
+                                        ],
+                                        "label": "Page 21"
+                                    },
+                                    "button_text": "Read more",
+                                    "cards": [
+                                        {
+                                            "id": "c1a",
+                                            "type": "card",
+                                            "enabled": true,
+                                            "words": "One",
+                                            "photo": [
+                                                201
+                                            ],
+                                            "owner": [
+                                                1
+                                            ]
+                                        },
+                                        {
+                                            "id": "c1b",
+                                            "type": "card",
+                                            "enabled": true,
+                                            "words": "Two",
+                                            "owner": [
+                                                2
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "s1",
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": 40
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": null,
+                        "values": {
+                            "title": "Meadows",
+                            "page_builder": [
+                                {
+                                    "id": "f2",
+                                    "type": "feature",
+                                    "enabled": true,
+                                    "heading": "About Meadows",
+                                    "label": "Meadows",
+                                    "intro": "<p class=\"lead\"><em>Gardens for the north</em></p>",
+                                    "image": [
+                                        102
+                                    ],
+                                    "author": [
+                                        2
+                                    ],
+                                    "published_on": "2026-02-01",
+                                    "related": [
+                                        12
+                                    ],
+                                    "button_link": {
+                                        "type": "entry",
+                                        "value": [
+                                            22
+                                        ],
+                                        "label": "Page 22"
+                                    },
+                                    "button_text": "Read more",
+                                    "cards": [
+                                        {
+                                            "id": "c2a",
+                                            "type": "card",
+                                            "enabled": true,
+                                            "words": "One",
+                                            "photo": [
+                                                202
+                                            ],
+                                            "owner": [
+                                                2
+                                            ]
+                                        },
+                                        {
+                                            "id": "c2b",
+                                            "type": "card",
+                                            "enabled": true,
+                                            "words": "Two",
+                                            "owner": [
+                                                3
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "s2",
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": 40
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": null,
+                        "values": {
+                            "title": "Walled gardens",
+                            "page_builder": [
+                                {
+                                    "id": "f3",
+                                    "type": "feature",
+                                    "enabled": true,
+                                    "heading": "About Walled gardens",
+                                    "label": "Walled gardens",
+                                    "intro": "<p class=\"lead\"><em>Gardens for the north</em></p>",
+                                    "image": [
+                                        103
+                                    ],
+                                    "author": [
+                                        3
+                                    ],
+                                    "published_on": "2026-03-01",
+                                    "related": [
+                                        13
+                                    ],
+                                    "button_link": {
+                                        "type": "entry",
+                                        "value": [
+                                            23
+                                        ],
+                                        "label": "Page 23"
+                                    },
+                                    "button_text": "Read more",
+                                    "cards": [
+                                        {
+                                            "id": "c3a",
+                                            "type": "card",
+                                            "enabled": true,
+                                            "words": "One",
+                                            "photo": [
+                                                203
+                                            ],
+                                            "owner": [
+                                                3
+                                            ]
+                                        },
+                                        {
+                                            "id": "c3b",
+                                            "type": "card",
+                                            "enabled": true,
+                                            "words": "Two",
+                                            "owner": [
+                                                4
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "s3",
+                                    "type": "spacer",
+                                    "enabled": true,
+                                    "height": 20
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "expected": {
+                "positions": {
+                    "page_builder/feature#0": {
+                        "intro": "<p class=\"lead\"><em>Gardens for the north</em></p>",
+                        "button_text": "Read more"
+                    },
+                    "page_builder/feature#0/cards/card#0": {
+                        "words": "One"
+                    },
+                    "page_builder/feature#0/cards/card#1": {
+                        "words": "Two"
+                    },
+                    "page_builder/spacer#0": {
+                        "height": 40
+                    }
+                },
+                "sequences": {
+                    "page_builder/feature#0/cards": [
+                        "card",
+                        "card"
+                    ]
+                },
+                "markup": {
+                    "page_builder/feature.intro": {
+                        "p": {
+                            "attributes": {
+                                "class": "lead"
+                            },
+                            "wrappers": [
+                                [
+                                    "em",
+                                    []
+                                ]
+                            ]
+                        }
+                    }
+                },
+                "links": {
+                    "page_builder/feature.button_link": 1
+                }
+            }
+        },
+        {
+            "algorithm": "apply",
+            "schema": "4e36c45b63a8",
+            "input": {
+                "data": {
+                    "title": "Rain gardens",
+                    "page_builder": [
+                        {
+                            "type": "feature",
+                            "enabled": true,
+                            "heading": "About rain gardens"
+                        },
+                        {
+                            "type": "spacer",
+                            "enabled": true
+                        },
+                        {
+                            "type": "spacer",
+                            "enabled": true
+                        }
+                    ]
+                },
+                "style": {
+                    "positions": {
+                        "page_builder/feature#0": {
+                            "intro": "<p class=\"lead\"><em>Gardens for the north</em></p>",
+                            "button_text": "Read more"
+                        },
+                        "page_builder/feature#0/cards/card#0": {
+                            "words": "One"
+                        },
+                        "page_builder/feature#0/cards/card#1": {
+                            "words": "Two"
+                        },
+                        "page_builder/spacer#0": {
+                            "height": 40
+                        }
+                    },
+                    "sequences": {
+                        "page_builder/feature#0/cards": [
+                            "card",
+                            "card"
+                        ]
+                    },
+                    "markup": {
+                        "page_builder/feature.intro": {
+                            "p": {
+                                "attributes": {
+                                    "class": "lead"
+                                },
+                                "wrappers": [
+                                    [
+                                        "em",
+                                        []
+                                    ]
+                                ]
+                            }
+                        }
+                    },
+                    "links": {
+                        "page_builder/feature.button_link": 1
+                    }
+                },
+                "self": {
+                    "id": 50,
+                    "title": "Rain gardens"
+                }
+            },
+            "expected": {
+                "data": {
+                    "title": "Rain gardens",
+                    "page_builder": [
+                        {
+                            "type": "feature",
+                            "enabled": true,
+                            "heading": "About rain gardens",
+                            "intro": "<p class=\"lead\"><em>Gardens for the north</em></p>",
+                            "button_text": "Read more",
+                            "button_link": {
+                                "type": "url",
+                                "value": "https://example.com",
+                                "label": "Link to choose"
+                            },
+                            "cards": [
+                                {
+                                    "type": "card",
+                                    "enabled": true,
+                                    "words": "One"
+                                },
+                                {
+                                    "type": "card",
+                                    "enabled": true,
+                                    "words": "Two"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "spacer",
+                            "enabled": true,
+                            "height": 40
+                        },
+                        {
+                            "type": "spacer",
+                            "enabled": true
+                        }
+                    ]
+                },
+                "toFill": [
+                    "Feature (links to example.com for now)",
+                    "Feature: Card 1",
+                    "Feature: Card 2"
+                ]
+            }
+        }
+    ]
+}

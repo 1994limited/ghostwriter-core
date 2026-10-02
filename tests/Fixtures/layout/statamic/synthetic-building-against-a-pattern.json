@@ -1,0 +1,297 @@
+{
+    "addon": "statamic",
+    "source": "Inputs made to tell the addons apart, run through the addon's own code: building-against-a-pattern",
+    "schemas": {
+        "921409bfddad": [
+            {
+                "handle": "title",
+                "kind": "text",
+                "label": "Title",
+                "type": "text"
+            },
+            {
+                "handle": "page_builder",
+                "kind": "blocks",
+                "label": "Page builder",
+                "type": "replicator",
+                "sets": {
+                    "feature": {
+                        "label": "Feature",
+                        "fields": [
+                            {
+                                "handle": "heading",
+                                "kind": "text",
+                                "label": "Heading",
+                                "type": "text"
+                            },
+                            {
+                                "handle": "label",
+                                "kind": "text",
+                                "label": "Label",
+                                "type": "text"
+                            },
+                            {
+                                "handle": "intro",
+                                "kind": "richtext",
+                                "label": "Intro",
+                                "type": "bard"
+                            },
+                            {
+                                "handle": "image",
+                                "kind": "reference",
+                                "label": "Image",
+                                "type": "assets",
+                                "files": true,
+                                "meta": {
+                                    "images": true,
+                                    "max_files": 1
+                                }
+                            },
+                            {
+                                "handle": "author",
+                                "kind": "reference",
+                                "label": "Author",
+                                "type": "users"
+                            },
+                            {
+                                "handle": "published_on",
+                                "kind": "reference",
+                                "label": "Published on",
+                                "type": "date"
+                            },
+                            {
+                                "handle": "related",
+                                "kind": "reference",
+                                "label": "Related",
+                                "type": "entries"
+                            },
+                            {
+                                "handle": "button_link",
+                                "kind": "reference",
+                                "label": "Button link",
+                                "type": "link"
+                            },
+                            {
+                                "handle": "button_text",
+                                "kind": "text",
+                                "label": "Button text",
+                                "type": "text"
+                            },
+                            {
+                                "handle": "cards",
+                                "kind": "blocks",
+                                "label": "Cards",
+                                "type": "replicator",
+                                "sets": {
+                                    "card": {
+                                        "label": "Card",
+                                        "fields": [
+                                            {
+                                                "handle": "words",
+                                                "kind": "text",
+                                                "label": "Words",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "handle": "photo",
+                                                "kind": "reference",
+                                                "label": "Photo",
+                                                "type": "assets",
+                                                "files": true,
+                                                "meta": {
+                                                    "images": true,
+                                                    "max_files": 1
+                                                }
+                                            },
+                                            {
+                                                "handle": "owner",
+                                                "kind": "reference",
+                                                "label": "Owner",
+                                                "type": "users"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "spacer": {
+                        "label": "Spacer",
+                        "fields": [
+                            {
+                                "handle": "height",
+                                "kind": "number",
+                                "label": "Height",
+                                "type": "integer"
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    "cases": [
+        {
+            "algorithm": "build",
+            "schema": "921409bfddad",
+            "input": {
+                "draft": {
+                    "title": "Rain  gardens\n",
+                    "page_builder": [
+                        {
+                            "type": "feature",
+                            "heading": "About",
+                            "intro": "Rain gardens **soak** it up.\n\n> Plant for the wet.",
+                            "button_text": "More"
+                        },
+                        {
+                            "type": "spacer",
+                            "height": 10
+                        },
+                        {
+                            "type": "carousel"
+                        },
+                        "not a block"
+                    ],
+                    "colour": "green"
+                },
+                "pattern": {
+                    "blocks": {
+                        "page_builder": {
+                            "sequence": [
+                                "feature",
+                                "spacer"
+                            ],
+                            "usage": {
+                                "feature": 1.0,
+                                "spacer": 1.0
+                            },
+                            "fixed": {
+                                "spacer": {
+                                    "height": 40
+                                },
+                                "feature": {
+                                    "button_text": "Read more",
+                                    "cards": [
+                                        {
+                                            "id": "c1a",
+                                            "type": "card",
+                                            "enabled": true,
+                                            "words": "One"
+                                        }
+                                    ]
+                                }
+                            },
+                            "used": {
+                                "feature": [
+                                    "heading",
+                                    "image",
+                                    "author",
+                                    "related",
+                                    "button_link",
+                                    "button_text",
+                                    "cards"
+                                ],
+                                "spacer": [
+                                    "height"
+                                ]
+                            },
+                            "boilerplate": [
+                                "spacer"
+                            ]
+                        }
+                    },
+                    "fixed": {
+                        "seo": {
+                            "id": "x1",
+                            "title": "Northfold"
+                        },
+                        "published_on": "2026-01-01"
+                    }
+                },
+                "defaults": {
+                    "seo": {
+                        "title": "Kind default"
+                    }
+                }
+            },
+            "expected": {
+                "data": {
+                    "title": "Rain gardens",
+                    "page_builder": [
+                        {
+                            "id": "5e4d0fdd",
+                            "type": "feature",
+                            "enabled": true,
+                            "heading": "About",
+                            "intro": [
+                                {
+                                    "type": "paragraph",
+                                    "content": [
+                                        {
+                                            "type": "text",
+                                            "text": "Rain gardens "
+                                        },
+                                        {
+                                            "type": "text",
+                                            "marks": [
+                                                {
+                                                    "type": "bold"
+                                                }
+                                            ],
+                                            "text": "soak"
+                                        },
+                                        {
+                                            "type": "text",
+                                            "text": " it up."
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "blockquote",
+                                    "content": [
+                                        {
+                                            "type": "paragraph",
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": "Plant for the wet."
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "button_text": "More",
+                            "cards": [
+                                {
+                                    "id": "9a1c55e5",
+                                    "type": "card",
+                                    "enabled": true,
+                                    "words": "One"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "e5c3a303",
+                            "type": "spacer",
+                            "enabled": true,
+                            "height": 40
+                        }
+                    ],
+                    "seo": {
+                        "title": "Kind default"
+                    },
+                    "published_on": "2026-01-01"
+                },
+                "notes": [
+                    "\"colour\" is not a field here and was left out.",
+                    "Spacer is the same on every entry here, so its usual content was used in place of what was drafted.",
+                    "A block of type \"carousel\" does not exist in page_builder and was left out.",
+                    "A block of type \"?\" does not exist in page_builder and was left out.",
+                    "Still to choose by hand: Feature: Image; Feature: Author; Feature: Related; Feature: Button link."
+                ]
+            }
+        }
+    ]
+}
