@@ -1,6 +1,6 @@
 {
     "name": "1994/ghostwriter-core",
-    "description": "The framework-free core shared by the Ghostwriter addons for Statamic, Filament and Craft: draft text handling, prompts, the AI provider layer, the Studio (every model job), the schema model and layout algorithms, and photo search.",
+    "description": "The framework-free core shared by the Ghostwriter addons for Statamic, Filament and Craft: draft text handling, prompts, the AI provider layer, the Studio (every model job), the schema model and layout algorithms, the domain model with its rules and store contracts, and photo search and image placeholders.",
     "type": "library",
     "license": "proprietary",
     "homepage": "https://github.com/1994limited/ghostwriter-core",
@@ -38,7 +38,7 @@
         "phpunit/phpunit": "^11.5|^12.0"
     },
     "suggest": {
-        "ext-gd": "Makes photos small before the photo picker sees them, when Imagick isn't there.",
+        "ext-gd": "Draws the striped image placeholder (Images\\Placeholders), and makes photos small before the photo picker sees them when Imagick isn't there.",
         "ext-imagick": "Makes photos small before the photo picker sees them (preferred over GD).",
         "ext-intl": "Transliterates non-Latin scripts in photo file names (Text\\Slug); without it they are dropped.",
         "guzzlehttp/guzzle": "Required (^7.8 or ^8.0) to use Http\\GuzzleHttpClients, the ready-made HttpClients implementation."
@@ -73,7 +73,7 @@
     "prefer-stable": true,
     "extra": {
         "branch-alias": {
-            "dev-main": "0.4.x-dev"
+            "dev-main": "0.5.x-dev"
         }
     }
 }
