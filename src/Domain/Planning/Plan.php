@@ -204,17 +204,28 @@ final class Plan
     }
 
     /**
-     * A dismissed idea back on the plan (E8). Only a dismissed one: a
-     * started piece is resumed, not put back.
+     * An idea back on the plan: a dismissed one (E8), or a started piece
+     * that isn't finished, which "Back to ideas" gives up on (E5). A
+     * finished piece can't be: that would plan something already written.
      *
-     * @throws Conflict for any other
+     * Whether a started piece is finished depends on the host's record
+     * (E6), so the host says: `$finished` is called with the idea. Without
+     * it, a started piece is refused, so nothing finished slips through.
+     *
+     * @param  (callable(Idea): bool)|null  $finished
+     *
+     * @throws Conflict for an open idea, or a started one that is (or may be) finished
      */
-    public function putBack(int|string $id): Idea
+    public function putBack(int|string $id, ?callable $finished = null): Idea
     {
         $idea = $this->find($id);
 
-        if (! $idea->isDismissed()) {
-            throw new Conflict('Only a dismissed idea can be put back.');
+        $unfinished = $idea->isDrafted() && $finished !== null && ! $finished($idea);
+
+        if (! $idea->isDismissed() && ! $unfinished) {
+            throw new Conflict($idea->isDrafted()
+                ? 'A finished piece can\'t be put back on the plan.'
+                : 'Only a dismissed idea, or a piece that isn\'t finished, can be put back.');
         }
 
         $idea->status = Idea::OPEN;
