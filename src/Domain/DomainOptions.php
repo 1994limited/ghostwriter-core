@@ -24,7 +24,7 @@ final class DomainOptions
     /**
      * @param  Format  $format  How the addon stores its records.
      * @param  bool  $shared  Conversations are shared with everyone who may use Ghostwriter (E7, `shared_conversations`, on by default); off, each is its starter's alone.
-     * @param  int  $jobTimeout  The time limit on one model call, in seconds (the addon's timeout setting). Work marked as running for (timeout + 120) × 2 has stopped (CRA-2).
+     * @param  int  $jobTimeout  The time limit on one model call, in seconds (the addon's timeout setting). Work marked as running for longer than the job limit (timeout × 3 + 60) plus 120 seconds has stopped (CRA-2).
      * @param  bool  $unownedIsAnyones  A session with no starter on record (from before starters were kept) may be opened by anyone (Statamic).
      * @param  bool  $adminSeesAll  An admin (a Statamic super user) may open and delete private conversations too.
      * @param  bool  $editFinishedOnApply  A piece editing an existing record is finished once its changes are put into the form (Craft, Filament); otherwise once the record is saved after that (Statamic).
@@ -90,12 +90,15 @@ final class DomainOptions
 
     /**
      * Seconds after which work still marked as running is taken to have
-     * stopped: twice the time a job is given (three tries of the time
-     * limit allow for one retry and the waits between). Craft's rule.
+     * stopped. A queued job is given three tries of the time limit plus a
+     * minute (timeout × 3 + 60, the addons' job limit), so work is only
+     * stale once that has run out, with two minutes' margin on top: a
+     * turn still retrying is never marked stopped while its job may run,
+     * which would let a second run start on the same conversation.
      */
     public function staleAfter(): int
     {
-        return ($this->jobTimeout + 120) * 2;
+        return $this->jobTimeout * 3 + 60 + 120;
     }
 
     public function with(?bool $shared = null, ?int $jobTimeout = null): self

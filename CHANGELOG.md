@@ -2,6 +2,11 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. While the version is `0.x`, a minor release may contain breaking changes.
 
+## 0.5.2 - 2026-10-02
+
+### Fixed
+- Work was taken as stopped after (timeout + 120) × 2 seconds (840 with the default 300), before the addons' job limit of timeout × 3 + 60 (960). A turn still retrying could be shown as failed and a second run started on the same conversation. `DomainOptions::staleAfter()` is now the job limit plus 120 seconds (1,080 with the default).
+
 ## 0.5.1 - 2026-10-02
 
 ### Fixed

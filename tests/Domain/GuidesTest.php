@@ -55,8 +55,8 @@ final class GuidesTest extends TestCase
         $state->begin('scan');
         $state->changedAt = '2026-10-02 12:00:00';
 
-        $this->assertFalse($state->recoverIfStale($options, new DateTimeImmutable('2026-10-02T12:10:00+00:00')));
-        $this->assertTrue($state->recoverIfStale($options, new DateTimeImmutable('2026-10-02T12:15:00+00:00')));
+        $this->assertFalse($state->recoverIfStale($options, new DateTimeImmutable('2026-10-02T12:17:00+00:00')));
+        $this->assertTrue($state->recoverIfStale($options, new DateTimeImmutable('2026-10-02T12:19:00+00:00')));
         $this->assertSame(DomainOptions::STOPPED, $state->error);
 
         $analysis = new Analysis('working');
