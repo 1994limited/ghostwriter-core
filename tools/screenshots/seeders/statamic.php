@@ -18,7 +18,8 @@ use NineteenNinetyFour\Ghostwriter\Blueprints\SchemaReader;
 use NineteenNinetyFour\Ghostwriter\Core\Text\Draft;
 use NineteenNinetyFour\Ghostwriter\Core\Text\EntrySimplifier;
 use NineteenNinetyFour\Ghostwriter\Drafts\FormBaseline;
-use NineteenNinetyFour\Ghostwriter\Sessions\Session;
+use NineteenNinetyFour\Ghostwriter\Core\Domain\Format;
+use NineteenNinetyFour\Ghostwriter\Core\Domain\Sessions\Session;
 use NineteenNinetyFour\Ghostwriter\Types\TypeRepository;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Entry;
@@ -170,7 +171,7 @@ $session = function (array $data) use ($storage, $json, $studio, $types): string
 
     // The brief is the first message, written as the panel writes it.
     if (($data['messages'][0]['content'] ?? null) === null && $data['source'] === null) {
-        $data['messages'][0]['content'] = $studio->brief($types->find($data['type']), Session::fromArray($data));
+        $data['messages'][0]['content'] = $studio->brief($types->find($data['type']), Session::fromArray($data, Format::Statamic));
     }
 
     $data['run_by'] ??= $data['messages'][0]['by'] ?? null;
