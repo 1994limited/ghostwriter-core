@@ -129,6 +129,27 @@ $stock->search('pottery', 'landscape', sources: ['getty']);   // only these libr
 
 Each adapter's test uses the `tests/Images/Libraries/LibraryContract.php` trait over `ImagesTestCase`'s mocked network: search maps IDs, thumbnails and offers; `photo()` refuses IDs that aren't the library's without asking it; no error holds a key; the capabilities hang together.
 
+## Licensing (paid libraries)
+
+A paid library implements `Libraries\LicensableLibrary` (which extends `PreviewableLibrary`): `preview($id)` (the comp), `account()`, `quotes($id)`, `license($id, $quote, $key, $licensedBy)`, `download($licence)` and `findLicences($id)`. The customer always licenses from their own account with their own key; nothing goes through 1994.
+
+The whole "License & replace" is `Domain\Stock\StockImages::license()`:
+
+```php
+$image = $stockImages->license($ledgerId, $library, $quote, $replacer, new Person($user->id, $user->name));
+```
+
+1. The ledger record is saved as `licensing` first, so a second press (or a second editor) is refused with a `Conflict`.
+2. The library is asked **once**. `LicensingUncertain` (the call may have charged) leaves the record `licensing`; tell the editor not to buy it again, and let `reconcile()` settle it from `findLicences()`. A plain refusal (`InsufficientBalance`, `QuoteChanged` with the new quote, `LicenceRefused`, `NotConnected`) marks it `failed`, and it may be tried again.
+3. The licence is recorded before anything else can fail.
+4. The licensed file goes to the addon's `AssetReplacer`, byte for byte (never re-encode it: the licences require its embedded copyright and IDs). If that fails, the record stays licensed and not replaced; `replaceAgain()` finishes it without buying again.
+
+All the licensing errors extend `PhotoUnavailable`, so existing catches still work.
+
+`Downloader::post()` sends token and licence calls exactly once, never retried or redirected; with `purchase: true`, anything that leaves the outcome unknown is `LicensingUncertain`. `LibraryTokens` is the port for a site's cached and user tokens (`OAuth\TokenSet`, masked in dumps); the addon encrypts them. `StandIn::jpeg($width, $height, $label)` draws the public-safe stand-in at the photo's aspect ratio.
+
+`Libraries\Testing\FakeLibrary` is a scripted paid library: photos, quotes and licence outcomes (`SUCCEED`, `UNCERTAIN_CHARGED`, `UNCERTAIN_NOT_CHARGED`, or an exception), GD-drawn comps, and a record of every call (`licenceCalls($id)`). It is also the addons' demo library. `Domain\Testing\MemoryAssetReplacer` and `Libraries\Testing\InMemoryLibraryTokens` go with it.
+
 ## Testing
 
 `StockSearch` takes `Testing\MockHttpClient` (it is a `DownloadClients` too, and records whether each download asked to stream), and `PhotoFinder` and `PhotoRanker` take a `FakeProvider` directly:

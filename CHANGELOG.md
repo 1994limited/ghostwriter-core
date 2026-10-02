@@ -4,7 +4,7 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
-Multi-source stock photos, from the stock images design: phase 1, the library abstraction, and phase 2, the ledger domain and the model-input guard. Nothing in the 1.0 API changes; the addons' calls work as they are.
+Multi-source stock photos, from the stock images design: phase 1, the library abstraction; phase 2, the ledger domain and the model-input guard; and phase 4, the licensing framework and its fakes. Nothing in the 1.0 API changes; the addons' calls work as they are.
 
 ### Added
 
@@ -18,10 +18,16 @@ Multi-source stock photos, from the stock images design: phase 1, the library ab
 - **`Images\Libraries\Quote` and `Licence`:** a priced licence option, and a licence bought (order ID, cost as charged or estimated, credit line, product type, term end, the idempotency key, and the provider's answer with signed addresses and tokens taken out).
 - **`Domain\Stock\ModelInputGuard`:** no Getty or iStock image the site holds goes to a model. It refuses an asset whose ledger record allows no model input (or is Getty's or iStock's), a `GettyImages-*` or `iStock-*` file, and an image whose embedded IPTC or XMP credit, source or copyright names Getty Images or iStock. `PhotoRanker`, `PhotoFinder` and `Studio` take one (an optional last argument); without one, they still check each image's bytes. `Images\ReferenceImage` carries a reference's asset and file name; `Studio\ImagerySample` gains optional `asset` and `filename`.
 
+- **Licensing, phase 4:** `Libraries\PreviewableLibrary` (`preview()`) and `LicensableLibrary` (`account()`, `quotes()`, `license()`, `download()`, `findLicences()`), with `Account`. The errors, in `Images\Exceptions`: `NotConnected`, `QuoteChanged` (with the new quote), `InsufficientBalance`, `LicenceRefused` and `LicensingUncertain` (it may have charged: never retry, reconcile).
+- **`StockImages::license()`**, the whole "License & replace": the ledger record goes to `licensing` first, the library is asked once, a plain refusal fails the record, an unknown outcome leaves it for `reconcile()`, the licence is recorded before the file is fetched, and the addon's new `Domain\Stock\AssetReplacer` port (with `ReplaceMeta`: credit, licence type, restrictions, the ledger ID; never title or alt) puts the file in place byte for byte. `replaceAgain()` finishes a licence whose file couldn't be put in place, without buying again.
+- **`Downloader::post()`**, for token and licence calls: sent exactly once, never retried or redirected, with `purchase: true` mapping anything that leaves the outcome unknown to `LicensingUncertain`, and messages that name the host at most.
+- **`Libraries\Ports\LibraryTokens`** and **`Libraries\OAuth\TokenSet`** (masked in dumps), **`Libraries\StandIn::jpeg()`** (the public-safe stand-in at the photo's aspect ratio), and the fakes: **`Libraries\Testing\FakeLibrary`** (scripted photos, quotes and licence outcomes, GD-drawn comps, every call recorded; also the addons' demo library), `InMemoryLibraryTokens` and `Domain\Testing\MemoryAssetReplacer`.
+
 ### Changed
 
 - **A model never sees a photo whose library doesn't allow it** (`Capabilities::$mayRank`). `PhotoRanker` sends only those photos' thumbnails and descriptions to the `photo-picker` agent; the rest follow the judged ones in their library's order, unjudged and never picked. Every free library allows it, so nothing changes for them yet. (The terms check says Unsplash shouldn't be judged; that change is a separate pull request, as it changes what the addons show.)
 - **Reference images and imagery samples go through the model-input guard.** One whose embedded credit or copyright names Getty Images or iStock is left out, logged at debug. Others are sent as before.
+- `PhotoUnavailable` is no longer `final`, so the licensing errors can extend it.
 - The branch alias is `1.x-dev` (it still said `0.5.x-dev`).
 
 ## 1.0.0 - 2026-10-02

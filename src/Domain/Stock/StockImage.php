@@ -341,16 +341,18 @@ final class StockImage
     }
 
     /**
-     * The licensed file is now in place of the stand-in.
+     * The licensed file is now in place of the stand-in (at $asset, if the
+     * addon had to move it).
      *
      * @throws Conflict unless it is licensed.
      */
-    public function replaced(?Person $by, DateTimeImmutable $now): void
+    public function replaced(?Person $by, DateTimeImmutable $now, ?AssetRef $asset = null): void
     {
         if (! $this->is(self::LICENSED)) {
             throw new Conflict('Only a licensed image can be replaced with its licensed file.');
         }
 
+        $this->asset = $asset ?? $this->asset;
         $this->replaced = true;
         $this->error = null;
         $this->record(HistoryEvent::REPLACED, $now, $by);
