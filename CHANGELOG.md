@@ -2,6 +2,27 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. While the version is `0.x`, a minor release may contain breaking changes.
 
+## 0.3.0 - Unreleased
+
+The Studio: every model call the addons make for writing, planning and learning a site, unified from the three addons' `Studio` classes. See [docs/studio.md](docs/studio.md) for how an addon wires it, and [docs/studio-unification.md](docs/studio-unification.md) for what differed and what core does.
+
+### Added
+
+- **`Studio\Studio`** with the union of the three addons' jobs: `analyseVoice`, `refineVoice`, `analyseType` (with the one re-ask when the reply can't be read), `suggestKinds`, `suggestIdeas`, `analyseImagery`, `draftBrief`, `photoQuery`, `write`, `brief` and `writerInstructions`, plus `ask()` for one-off calls. Prompts come from the addon's `PromptLibrary`, limits and effort from `Agents`, calls go through `Providers` or any `TextProvider`.
+- **Neutral inputs**, no CMS objects: `VoiceSample`, `ContentKind` and `Question`, `Layout` (the fields already described, and the example entries), `TypeSurvey`, `KindSurvey` and `KindSample`, `PlanContext`, `PlanGroup`, `PlanItem` and `PlannedIdea`, `ImagerySample`, `Conversation` and `WriterContext`.
+- **Results with usage:** `Result` (`value` and `usage`, counting every call a job made, retries and re-asks included), `SuggestedKind` and `SuggestedIdea` (with `toArray()` in each addon's keys), and `TaggedResponse` for the voice and writing jobs. A reply that can't be read throws `UnreadableReply`, an `InvalidArgumentException` carrying the message the addons threw and the `problem`.
+- **`StudioOptions`**, with `statamic()`, `craft()` and `filament()` presets for what the three did differently: example YAML depth, the planner's "draft" or "not published", "blueprint" or "entry type", whether a kind finder reply with no `<kinds>` block means "nothing to add", and the cut-off messages.
+- **The cut-off policy (core-ai-design §6.6), once:** a reply that ran out of room is asked for again with twice the room, up to 32000 tokens. Still cut off, a draft or guide (`writer`, `type-analyst`, `voice-analyst`, `voice-editor`) throws `Truncated`; everything else is kept, with a warning.
+- **F8:** a reply that can't be read is logged as the problem only ("there was no `<type>` block", "the YAML did not parse at line 3"). The whole reply goes in the log context only with `StudioOptions::$logReplies` on. Prompts, instructions and keys are never logged.
+- **Parity tooling:** `Studio\Testing\RequestLog` records a suite's requests as they would be sent, and `bin/compare-requests` (installed as `vendor/bin/compare-requests`) compares two runs. `tests/Fixtures/studio` holds each addon's representative inputs and the exact requests core sends for them.
+
+### Changed for the addons, once they switch
+
+- Craft: a cut-off plan, kind list, brief or imagery guide is kept rather than failing, as in Statamic and Filament.
+- Craft and Filament: an empty `<kinds></kinds>` reply means "nothing to add" rather than an error.
+- All three: a title repeated within one kind finder or planner reply is kept once; the planner accepts `collection`, `section` or `resource` as the group key; token usage includes the retry with more room and the type analyst's re-ask.
+- The branch alias is `0.3.x-dev`; addons should require `~0.3.0`.
+
 ## 0.2.0 - 2026-10-02
 
 Photo search, unified from the three addons' copies, with model ranking and the photo libraries' own descriptions. See [docs/images.md](docs/images.md) for how an addon wires it.

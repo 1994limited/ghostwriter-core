@@ -14,7 +14,7 @@ composer require 1994/ghostwriter-core
 
 PHP 8.2 or later, with `dom` and `mbstring`. Runtime dependencies are `symfony/yaml` (6.4, 7 or 8), `league/commonmark` 2 and the PSR HTTP and log interfaces (`psr/log` 1 to 3). `guzzlehttp/guzzle` (7.8+ or 8) is suggested, not required: it's needed for `Http\GuzzleHttpClients`, the ready-made HTTP client, and for `Testing\MockHttpClient`'s default factories. CI runs the lowest and highest versions allowed, and Guzzle 7 and 8 each.
 
-During the extraction core is `0.x`, and the addons should require an exact minor (`~0.2.0`).
+During the extraction core is `0.x`, and the addons should require an exact minor (`~0.3.0`).
 
 ## What's in it
 
@@ -66,6 +66,17 @@ One way to call a model, used by all three addons, over any PSR-18 client. It co
 - **Errors:** every failure is a `ProviderException` with a message that can be shown to an editor. Its subclasses (`NotConfigured`, `AuthenticationFailed`, `RateLimited`, `Overloaded`, `Unreachable`, `Refused`, `BadResponse`, plus `Truncated` for callers) say what happened, and `retryable()` says whether trying again could help.
 - **Cut-off replies:** providers report `StopReason::MaxTokens` and never throw for it. The caller decides whether to retry or throw `Truncated`.
 - **Gateways:** a `base_url` per provider, for gateways that speak the same API. It must be `https://`, except for localhost.
+
+### Studio: `NineteenNinetyFour\Ghostwriter\Core\Studio`
+
+Every model call the addons make for writing, planning and learning a site: the voice guide, the type analysis (with its re-ask), kind suggestions, plan ideas, the imagery guide, brief drafts and the writer's turns. Inputs are small value objects (`VoiceSample`, `TypeSurvey`, `KindSurvey`, `PlanContext`, `ImagerySample`, `Conversation`, `WriterContext`), never CMS objects; results are core types with their token usage. The cut-off policy and the logging of unreadable replies live here, once. See [docs/studio.md](docs/studio.md) for the wiring and the parity check, and [docs/studio-unification.md](docs/studio-unification.md) for what each addon passes.
+
+```php
+$studio = new Studio($providers, $prompts, $logger, StudioOptions::statamic());
+$ideas = $studio->suggestIdeas(new PlanContext($groups, $plan, $voice, $steer));
+$ideas->value;          // SuggestedIdea[]
+$ideas->usage->output;  // tokens, retries included
+```
 
 ### Images: `NineteenNinetyFour\Ghostwriter\Core\Images`
 
