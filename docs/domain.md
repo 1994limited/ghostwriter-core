@@ -23,6 +23,8 @@ All under `NineteenNinetyFour\Ghostwriter\Core\Domain`, apart from the placehold
 | `Guides\Guide`, `GuideState` | The voice and image style guides, and their screens' state. | `normalise()`, `section()`. |
 | `Images\ImageRequest`, `ImageRequests`, `StoredFile` | The image button's requests and the pictures beside them. | `succeed()`, `fail()`, `isOwnedBy()`, `isStale()`, `isExpired()`; `ImageRequests::start()`, `mine()`, `change()`. |
 | `Queue\Waiting` | Work not yet picked up by a worker. | `queued()`, `started()`, `waited()`, `notice()`. |
+| `Stock\StockImage`, `StockImages`, `AssetRef`, `Usage`, `Person`, `HistoryEvent` | The stock image ledger (since 1.1): one record per stock image put into the site, free or paid, with where it is used, its licence state, quote, licence, credit, product and term, and an audit trail. `preview` → `licensing` → `licensed` (or `failed`, tried again) → `removed`; a free photo is `licensed` at once. | `recordPreview()`, `recordFree()`, `quoted()`, `beginLicensing()` (once: a second attempt while one is in flight is refused), `licensed()`, `failed()`, `replaced()`, `reconcile()` (an unknown outcome is settled from the library's own licences, never by buying again), `dueForReconcile()`, `compRefreshed()` (once), `compExpired()`, `removed()`, `syncUsages()`, `unlicensedIn()`, `unlicensedAmong()`. No delete; history only grows; a licensed record never goes back to a preview. |
+| `Stock\ModelInputGuard` | Keeps Getty and iStock images out of every model call (the terms check): a ledger record whose library allows no model input, a `GettyImages-*` or `iStock-*` file name, or an embedded IPTC or XMP credit, source or copyright naming Getty Images or iStock. | `allows()`, `allowsImage($bytes, $asset, $filename)`, `allowsAsset()`, `allowsFilename()`, `allowsBytes()`. `PhotoRanker` (reference images) and `Studio::analyseImagery()` (samples) call it; pass references as `Images\ReferenceImage` and samples with their `asset` and `filename` so it can check the ledger and the name too. |
 | `Core\Images\Placeholders` | The striped placeholder and where it goes (D10). | `fill()`, `note()`, `png()`. |
 
 Work states (`PlanState`, `GuideState`, `KindSuggestions`, `Analysis`) share `begin()`, `succeed()`, `fail()`, `forgetFailure()` and `recoverIfStale()`.
@@ -41,12 +43,15 @@ Each store takes and returns core types only. Read a stored record with `Type::f
 | `Guides\GuideStore` | `voice.md`, `imagery.md`; `voice.json`, `imagery.json` | `guide` documents; `voice`, `imagery` state | `ghostwriter_guides`; `guide:<kind>` state rows |
 | `Images\ImageRequestStore` | `images/<id>.json`, files in `images/files` | `image:<id>` state, `ghostwriter_files` | `image:<id>` state rows, the local disk |
 | `Queue\WaitingStore` | `queued/<subject>.mark` files | — (its own queue: `runsItself`) | `queued:<subject>` state rows |
+| `Stock\StockImageStore` (1.1) | one YAML file per record in `content/ghostwriter/stock/<id>.yaml` | `ghostwriter_stock_images` (indexed columns plus `data` JSON) and `ghostwriter_stock_usages`; no cascade delete from assets | `ghostwriter_stock_images` and `ghostwriter_stock_usages`, with workspace columns |
 | `Lock` | `flock` on `<id>.lock` beside the session | `Craft::$app->getMutex()` (as `Store::locked()`) | `Cache::lock($key, 60)->block($wait, $work)` on a store every worker shares |
 | `Core\Images\AssetSink` | the field's asset container, `ghostwriter/image-placeholder.png`, titled and with alt text | the field's volume, `ghostwriter-image-placeholder.png` | the field's disk and directory |
 
 Where a store knows when a work state or image request last changed (Craft's `dateUpdated`, a file's modification time, Filament's `updated_at`), set `$state->changedAt` when reading it, so `recoverIfStale()` can tell a stopped job.
 
 A store's `find()` must return null, never throw, for an ID that isn't one: check it with `Format::isSessionId()` before touching a path or a query.
+
+A `StockImageStore` has no delete, and its `save()` passes the record through `$image->over($stored)` with the copy stored: that refuses (`Conflict`) a save that would shorten the history without adding to it, or move the state back, and merges in any events the stored copy has that the one being saved lacks. `StockImageQuery::apply()` and `matches()` filter, order and page for a store that does that in PHP.
 
 ### Building them
 
@@ -132,7 +137,7 @@ if ($note = $placeholders->note()) {
 
 ## Contract tests
 
-Core ships what every store must do, in `tests/Contracts`: `SessionStoreContract`, `PlanStoreContract`, `KindStoreContract`, `GuideStoreContract`, `ImageRequestStoreContract`, `WaitingStoreContract` and `LockContract`, each a trait with an abstract PHPUnit case beside it (`SessionStoreContractTest`, and so on). Core runs them against its in-memory stores (`Domain\Testing\InMemory*`) for all three formats.
+Core ships what every store must do, in `tests/Contracts`: `SessionStoreContract`, `PlanStoreContract`, `KindStoreContract`, `GuideStoreContract`, `ImageRequestStoreContract`, `WaitingStoreContract`, `StockImageStoreContract` (1.1) and `LockContract`, each a trait with an abstract PHPUnit case beside it (`SessionStoreContractTest`, and so on). Core runs them against its in-memory stores (`Domain\Testing\InMemory*`) for all three formats.
 
 Packagist installs include `tests/Contracts` (the rest of `tests/` is left out). Map the namespace in the addon's `composer.json`:
 

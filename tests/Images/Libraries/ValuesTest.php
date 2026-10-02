@@ -7,8 +7,10 @@ use InvalidArgumentException;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Shape;
 use NineteenNinetyFour\Ghostwriter\Core\Images\Libraries\Capabilities;
 use NineteenNinetyFour\Ghostwriter\Core\Images\Libraries\Cost;
+use NineteenNinetyFour\Ghostwriter\Core\Images\Libraries\Licence;
 use NineteenNinetyFour\Ghostwriter\Core\Images\Libraries\Offer;
 use NineteenNinetyFour\Ghostwriter\Core\Images\Libraries\Preview;
+use NineteenNinetyFour\Ghostwriter\Core\Images\Libraries\Quote;
 use NineteenNinetyFour\Ghostwriter\Core\Images\Libraries\SearchQuery;
 use NineteenNinetyFour\Ghostwriter\Core\Images\PhotoFile;
 use NineteenNinetyFour\Ghostwriter\Core\Tests\Images\ImagesTestCase;
@@ -114,5 +116,38 @@ final class ValuesTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
         new Preview($file, 'https://example.com/a.jpg', true, $now, $now);
+    }
+
+    public function test_a_quote_goes_to_an_array_and_back_and_can_expire(): void
+    {
+        $now = new DateTimeImmutable('2026-10-02T12:00:00+00:00');
+        $quote = new Quote('123', 'creditpack:extended', 'iStock extended licence', Cost::units(3, Cost::CREDIT), 'creditpack', '2400', true, $now->modify('+10 minutes'), 'https://example.com/terms');
+
+        $this->assertEquals($quote, Quote::fromArray($quote->toArray()));
+        $this->assertEquals($quote, Quote::fromArray(json_decode((string) json_encode($quote->toArray()), true)));
+        $this->assertSame('3 credits', $quote->costLabel());
+        $this->assertSame('not known before licensing', (new Quote('1', 'pack', 'Pack'))->costLabel());
+        $this->assertFalse($quote->isExpired($now));
+        $this->assertTrue($quote->isExpired($now->modify('+10 minutes')));
+        $this->assertNull(Quote::fromArray(['option' => 'x']));
+    }
+
+    public function test_a_licence_keeps_no_signed_address_or_token(): void
+    {
+        $licence = new Licence(
+            'getty', '123', 'order-9', new DateTimeImmutable('2026-10-02T12:00:00+00:00'), 'Ann', 'premiumaccess', Cost::units(1, Cost::DOWNLOAD),
+            creditLine: 'Kim/Getty Images', productType: 'premiumaccess', termEndsAt: new DateTimeImmutable('2027-01-01T00:00:00+00:00'), key: 'record-1',
+            raw: ['id' => 'order-9', 'uri' => 'https://delivery.example.com/a.jpg?sig=abc', 'page' => 'https://example.com/photo/123', 'nested' => ['access_token' => 'secret', 'size' => 2400]],
+        );
+
+        $array = $licence->toArray();
+
+        $this->assertSame(['id' => 'order-9', 'page' => 'https://example.com/photo/123', 'nested' => ['size' => 2400]], $array['raw']);
+        $this->assertStringNotContainsString('secret', (string) json_encode($array));
+        $this->assertStringNotContainsString('sig=abc', (string) json_encode($array));
+        $back = Licence::fromArray($array);
+        $this->assertNotNull($back);
+        $this->assertSame(['order-9', 'record-1', '2027-01-01', '1 download'], [$back->orderId, $back->key, $back->termEndsAt?->format('Y-m-d'), $back->cost?->label()]);
+        $this->assertNull(Licence::fromArray(['library' => 'getty']));
     }
 }

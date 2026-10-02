@@ -11,6 +11,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\TextProvider;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextResponse;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Usage;
+use NineteenNinetyFour\Ghostwriter\Core\Domain\Stock\ModelInputGuard;
 use NineteenNinetyFour\Ghostwriter\Core\Prompts\PromptLibrary;
 use NineteenNinetyFour\Ghostwriter\Core\Text\LenientYaml;
 use NineteenNinetyFour\Ghostwriter\Core\Text\TaggedResponse;
@@ -72,6 +73,8 @@ final class Studio
 
     private readonly StudioOptions $options;
 
+    private readonly ModelInputGuard $guard;
+
     /**
      * @param  Providers|TextProvider  $model  The registry (its text provider is used), or a provider.
      */
@@ -80,9 +83,11 @@ final class Studio
         private readonly PromptLibrary $prompts,
         ?LoggerInterface $logger = null,
         ?StudioOptions $options = null,
+        ?ModelInputGuard $guard = null,
     ) {
         $this->logger = $logger ?? new NullLogger;
         $this->options = $options ?? new StudioOptions;
+        $this->guard = $guard ?? new ModelInputGuard(logger: $this->logger);
     }
 
     /** Whether there is a model with a key to call. */
@@ -407,7 +412,8 @@ final class Studio
 
     /**
      * The style of one group's images, from a spread of them: the reply's
-     * `<document>`, or the whole reply when it has none.
+     * `<document>`, or the whole reply when it has none. Samples the
+     * model-input guard refuses (Getty and iStock images) are left out.
      *
      * @param  array<int, ImagerySample>  $samples
      * @return Result<string>
@@ -416,7 +422,7 @@ final class Studio
      */
     public function analyseImagery(string $groupTitle, array $samples): Result
     {
-        $samples = array_values($samples);
+        $samples = array_values(array_filter($samples, fn (ImagerySample $sample) => $this->guard->allowsImage($sample->image, $sample->asset, $sample->filename)));
         $list = implode("\n", array_map(fn (ImagerySample $sample, int $i) => ($i + 1).". {$sample->label}, on \"{$sample->on}\"", $samples, array_keys($samples)));
 
         $response = $this->ask('imagery-analyst', "Section: {$groupTitle}\n\nThe attached images, in order:\n{$list}", images: array_map(fn (ImagerySample $sample) => $sample->image, $samples));

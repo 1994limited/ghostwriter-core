@@ -4,7 +4,7 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
-Multi-source stock photos, from the stock images design: phase 1, the library abstraction. Nothing in the 1.0 API changes; the addons' calls work as they are.
+Multi-source stock photos, from the stock images design: phase 1, the library abstraction, and phase 2, the ledger domain and the model-input guard. Nothing in the 1.0 API changes; the addons' calls work as they are.
 
 ### Added
 
@@ -13,10 +13,15 @@ Multi-source stock photos, from the stock images design: phase 1, the library ab
 - **`StockSearch` is a set of libraries.** A new optional `libraries:` argument adds more after the free ones (one with a free library's ID replaces it). New: `libraries()`, `library($id)`, `label($id)`, `mayRank(Photo)`, and `search(..., sources:)` to keep a search to some libraries.
 - **`Photo` gains `offer`, `editorial`, `restrictions` and `collection`** (appended to the constructor with defaults), `offer()` and `isFree()`. `toArray()` adds the new keys only when set, so a free photo's array is as before; `fromArray()` reads them.
 - **`tests/Images/Libraries/LibraryContract.php`:** what every library adapter must do, run against the four free ones.
+- **The stock image ledger (`Domain\Stock`), phase 2:** `StockImage`, one record per stock image put into the site, free or paid: its asset (`AssetRef`), where it is used (`Usage`), its state (`preview`, `licensing`, `licensed`, `failed`, `removed`), the comp kept for it and when each comp was downloaded (one "Refresh preview" allowed), credit, licence type, restrictions, product and term end (for the seat and storage terms), the quote and the licence, who did what (`Person`) and an append-only `history` of `HistoryEvent`s. `StockImages` holds the rules, each change under the lock `stock:<id>`: a licence is begun once, an unknown outcome is settled by `reconcile()` from the library's own licences (never by buying again; failed only after 10 minutes), usages follow the records that hold the image (`syncUsages()`), and the publish guard asks `unlicensedIn()` or `unlicensedAmong()`.
+- **`StockImageStore`**, with `StockImageQuery` and `StockImagePage`. No delete. `save()` goes through `StockImage::over()`, which refuses a shorter history or a state moving back, and merges two saves' histories. `tests/Contracts/StockImageStoreContract.php` and `Domain\Testing\InMemoryStockImageStore`.
+- **`Images\Libraries\Quote` and `Licence`:** a priced licence option, and a licence bought (order ID, cost as charged or estimated, credit line, product type, term end, the idempotency key, and the provider's answer with signed addresses and tokens taken out).
+- **`Domain\Stock\ModelInputGuard`:** no Getty or iStock image the site holds goes to a model. It refuses an asset whose ledger record allows no model input (or is Getty's or iStock's), a `GettyImages-*` or `iStock-*` file, and an image whose embedded IPTC or XMP credit, source or copyright names Getty Images or iStock. `PhotoRanker`, `PhotoFinder` and `Studio` take one (an optional last argument); without one, they still check each image's bytes. `Images\ReferenceImage` carries a reference's asset and file name; `Studio\ImagerySample` gains optional `asset` and `filename`.
 
 ### Changed
 
 - **A model never sees a photo whose library doesn't allow it** (`Capabilities::$mayRank`). `PhotoRanker` sends only those photos' thumbnails and descriptions to the `photo-picker` agent; the rest follow the judged ones in their library's order, unjudged and never picked. Every free library allows it, so nothing changes for them yet. (The terms check says Unsplash shouldn't be judged; that change is a separate pull request, as it changes what the addons show.)
+- **Reference images and imagery samples go through the model-input guard.** One whose embedded credit or copyright names Getty Images or iStock is left out, logged at debug. Others are sent as before.
 - The branch alias is `1.x-dev` (it still said `0.5.x-dev`).
 
 ## 1.0.0 - 2026-10-02
