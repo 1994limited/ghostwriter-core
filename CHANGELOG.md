@@ -2,6 +2,26 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. While the version is `0.x`, a minor release may contain breaking changes.
 
+## 0.4.0 - 2026-10-02
+
+The schema model and the layout algorithms, unified from the three addons' copies: Phase 3, stage 1 of the core extraction. The addons switch over in stage 2. See [docs/layout.md](docs/layout.md) for how an addon wires it, and [docs/layout-unification.md](docs/layout-unification.md) for what differed and what core does.
+
+### Added
+
+- **`Schema\Field`, `Set`, `Schema` and `Kind`:** what a kind of entry is made of, with the union of the three addons' kinds (`text`, `longtext`, `richtext`, `choice`, `choices`, `toggle`, `number`, `list`, `blocks`, `rows`, `group`, `reference`), page builders' sets, an adapter's `engine` tag and its own `meta`. `Schema::fromSpecs()` reads the arrays the addons' `SchemaReader`s return today, and `toSpecs()` gives them back.
+- **`Schema\EntryData`:** an existing entry's content in one shape whatever the CMS (Craft's `EntryData` shape), with its ID, title and parent.
+- **`Layout\SchemaDescriber`, `PatternFinder`, `KindFinder`, `HouseStyle` and `EntryBuilder`**, working on a `Schema` and `EntryData`, with results `Pattern`, `HouseRules`, `HouseResult` (with the "Still to set by hand" note), `FoundKind` and `BuiltEntry`. Each `toArray()` is the array the addons' classes returned. `PatternFinder::choose()` keeps the shared rule for which entries to learn from. `Layouts` builds all five with one set of options and dialects.
+- **Dialects:** `RichTextDialect`, with `HtmlDialect` for HTML (Craft's CKEditor and Redactor, Filament's RichEditor and MarkdownEditor); Statamic's Bard dialect lives in its adapter, and a reference copy is in core's tests. `LinkDialect`, with `StatamicLinks`, `CraftLinks` (the adapter passes its Hyper and Link field classes) and `NoLinks` (Filament).
+- **`LayoutOptions`**, with `statamic()`, `craft()` and `filament()` presets for what the three did differently: "collection" or "section", "page" or "record", Statamic's bookkeeping keys, whether a block's rich text is copied by position, which unsettled references are named, block and row IDs in the data, the unknown-block wording, and how the kind finder picks its builder and names its kinds.
+- **Studio:** `Layout::fromSchema($schema, $pattern, $describer)` describes a structured schema with core's `SchemaDescriber`. `Layout::fromPattern()` with an addon's own text still works, and sends the same requests.
+- **Parity tooling:** `Layout\Testing\LayoutLog` and `bin/compare-layouts` (installed as `vendor/bin/compare-layouts`) compare what the layout algorithms gave in two runs of an addon's suite. `tests/Fixtures/layout` holds 495 golden cases (Statamic 225, Filament 95, Craft 175) recorded from each addon's own code, from its test suite, its Northfold test site and made-up inputs, with `tools/record-layouts`; core reproduces every one.
+
+### Changed for the addons, once they switch
+
+- Filament: a field named `label` or `value` is no longer read as part of a Craft link (FIL-9), so a label repeating each record's title isn't copied into a new record as its title.
+- Statamic: an empty value shared by most entries is no longer taken for a house default, as in Craft and Filament. A field held back for a link to the new entry itself is skipped in Craft and Filament too, as in Statamic. A copied entry-level default gets fresh set and row IDs.
+- The branch alias is `0.4.x-dev`; addons should require `~0.4.0`.
+
 ## 0.3.0 - 2026-10-02
 
 The Studio: every model call the addons make for writing, planning and learning a site, unified from the three addons' `Studio` classes. See [docs/studio.md](docs/studio.md) for how an addon wires it, and [docs/studio-unification.md](docs/studio-unification.md) for what differed and what core does.
