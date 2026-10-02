@@ -13,6 +13,12 @@ use NineteenNinetyFour\Ghostwriter\Core\Images\PhotoUnavailable;
  * Unsplash, searched when the site has an access key (Credentials
  * `unsplash`). A download is reported to Unsplash, as its terms ask, and
  * the file is asked for at 2,400 pixels wide as a JPEG.
+ *
+ * Its photos are not judged by a model: Unsplash's API Terms (§12) send
+ * any use "in connection with" machine learning or AI to its data
+ * licensing, and ranking is at least that. They are listed after the
+ * judged ones, in Unsplash's order, until Unsplash or counsel says
+ * otherwise.
  */
 final class Unsplash extends FreeLibrary
 {
@@ -51,6 +57,11 @@ final class Unsplash extends FreeLibrary
     protected function creditRequired(): bool
     {
         return true;
+    }
+
+    protected function mayRank(): bool
+    {
+        return false;
     }
 
     protected function lookup(string $id): array

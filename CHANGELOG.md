@@ -25,7 +25,8 @@ Multi-source stock photos, from the stock images design: phase 1, the library ab
 
 ### Changed
 
-- **A model never sees a photo whose library doesn't allow it** (`Capabilities::$mayRank`). `PhotoRanker` sends only those photos' thumbnails and descriptions to the `photo-picker` agent; the rest follow the judged ones in their library's order, unjudged and never picked. Every free library allows it, so nothing changes for them yet. (The terms check says Unsplash shouldn't be judged; that change is a separate pull request, as it changes what the addons show.)
+- **A model never sees a photo whose library doesn't allow it** (`Capabilities::$mayRank`). `PhotoRanker` sends only those photos' thumbnails and descriptions to the `photo-picker` agent; the rest follow the judged ones in their library's order, unjudged and never picked.
+- **Unsplash photos are no longer judged by a model.** Unsplash's API Terms (§12) send any use "in connection with" AI to its data licensing, so `Unsplash` has `mayRank: false` until Unsplash or counsel says otherwise (the stock images terms check). Its results still show, after the judged Pexels, Pixabay and Openverse results, without a "Best match" badge; with only an Unsplash key, results come back unranked. Searching, fetching and credits for Unsplash are unchanged. **For the addons:** tests that expect Unsplash results to be ranked need another library (the Statamic suite has six).
 - **Reference images and imagery samples go through the model-input guard.** One whose embedded credit or copyright names Getty Images or iStock is left out, logged at debug. Others are sent as before.
 - `PhotoUnavailable` is no longer `final`, so the licensing errors can extend it.
 - The branch alias is `1.x-dev` (it still said `0.5.x-dev`).

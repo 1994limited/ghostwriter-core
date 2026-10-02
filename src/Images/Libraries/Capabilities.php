@@ -24,8 +24,10 @@ use InvalidArgumentException;
  *   free library.
  * - `mayRank`: thumbnails and metadata may be shown to a model (the
  *   `photo-picker` agent). False for paid libraries, whose licences forbid
- *   using content or its metadata for AI. PhotoRanker never shows a model
- *   a photo from a library without it.
+ *   using content or its metadata for AI, and for Unsplash, whose API
+ *   terms send AI uses to its data licensing (until Unsplash or counsel
+ *   says otherwise); true for Pexels, Pixabay and Openverse. PhotoRanker
+ *   never shows a model a photo from a library without it.
  * - `noModelInput`: no asset from this library (a comp, a stand-in or the
  *   licensed file) may be sent to any model, for any feature: not as a
  *   reference image, not as a sample to describe. True for paid

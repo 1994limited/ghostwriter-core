@@ -20,16 +20,16 @@ class PhotoFinderTest extends ImagesTestCase
         parent::setUp();
 
         $this->fake = new FakeProvider;
-        $this->credentials->set('unsplash', 'u-key');
+        $this->credentials->set('pexels', 'p-key');
         $this->route('https://images.example.com/', $this->jpegResponse());
 
         foreach (['raised brick beds', 'garden bed', 'carved table', 'brick planter', 'vegetable garden', 'mended pottery'] as $term) {
             $slug = str_replace(' ', '-', $term);
-            $this->route('https://api.unsplash.com/search/photos?query='.rawurlencode($term).'&', ['results' => array_map(fn (int $i) => [
+            $this->route('https://api.pexels.com/v1/search?query='.rawurlencode($term).'&', ['photos' => array_map(fn (int $i) => [
                 'id' => "{$slug}-{$i}",
-                'alt_description' => "{$term} number {$i}",
-                'urls' => ['small' => "https://images.example.com/{$slug}-{$i}.jpg"],
-                'user' => ['name' => 'Ann'],
+                'alt' => "{$term} number {$i}",
+                'src' => ['medium' => "https://images.example.com/{$slug}-{$i}.jpg"],
+                'photographer' => 'Ann',
             ], range(1, 8))]);
         }
     }
@@ -76,8 +76,8 @@ class PhotoFinderTest extends ImagesTestCase
 
     public function test_without_a_model_it_searches_the_title_and_ranks_nothing(): void
     {
-        $this->route('https://api.unsplash.com/search/photos?query=growing%20food%20in%20small%20spaces', ['results' => []]);
-        $this->route('https://api.unsplash.com/search/photos?query=growing%20food&', ['results' => [['id' => 'g1', 'urls' => ['small' => 'https://images.example.com/g1.jpg']]]]);
+        $this->route('https://api.pexels.com/v1/search?query=growing%20food%20in%20small%20spaces', ['photos' => []]);
+        $this->route('https://api.pexels.com/v1/search?query=growing%20food&', ['photos' => [['id' => 'g1', 'src' => ['medium' => 'https://images.example.com/g1.jpg']]]]);
 
         $results = (new PhotoFinder($this->stock(false), null, $this->prompts()))->find($this->context(), [self::jpeg()]);
 
@@ -135,7 +135,7 @@ class PhotoFinderTest extends ImagesTestCase
     public function test_searches_fall_back_to_the_title_when_the_answer_is_empty(): void
     {
         $this->fake->respond('photo-researcher', ' ;;; ');
-        $this->route('https://api.unsplash.com/search/photos?query=growing', ['results' => []]);
+        $this->route('https://api.pexels.com/v1/search?query=growing', ['photos' => []]);
 
         $this->assertSame(['growing food in small spaces'], $this->finder()->searchTerms($this->context()));
     }

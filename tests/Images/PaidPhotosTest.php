@@ -92,14 +92,22 @@ final class PaidPhotosTest extends ImagesTestCase
         $this->assertTrue($stock->mayRank(self::photo('a', source: 'nowhere')));
     }
 
-    public function test_the_free_libraries_are_judged_as_before(): void
+    public function test_of_the_free_libraries_only_unsplash_is_not_judged(): void
     {
         $stock = $this->stock();
 
-        foreach (['unsplash', 'pexels', 'pixabay', 'openverse'] as $source) {
-            $this->assertTrue($stock->mayRank(self::photo('a', source: $source)), $source);
+        foreach (['unsplash' => false, 'pexels' => true, 'pixabay' => true, 'openverse' => true] as $source => $mayRank) {
+            $this->assertSame($mayRank, $stock->mayRank(self::photo('a', source: $source)), $source);
             $this->assertFalse($stock->library($source)?->capabilities()->noModelInput);
         }
+
+        $this->fake->respond('photo-picker', '1: the bowl');
+        $ranking = (new PhotoRanker($stock, $this->fake, new PromptLibrary(Vocabulary::craft())))
+            ->rank([self::photo('u', source: 'unsplash'), self::photo('p', description: 'a bowl')], $this->context());
+
+        $this->assertSame(['p', 'u'], array_map(fn (Photo $photo) => $photo->id, $ranking->photos));
+        $this->assertSame([true, false], array_map(fn (Photo $photo) => $photo->picked, $ranking->photos));
+        $this->fake->assertSent('photo-picker', fn (TextRequest $request) => count($request->images) === 1);
     }
 
     public function test_the_model_never_sees_a_paid_photo_which_follows_the_judged_ones_in_its_own_order(): void

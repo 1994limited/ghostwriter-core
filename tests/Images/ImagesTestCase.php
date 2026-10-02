@@ -118,9 +118,12 @@ abstract class ImagesTestCase extends TestCase
         return self::photo($id);
     }
 
-    protected static function photo(string $id, string $term = 'pottery', string $source = 'unsplash', ?string $description = null): Photo
+    /**
+     * A Pexels photo by default: a library whose photos a model may judge.
+     */
+    protected static function photo(string $id, string $term = 'pottery', string $source = 'pexels', ?string $description = null): Photo
     {
-        return new Photo($source, $id, "https://images.example.com/{$id}.jpg", 'Ann on Unsplash', "https://unsplash.com/photos/{$id}", 'Unsplash licence', description: $description, term: $term);
+        return new Photo($source, $id, "https://images.example.com/{$id}.jpg", 'Ann on Pexels', "https://www.pexels.com/photo/{$id}/", 'Pexels licence', description: $description, term: $term);
     }
 
     private function dispatch(RequestInterface $request): ResponseInterface

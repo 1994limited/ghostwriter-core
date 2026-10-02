@@ -17,10 +17,11 @@ final class UnsplashTest extends ImagesTestCase
         $this->credentials->set('unsplash', 'secret-unsplash-key');
     }
 
-    public function test_it_needs_a_key_and_must_be_credited(): void
+    public function test_it_needs_a_key_must_be_credited_and_is_not_judged_by_a_model(): void
     {
         $this->assertTrue($this->library()->available());
         $this->assertTrue($this->library()->capabilities()->creditRequired);
+        $this->assertFalse($this->library()->capabilities()->mayRank, 'Unsplash API Terms §12.');
         $this->assertFalse($this->library()->capabilities()->noModelInput);
 
         $this->credentials->set('unsplash', ' ');
