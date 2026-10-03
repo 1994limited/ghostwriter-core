@@ -172,6 +172,7 @@ Deterministic, no model. The output has the draft's own shape, so the existing b
 $validator = new PlanValidator(EntryBuilder $builder, ?LoggerInterface $logger);   // the addon's builder, for the round trip
 $violations = $validator->check($plan, $units, $extras, $draft, $schema, ?Pattern $pattern, list<Plan> $earlier);   // list<Violation>
 $usable     = $validator->valid(list<Plan> $plans, $units, $extras, $draft, $schema, ?Pattern $pattern);       // the ones that pass; the writer's always
+$validated  = $validator->validate(list<Plan> $plans, $units, $extras, $draft, $schema, ?Pattern $pattern);    // Validated: ->kept, ->dropped (violations by plan id), ->rules()
 ```
 
 | Rule (`Violation::…`) | Fails when |
@@ -181,7 +182,7 @@ $usable     = $validator->valid(list<Plan> $plans, $units, $extras, $draft, $sch
 | `UNKNOWN_REF` | a ref stands for no unit, piece, lead-in or extra item |
 | `KIND` | what's placed doesn't suit the field: more than one piece, or a quote, in a text field; a heading in plain long text or a list; an image outside an image field or text in one |
 | `LIMITS` | more or fewer blocks than the builder's `Field::$meta['min']` / `['max']` |
-| `REQUIRED` | a required field of a new block (or a top-level field the plan arranges) is left empty, with no setting or house default for it |
+| `REQUIRED` | a required field the writer writes in (text, long text, rich text, a list, rows) of a new block, or a top-level field the plan arranges, is left empty, with no setting or house default for it |
 | `EMPTY_BLOCK` | a block meant for words has none |
 | `DUPLICATED` | a unit, piece, lead-in or extra item is placed twice |
 | `MISSING` | a unit (or piece) of an arranged field isn't placed; media may be left out |
@@ -193,7 +194,9 @@ $usable     = $validator->valid(list<Plan> $plans, $units, $extras, $draft, $sch
 | `SAME` | it's the same layout as an earlier plan (the writer's included) |
 | `ROUND_TRIP` | building it notes something new that is not a field here, not an option, or an unknown block |
 
-Violations are logged at debug level. A plan that fails is dropped.
+A required field the writer never fills is not a reason to drop a plan: images and other files, links, entries and other references, settings (choice, choices, toggle, number), groups and nested builders (`PlanValidator::requiredWords()` is false for them). A plan never holds one, so a block it makes leaves it empty, and the build path gives it exactly what it gives the writer's draft: the striped placeholder in an image field (`Images\Placeholders`, which "Finish this page" then turns into a gap), the `#gw-link:` sentinel in a link (`HouseStyle`, with `LayoutOptions::$linkSentinels`), the house or the CMS's own default for a setting, and entries left for a person.
+
+Violations are logged at debug level, with their rules. A plan that fails is dropped. `SessionLayouts::planned()` gives the last planner call's `Validated` (null before one), so a reply that produced no layouts can be explained: `$layouts->planned()?->rules()` is `['p2' => ['required']]`, and the log has a line naming each dropped plan and its rules. A plan marked stale after an edit is logged at debug with its rules too.
 
 ## After the text changes
 

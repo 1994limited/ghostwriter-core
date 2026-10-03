@@ -42,6 +42,9 @@ use Psr\Log\NullLogger;
  * 6. **Distinctness.** It isn't the same layout as an earlier plan.
  * 7. **Round trip.** EntryBuilder, given the arranged draft, notes nothing
  *    new that is "not a field here", "not an option" or an unknown block.
+ *
+ * validate() says which plans were dropped and by which rules (Validated);
+ * valid() gives only the plans kept.
  */
 final class PlanValidator
 {
@@ -69,7 +72,21 @@ final class PlanValidator
      */
     public function valid(array $plans, Units $units, Extras|array $extras, Draft|array $draft, Schema $schema, ?Pattern $pattern = null): array
     {
+        return $this->validate($plans, $units, $extras, $draft, $schema, $pattern)->kept;
+    }
+
+    /**
+     * As valid(), with what was dropped and why: each dropped plan's
+     * violations, by its id, also logged at debug level with their rules.
+     *
+     * @param  list<Plan>  $plans
+     * @param  Extras|array<int, mixed>  $extras
+     * @param  Draft|array<string, mixed>  $draft
+     */
+    public function validate(array $plans, Units $units, Extras|array $extras, Draft|array $draft, Schema $schema, ?Pattern $pattern = null): Validated
+    {
         $kept = [];
+        $dropped = [];
 
         foreach ($plans as $plan) {
             if ($plan->origin === PlanOrigin::Writer) {
@@ -83,11 +100,28 @@ final class PlanValidator
             if ($violations === []) {
                 $kept[] = $plan;
             } else {
-                $this->logger->debug("Ghostwriter: layout \"{$plan->name}\" was dropped.", ['plan' => $plan->id, 'violations' => array_map('strval', $violations)]);
+                $dropped[$plan->id] = $violations;
+                $rules = Validated::rulesOf($violations);
+                $this->logger->debug("Ghostwriter: layout \"{$plan->name}\" was dropped (".implode(', ', $rules).').', ['plan' => $plan->id, 'rules' => $rules, 'violations' => array_map('strval', $violations)]);
             }
         }
 
-        return $kept;
+        return new Validated($kept, $dropped);
+    }
+
+    /**
+     * Whether a required field must be filled by the plan for it to be
+     * used: only a field the writer writes words in. Images and other
+     * files, links, entries (reference), settings (choice, choices,
+     * toggle, number), groups and nested builders are never in a plan;
+     * left empty, they get what the writer's draft gets on the build path
+     * ("Use this draft"): the striped placeholder (Images\Placeholders), a
+     * `#gw-link:` sentinel (HouseStyle), the house or the CMS's default,
+     * or a gap in "Finish this page".
+     */
+    public static function requiredWords(Field $field): bool
+    {
+        return $field->required && ! $field->files && in_array($field->kind, [Kind::Text, Kind::LongText, Kind::RichText, Kind::List, Kind::Rows], true);
     }
 
     /**
@@ -132,7 +166,7 @@ final class PlanValidator
                     array_push($violations, ...$this->fits($placement, $field, $content, $units, $handle));
                 }
 
-                if ($field->required && $placement === null) {
+                if (self::requiredWords($field) && $placement === null) {
                     $violations[] = new Violation(Violation::REQUIRED, "{$handle} is required.");
                 }
             }
@@ -254,7 +288,7 @@ final class PlanValidator
             foreach ($set->fields as $setField) {
                 $filled = in_array($setField->handle, $placed, true) || array_key_exists($setField->handle, $block->settings) || array_key_exists($setField->handle, (array) ($fixed[$block->type] ?? []));
 
-                if ($setField->required && ($setField->isWritable() || $setField->files) && ! $filled) {
+                if (self::requiredWords($setField) && ! $filled) {
                     $violations[] = new Violation(Violation::REQUIRED, "{$block->type}: {$setField->handle} is required.");
                 }
 

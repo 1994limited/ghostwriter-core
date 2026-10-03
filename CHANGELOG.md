@@ -2,6 +2,13 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 it follows semantic versioning: a minor or patch release doesn't break the public API.
 
+## Unreleased
+
+### Fixed (1.8.1)
+
+- **Layouts: a required image no longer drops every alternative.** On a site whose hero has a required image (Northfold's Pages), `PlanValidator` dropped every plan that made its own hero, as a plan never holds images, so the planner's layouts were never offered. "Required" now applies only to fields the writer writes in (text, long text, rich text, a list, rows: `PlanValidator::requiredWords()`). A required image, link, entries field, setting (choice, toggle, number), group or nested builder left empty in a plan's block gets what the writer's draft gets on the build path: the striped placeholder, the `#gw-link:` sentinel, the house or CMS default. The planner's brief marks only those fields as required, too. See docs/layouts.md.
+- **Why a plan was dropped is now recorded.** `PlanValidator::validate()` returns `Validated` (`kept`, `dropped`: violations by plan id, `rules()`); `valid()` is unchanged. `SessionLayouts::planned()` gives the last planner call's `Validated`. Dropped plans are logged at debug with their rules, as are plans marked stale after an edit, and the planner call logs one line naming each dropped plan and its rules.
+
 ## 1.8.0 - 2026-10-03
 
 ### Added

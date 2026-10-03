@@ -50,6 +50,9 @@ final class SessionLayouts
 
     private readonly LoggerInterface $logger;
 
+    /** The last planner call's plans, checked: kept, and dropped with why. */
+    private ?Validated $planned = null;
+
     public function __construct(
         private readonly Studio $studio,
         private readonly Layouts $layouts = new Layouts,
@@ -205,6 +208,20 @@ final class SessionLayouts
         return $this->layouts->builder()->build($this->draftData($session, $site, $planId), $site->schema, $site->pattern, $site->defaults);
     }
 
+    /**
+     * What the validator made of the planner's plans on the last call this
+     * object made to it (afterWriter() on a first draft, or refresh()): the
+     * plans kept, and each dropped one's violations by its id
+     * (`$planned->rules()` gives the rules alone). The writer's plan is
+     * always kept. Null before any planner call, or when the planner wasn't
+     * needed. Not stored on the session: it is for diagnosing a planner
+     * reply that produced no layouts.
+     */
+    public function planned(): ?Validated
+    {
+        return $this->planned;
+    }
+
     /** The session's extras, for the Text tab. */
     public function extras(Session $session): Extras
     {
@@ -249,8 +266,13 @@ final class SessionLayouts
             }
 
             $repaired = $repair->repair($plan, $units, $extras, $writer);
-            $stale = $validator->check($repaired, $units, $extras, $draft, $site->schema, $site->pattern, $plans) !== [];
-            $plans[] = $repaired->with(stale: $stale, suggested: false);
+            $violations = $validator->check($repaired, $units, $extras, $draft, $site->schema, $site->pattern, $plans);
+
+            if ($violations !== []) {
+                $this->logger->debug("Ghostwriter: layout \"{$repaired->name}\" needs refreshing (".implode(', ', Validated::rulesOf($violations)).').', ['plan' => $repaired->id, 'rules' => Validated::rulesOf($violations), 'violations' => array_map('strval', $violations)]);
+            }
+
+            $plans[] = $repaired->with(stale: $violations !== [], suggested: false);
         }
 
         $this->store($session, new Plans($plans), $units, $extras, $draft, $site);
@@ -261,6 +283,7 @@ final class SessionLayouts
      */
     private function plan(Session $session, LayoutContext $site): Usage
     {
+        $this->planned = null;
         $draft = self::draft($session->draft);
 
         if ($draft === null) {
@@ -291,8 +314,13 @@ final class SessionLayouts
             $this->logger->warning("Ghostwriter: the layout planner failed: {$exception->getMessage()}", ['agent' => 'layout-planner']);
         }
 
-        $valid = (new PlanValidator($this->layouts->builder(), $this->logger))->valid([$writer, ...$proposed], $units, $extras, $draft, $site->schema, $site->pattern);
-        $plans = Plans::of($writer, array_slice($valid, 1));
+        $this->planned = (new PlanValidator($this->layouts->builder(), $this->logger))->validate([$writer, ...$proposed], $units, $extras, $draft, $site->schema, $site->pattern);
+        $plans = Plans::of($writer, array_slice($this->planned->kept, 1));
+
+        if ($this->planned->dropped !== []) {
+            $why = implode('; ', array_map(fn (string $id, array $rules) => "{$id}: ".implode(', ', $rules), array_keys($this->planned->rules()), $this->planned->rules()));
+            $this->logger->debug('Ghostwriter: the layout planner proposed '.count($proposed).' layouts and '.count($this->planned->dropped)." were dropped ({$why}).", ['agent' => 'layout-planner', 'dropped' => $this->planned->rules()]);
+        }
         $this->store($session, $plans, $units, $extras, $draft, $site, $patterns, $profile);
 
         if ($session->plan !== null && $this->plans($session)->get($session->plan) === null) {
