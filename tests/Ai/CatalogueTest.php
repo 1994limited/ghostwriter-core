@@ -100,7 +100,7 @@ class CatalogueTest extends TestCase
         $this->assertNull(Agents::effort('writer'));
 
         foreach (PromptLibrary::NAMES as $name) {
-            if ($name !== 'image') {
+            if (! in_array($name, ['image', 'writer-extras'], true)) {
                 $this->assertArrayHasKey($name, Agents::MAX_TOKENS, "{$name} has no token limit.");
             }
         }

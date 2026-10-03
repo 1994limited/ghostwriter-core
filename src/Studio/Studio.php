@@ -11,6 +11,10 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\TextProvider;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextResponse;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Usage;
+use NineteenNinetyFour\Ghostwriter\Core\Arrange\Extras\Extras;
+use NineteenNinetyFour\Ghostwriter\Core\Arrange\Extras\ExtraSlots;
+use NineteenNinetyFour\Ghostwriter\Core\Arrange\Extras\ExtraSources;
+use NineteenNinetyFour\Ghostwriter\Core\Arrange\Extras\ExtrasReader;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Stock\ModelInputGuard;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\GapRefused;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Markers;
@@ -763,7 +767,41 @@ final class Studio
             '{{ fields }}' => $context->layout->fields,
             '{{ examples }}' => $this->examples($context->layout),
             '{{ images }}' => $context->images,
-        ]);
+        ]).$this->extrasSection($context);
+    }
+
+    /**
+     * The extras the writer may prepare with its draft, for the block types
+     * this site has (Arrange\Extras\ExtraSlots). Empty when the layout has
+     * no schema, or the schema has no place for any extra, so the writer's
+     * instructions are then exactly as they were.
+     */
+    public function extrasSection(WriterContext $context): string
+    {
+        $slots = ExtraSlots::for($context->layout->schema);
+
+        if ($slots->isEmpty()) {
+            return '';
+        }
+
+        return "\n\n".strtr($this->prompt('writer-extras'), ['{{ extras }}' => $slots->describe()]);
+    }
+
+    /**
+     * The extras in a writer's reply, keeping only items whose every fact
+     * has a source (Arrange\Extras\ExtrasReader). Sources are the person's
+     * words, the draft and the examples the writer was shown; `$exampleIds`
+     * are those examples' entry ids, in order, when the adapter knows them.
+     *
+     * @param  array<int, int|string|null>  $exampleIds
+     */
+    public function extras(TaggedResponse $response, Conversation $conversation, WriterContext $context, array $exampleIds = []): Extras
+    {
+        return (new ExtrasReader($this->logger))->read(
+            $response->extras,
+            ExtraSlots::for($context->layout->schema),
+            ExtraSources::fromWriter($conversation, $response->document ?? $conversation->draft, $context->layout, $exampleIds),
+        );
     }
 
     /**

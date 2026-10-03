@@ -2,6 +2,23 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 it follows semantic versioning: a minor or patch release doesn't break the public API.
 
+## Unreleased
+
+### Added
+
+- **Extras, prepared by the writer in the same call as the draft (`Arrange\Extras\*`).** Stats, FAQs, a pull quote, an "at a glance" box, captions, a second call to action, a testimonial and a short intro, only for the block types and fields the site has. Every fact in an extra carries its source; an unsourced fact is never kept. See docs/layouts.md.
+  - `ExtraSlots::for(?Schema)`: which kinds this site can show, and where (a page builder's set by handle or label, with the field shape as a check; rich text; a top-level intro field). `kinds()`, `has()`, `slots()`, `describe()`, `isEmpty()`.
+  - The writer's instructions gain the new prompt `writer-extras` ("Extras you may prepare") whenever the layout has a schema with somewhere to put an extra. `Studio::extrasSection(WriterContext)` gives that section. With no schema (a `Layout` built from fields an addon described), the writer's request is exactly as before.
+  - `TaggedResponse::$extras`: the writer's `<extras>` block, kept out of the reply.
+  - `ExtrasReader::read(?string $block, ExtraSlots, ExtraSources): Extras` and `Studio::extras(TaggedResponse, Conversation, WriterContext, array $exampleIds = [])`. An item is kept when its quote is in its source (the brief or answers, the draft, or an example the writer was shown) and every figure, quotation and name in it is in that quote (`ScopedEditCheck`: no fact and no link beyond the quote); an attribution's names must be in its source. An item that fails, or has none, is kept only with an `[[ask: …]]` in place of the missing fact and nothing else unsourced: it "needs your answer". Everything else is dropped and logged, never invented.
+  - `Extras` (`all()`, `items()`, `item()`, `extraOf()`, `edit()`, `without()`, `toArray()`, `fromArray()`), `Extra`, `ExtraItem` (ids `x1.2`, parts such as `question` and `attribution`, `needsAnswer()`), `Source`, `SourceKind`, `ExtraKind`, `ExtraSources::fromWriter()`.
+- **`Session::$extras`**: the session's extras (`Extras::toArray()`). Stored like `$units`: only once there is something in it, under `extras` (Filament: a JSON column the addon adds).
+
+### Changed
+
+- `TaggedResponse`'s constructor takes `$extras` as a new optional last argument; a reply with no `<reply>` block has its `<extras>` block taken out of the text shown, as `<draft>` and `<images>` are.
+- `PromptLibrary::NAMES` lists `writer-extras`.
+
 ## 1.7.0 - 2026-10-03
 
 ### Added

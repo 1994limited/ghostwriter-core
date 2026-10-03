@@ -51,6 +51,14 @@ class StructuredLayoutTest extends StudioTestCase
             $requests[] = RequestLog::records($this->fake->requests());
         }
 
+        // A schema shows the writer where extras could go; fields described
+        // by an addon give it no schema, so the writer is told nothing more.
+        $extras = $this->studio()->extrasSection(new WriterContext(new ContentKind('article', 'Article'), '', $structured, ''));
+        $this->assertStringStartsWith("\n\n## Extras you may prepare\n", $extras);
+        $this->assertStringContainsString('- `pull_quote`: ', $extras);
+        $this->assertStringEndsWith($extras, $requests[0][0]['instructions']);
+        $requests[0][0]['instructions'] = substr($requests[0][0]['instructions'], 0, -strlen($extras));
+
         $this->assertSame($requests[0], $requests[1]);
         $this->assertStringContainsString("- `title` (short text, required)\n", $requests[0][0]['instructions'].$requests[0][0]['prompt']);
     }

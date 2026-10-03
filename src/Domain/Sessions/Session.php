@@ -53,6 +53,7 @@ final class Session
      * @param  int|null  $siteId  The site the record is in (Craft).
      * @param  array<int, array<string, string>>  $gaps  What the draft left for a person when it was applied (Gaps\SessionGaps::toArray()). Stored only once there is something in it, under `gaps` (Filament: a JSON column the addon adds).
      * @param  array<string, mixed>  $units  The draft's unit ids (Arrange\Units::sidecar()), carried from turn to turn. Stored like `gaps`: only once there is something in it, under `units` (Filament: a JSON column the addon adds).
+     * @param  list<array<string, mixed>>  $extras  The extras the writer prepared with the draft (Arrange\Extras\Extras::toArray()), kept until it sends new ones. Stored like `units`, under `extras`.
      */
     public function __construct(
         public readonly Format $format,
@@ -82,6 +83,7 @@ final class Session
         public bool $editing = false,
         public array $gaps = [],
         public array $units = [],
+        public array $extras = [],
     ) {
         $this->editing = $editing || $source !== null;
     }
@@ -456,6 +458,10 @@ final class Session
             $data['units'] = $format !== Format::Filament ? $this->units : ($this->units === [] ? null : $format->json($this->units));
         }
 
+        if ($this->extras !== [] || array_key_exists('extras', $this->stored)) {
+            $data['extras'] = $format !== Format::Filament ? $this->extras : ($this->extras === [] ? null : $format->json($this->extras));
+        }
+
         // Kept where the record has room for it; Filament's table has no
         // column, and falls back on updated_at, which a claim also sets.
         if ($this->startedWorkingAt !== null && $format !== Format::Filament) {
@@ -494,6 +500,7 @@ final class Session
             variant: self::nullableText($data['blueprint'] ?? null),
             gaps: self::gaps($data['gaps'] ?? []),
             units: self::units($data['units'] ?? []),
+            extras: self::records($data['extras'] ?? []),
         );
     }
 
@@ -527,6 +534,7 @@ final class Session
             siteId: self::int($data['site_id'] ?? null),
             gaps: self::gaps($data['gaps'] ?? []),
             units: self::units($data['units'] ?? []),
+            extras: self::records($data['extras'] ?? []),
         );
     }
 
@@ -563,6 +571,7 @@ final class Session
             editing: $editing,
             gaps: self::gaps(self::decoded($row['gaps'] ?? null)),
             units: self::units(self::decoded($row['units'] ?? null)),
+            extras: self::records(self::decoded($row['extras'] ?? null)),
         );
     }
 
@@ -619,6 +628,30 @@ final class Session
 
         foreach (is_array($units) ? $units : [] as $key => $value) {
             $out[(string) $key] = $value;
+        }
+
+        return $out;
+    }
+
+    /**
+     * A list of keyed records, as stored.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private static function records(mixed $records): array
+    {
+        $out = [];
+
+        foreach (is_array($records) ? $records : [] as $record) {
+            if (is_array($record)) {
+                $entry = [];
+
+                foreach ($record as $key => $value) {
+                    $entry[(string) $key] = $value;
+                }
+
+                $out[] = $entry;
+            }
         }
 
         return $out;

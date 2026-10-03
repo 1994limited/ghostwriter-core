@@ -41,6 +41,7 @@
         "document": "# Voice\n\nWarm.",
         "inputTokens": 100,
         "outputTokens": 50,
-        "images": null
+        "images": null,
+        "extras": null
     }
 }
