@@ -49,16 +49,39 @@ final class Transport
 
     private int $attempts = 0;
 
+    /** @var (Closure(ResponseInterface, string): ?ProviderException)|null */
+    private readonly ?Closure $errors;
+
+    /**
+     * $errors is a provider's own reading of an error response, given the
+     * response and its body, tried before the usual mapping; null from it
+     * means the usual mapping applies.
+     *
+     * @param  (callable(ResponseInterface, string): ?ProviderException)|null  $errors
+     */
     public function __construct(
         private readonly HttpClients $http,
         private readonly string $provider,
         ?RetryPolicy $retry = null,
         ?Sleeper $sleeper = null,
         ?LoggerInterface $logger = null,
+        ?callable $errors = null,
     ) {
         $this->retry = $retry ?? new RetryPolicy;
         $this->sleeper = $sleeper ?? new SystemSleeper;
         $this->logger = $logger ?? new NullLogger;
+        $this->errors = $errors !== null ? Closure::fromCallable($errors) : null;
+    }
+
+    /**
+     * A copy that reads error responses with $errors first (see the
+     * constructor). The copy counts its own attempts.
+     *
+     * @param  callable(ResponseInterface, string): ?ProviderException  $errors
+     */
+    public function withErrors(callable $errors): self
+    {
+        return new self($this->http, $this->provider, $this->retry, $this->sleeper, $this->logger, $errors);
     }
 
     public function provider(): string
@@ -103,6 +126,19 @@ final class Transport
         }
 
         return $this->send('POST', $url, $headers + ['content-type' => 'application/json'], $encoded, $timeout, $agent);
+    }
+
+    /**
+     * GET a JSON reply, retried like any other call.
+     *
+     * @param  array<string, string>  $headers
+     * @return array<string, mixed>
+     *
+     * @throws ProviderException
+     */
+    public function get(string $url, array $headers, int $timeout, string $agent = ''): array
+    {
+        return $this->send('GET', $url, $headers, '', $timeout, $agent);
     }
 
     /**
@@ -211,7 +247,7 @@ final class Transport
                 $request = $request->withHeader($name, $value);
             }
 
-            return $request->withBody($this->http->streamFactory()->createStream($body));
+            return $method === 'GET' && $body === '' ? $request : $request->withBody($this->http->streamFactory()->createStream($body));
         };
     }
 
@@ -238,6 +274,17 @@ final class Transport
     {
         $status = $response->getStatusCode();
         $label = $this->label();
+
+        if ($this->errors !== null) {
+            $body = (string) $response->getBody();
+            $own = ($this->errors)($response, $body);
+
+            if ($own !== null) {
+                return $own;
+            }
+
+            $response = $response->withBody($this->http->streamFactory()->createStream($body));
+        }
 
         return match (true) {
             $status === 401, $status === 403 => new AuthenticationFailed(

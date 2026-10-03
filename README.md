@@ -58,7 +58,7 @@ $instructions = strtr($prompts->get('planner'), [
 
 ### AI: `NineteenNinetyFour\Ghostwriter\Core\Ai`
 
-One way to call a model, used by all three addons, over any PSR-18 client. It covers Anthropic, OpenAI and Gemini for text, and OpenAI and Gemini for images.
+One way to call a model, used by all three addons, over any PSR-18 client. It covers Anthropic, OpenAI, Gemini and OpenRouter for text, and OpenAI, Gemini and OpenRouter for images. See [docs/providers.md](docs/providers.md).
 
 - **Requests and responses:** `TextRequest` (agent, instructions, prompt, history, images; max tokens, effort, model and timeout default sensibly; `withMaxTokens()` and `withModel()` return a copy) and `TextResponse` (text, `StopReason`, `Usage`, provider, model, `truncated()`). Images use `ImageRequest` and `Image`.
 - **Defaults:** `Models` is the one table of default models and their capabilities. `Agents` gives each agent (prompt name) its max tokens and effort.
@@ -66,6 +66,7 @@ One way to call a model, used by all three addons, over any PSR-18 client. It co
 - **Errors:** every failure is a `ProviderException` with a message that can be shown to an editor. Its subclasses (`NotConfigured`, `AuthenticationFailed`, `RateLimited`, `Overloaded`, `Unreachable`, `Refused`, `BadResponse`, plus `Truncated` for callers) say what happened, and `retryable()` says whether trying again could help.
 - **Cut-off replies:** providers report `StopReason::MaxTokens` and never throw for it. The caller decides whether to retry or throw `Truncated`.
 - **Gateways:** a `base_url` per provider, for gateways that speak the same API. It must be `https://`, except for localhost.
+- **Connect with OpenRouter:** people without an API key can sign in to OpenRouter instead (OAuth PKCE, `Credentials\OpenRouterConnection`). The key it gives is kept encrypted by the addon (`Ports\ProviderKeys`), and a key in `.env` always wins (`Credentials\ConnectedCredentials`). See [docs/connecting-accounts.md](docs/connecting-accounts.md).
 
 ### Studio: `NineteenNinetyFour\Ghostwriter\Core\Studio`
 

@@ -19,6 +19,7 @@ interface Credentials
         'unsplash' => 'UNSPLASH_ACCESS_KEY',
         'pixabay' => 'PIXABAY_API_KEY',
         'pexels' => 'PEXELS_API_KEY',
+        'openrouter' => 'OPENROUTER_API_KEY',
     ];
 
     /**

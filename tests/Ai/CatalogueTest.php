@@ -36,6 +36,31 @@ class CatalogueTest extends TestCase
         Models::defaultImage('anthropic');
     }
 
+    public function test_openrouter_defaults_by_tier_and_its_effort(): void
+    {
+        $this->assertSame('anthropic/claude-opus-5.5', Models::defaultText('openrouter'));
+        $this->assertSame('openai/gpt-image-2.5-sunburst', Models::defaultImage('openrouter'));
+        $this->assertSame(['openai', 'gemini', 'openrouter'], Models::IMAGE_ORDER);
+        $this->assertSame('anthropic/claude-opus-5.5', Models::defaultTextFor('openrouter', 'writer'));
+        $this->assertSame('anthropic/claude-sonnet-5.5', Models::defaultTextFor('openrouter', 'photo-picker'));
+        $this->assertSame('claude-opus-5-5', Models::defaultTextFor('anthropic', 'photo-picker'), 'Other providers have one default.');
+        $this->assertSame(['quick', 'writing', 'writing'], [Agents::tier('gap-filler'), Agents::tier('writer'), Agents::tier('unknown')]);
+
+        $this->assertSame(['anthropic', 'claude-opus-5-5'], Models::nativeModel('anthropic/claude-opus-5.5'));
+        $this->assertSame(['gemini', 'gemini-3.8-flash'], Models::nativeModel('google/gemini-3.8-flash:free'));
+        $this->assertNull(Models::nativeModel('meta-llama/llama-4'));
+
+        $this->assertTrue(Models::takesEffort('openrouter', 'anthropic/claude-sonnet-5.5'));
+        $this->assertTrue(Models::takesEffort('openrouter', 'openai/gpt-6.1-sol'));
+        $this->assertTrue(Models::takesEffort('openrouter', 'google/gemini-3.8-flash'));
+        $this->assertFalse(Models::takesEffort('openrouter', 'anthropic/claude-haiku-4.5'));
+        $this->assertFalse(Models::takesEffort('openrouter', 'meta-llama/llama-4'));
+
+        foreach ([...Models::OPENROUTER_TIERS, ...array_keys(Models::OPENROUTER_TEXT_CHOICES), ...array_keys(Models::OPENROUTER_IMAGE_CHOICES)] as $id) {
+            $this->assertMatchesRegularExpression('#^[a-z0-9-]+/[a-z0-9.-]+$#', $id);
+        }
+    }
+
     public function test_which_models_take_effort_and_fallbacks(): void
     {
         foreach (['claude-opus-5-5', 'claude-opus-4-6', 'claude-sonnet-5-5', 'claude-fable-5-1', 'claude-opus-5', 'claude-sonnet-4-6-20260101'] as $model) {

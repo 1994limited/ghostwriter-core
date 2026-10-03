@@ -2,16 +2,19 @@
 
 namespace NineteenNinetyFour\Ghostwriter\Core\Tests\Ai;
 
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Agents;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\NotConfigured;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\Overloaded;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Http\RetryPolicy;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\ImageRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Ports\ArrayCredentials;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Ports\ModelTiers;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Ports\StaticProviderSettings;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers\Anthropic;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers\Gemini;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers\OpenAi;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers\OpenRouter;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Testing\FakeProvider;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Testing\RecordingSleeper;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
@@ -69,6 +72,37 @@ class ProvidersTest extends ProviderTestCase
 
         $this->settings->imageProvider = 'anthropic';
         $this->assertNull($this->providers->imageHandle(), 'Claude does not make images.');
+    }
+
+    public function test_openrouter_writes_and_makes_images_only_after_the_others(): void
+    {
+        $this->keys->set('openrouter', 'or');
+        $this->settings->textProvider = 'openrouter';
+
+        $this->assertInstanceOf(OpenRouter::class, $this->providers->text());
+        $this->assertSame('openrouter', $this->providers->imageHandle(), 'With no OpenAI or Gemini key, OpenRouter makes the images.');
+        $this->assertInstanceOf(OpenRouter::class, $this->providers->image());
+
+        $this->keys->set('gemini', 'g');
+        $this->assertSame('gemini', $this->providers->imageHandle(), 'An existing image key keeps making images.');
+
+        $this->settings->imageProvider = 'openrouter';
+        $this->assertSame('openrouter', $this->providers->imageHandle());
+    }
+
+    public function test_settings_can_choose_a_model_per_tier(): void
+    {
+        $settings = new StaticProviderSettings('openrouter', 'openai/gpt-6.1-sol', tierModels: ['openrouter' => [Agents::QUICK => 'google/gemini-3.8-flash']]);
+        $this->assertInstanceOf(ModelTiers::class, $settings);
+        $this->keys->set('openrouter', 'or');
+        $this->http->queueJson(['choices' => [['message' => ['content' => 'OK'], 'finish_reason' => 'stop']]]);
+        $this->http->queueJson(['choices' => [['message' => ['content' => 'OK'], 'finish_reason' => 'stop']]]);
+
+        $providers = new Providers($this->keys, $this->http, $settings, sleeper: $this->sleeper);
+        $providers->text()->text(new TextRequest('photo-picker', 'I', 'P'));
+        $providers->text()->text(new TextRequest('writer', 'I', 'P'));
+
+        $this->assertSame(['google/gemini-3.8-flash', 'openai/gpt-6.1-sol'], [$this->http->body(0)['model'], $this->http->body(1)['model']]);
     }
 
     public function test_an_unknown_provider_is_not_configured(): void
@@ -132,6 +166,7 @@ class ProvidersTest extends ProviderTestCase
             'UNSPLASH_ACCESS_KEY' => false,
             'PIXABAY_API_KEY' => false,
             'PEXELS_API_KEY' => false,
+            'OPENROUTER_API_KEY' => false,
         ], $status);
     }
 

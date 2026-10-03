@@ -2,6 +2,32 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 it follows semantic versioning: a minor or patch release doesn't break the public API.
 
+## Unreleased
+
+### Added
+
+- **OpenRouter, a fourth AI provider (`openrouter`).** `Ai\Providers\OpenRouter` writes through OpenRouter's OpenAI-compatible Chat Completions, with images as input (photo ranking, alt text), and makes images through its Image API, with references. It sends app attribution (`HTTP-Referer`, `X-OpenRouter-Title`, `X-Title`) and is retried like the other providers. The key is `OPENROUTER_API_KEY` (`Credentials::ENV`, so `keyStatus()` lists it last) or a connected one. See docs/providers.md.
+  - **Models by tier.** New `Agents::tier()` (`Agents::WRITING`, `Agents::QUICK` for the photo agents and `gap-filler`) and `Models::OPENROUTER_TIERS`: `anthropic/claude-opus-5.5` for writing, `anthropic/claude-sonnet-5.5` for quick jobs. Also `Models::defaultTextFor()`, `Models::nativeModel()`, `Models::OPENROUTER_TEXT_CHOICES` and `Models::OPENROUTER_IMAGE_CHOICES`. The new optional `Ports\ModelTiers` (implemented by `StaticProviderSettings`, which takes `tierModels`) chooses a model per tier. `reasoning.effort` goes only to models whose own provider takes effort.
+  - **Errors:** a 402 is the new `Exceptions\OutOfCredit`: "Your OpenRouter credit has run out. Add credit at https://openrouter.ai/settings/credits, then try again." A key's own limit gets its own message, and the in-flight budget is `RateLimited`. A 403 is moderation or a refusal (`Refused`), never a bad key. An error inside a 200 is not taken for an answer.
+  - **Images:** `Models::IMAGE_ORDER` is now `openai`, `gemini`, `openrouter`, so sites with an OpenAI or Gemini key keep using it. The default image model is `openai/gpt-image-2.5-sunburst`.
+- **Connect with OpenRouter.** `Ai\Credentials\ConnectsProvider` (`authorizationUrl($state, $redirectUri, $codeChallenge)`, `connect($code, $verifier): ConnectedKey`, `connected()`, `usesEnvKey()`, `disconnect()`, `account(): ProviderAccount`) is implemented by `OpenRouterConnection`, which uses OAuth PKCE (S256) and checks connections with `GET /api/v1/key`. Also new:
+  - `Credentials\Pkce`;
+  - `Credentials\ConnectedCredentials`, which reads keys from `.env` first and connected keys after;
+  - `Credentials\ConnectedKey`, masked in dumps;
+  - `Credentials\ProviderAccount`;
+  - the storage port `Ai\Ports\ProviderKeys`, which each addon implements and encrypts;
+  - `Exceptions\ConnectFailed`;
+  - for tests, `Testing\FakeOpenRouter` and `Testing\InMemoryProviderKeys`.
+
+  docs/connecting-accounts.md describes the routes and the settings row.
+- `Http\Transport::get()`, and an optional error reader (`$errors`, the new last constructor argument, and `withErrors()`) that a provider uses to read its own error responses first.
+
+### Changed
+
+- A provider's key parameter is `#[SensitiveParameter]`.
+- The "not a provider Ghostwriter can write with" message now lists openrouter.
+- Requests to Anthropic, OpenAI and Gemini are unchanged. `compare-requests` shows no difference, and neither do their HTTP requests.
+
 ## 1.5.0 - 2026-10-03
 
 ### Added

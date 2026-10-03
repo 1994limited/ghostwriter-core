@@ -35,7 +35,7 @@ abstract class HttpProvider
      * @throws NotConfigured for a base URL core won't send a key to.
      */
     public function __construct(
-        protected readonly string $apiKey,
+        #[\SensitiveParameter] protected readonly string $apiKey,
         protected readonly Transport $transport,
         protected readonly ?string $model = null,
         protected readonly ?string $imageModel = null,
