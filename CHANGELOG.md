@@ -20,6 +20,12 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
   - `UnitMatcher::carry(Units $before, Units $after): Units`: an id is kept at the same place when the text is ≥ 60% similar (word-pair Jaccard), else by the best match anywhere ≥ 50%; ids are never reused.
   - `Units::sidecar()` and `restore()`: the ids stored beside the draft, never in its YAML.
 - **`Session::$units`**, the draft's `Units::sidecar()`. Stored like `$gaps`: only once there is something in it, under `units`, so a store with no place for it yet (Filament's table) is never sent the key.
+- **The preview's invisible markers (`Preview\PreviewMarkers`).** A marker is `U+E0067 U+E0077`, a payload in Unicode tag characters (`b7.2`: block 7, field 2; `f2`: a top-level field; `s3`: a section of rich text) and `U+E007F`. `mark(array $data, Schema, ?Units): PreviewData` marks the preview's copy of apply's data (every text value of every block, plain text, markdown, HTML and Bard JSON, and each section of rich text) and builds its `BlockMap` of `MappedBlock`s (`key`, `kind`, `path`, `label`, `parent`, `units`, `fields`, `assets`, `anchors`, `type`) for the locator. Also `encode()`, `decode()`, `strip()`, `stripText()`, `contains()`, `markText()`, `markMarkdown()`, `markHtml()` and `markBard()`. `PreviewData` (`data`, `map`, `hash`, `planId`, `draftVersion`). See docs/preview.md.
+- **`Tests\Contracts\PreviewMarkerContract`** (with `PreviewMarkerContractTest`): each addon proves that its stored rich text, markdown and plain values keep their markers through the site's own rendering, strip back to exactly the unmarked page, and that apply's data never holds one. Core runs it for HTML and Bard.
+
+### Changed
+
+- `Text\Draft::parse()` takes out any preview marker, so one can never reach a draft or an entry.
 
 ## 1.6.1 - 2026-10-03
 
