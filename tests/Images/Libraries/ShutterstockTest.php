@@ -104,7 +104,7 @@ final class ShutterstockTest extends ImagesTestCase
         $this->assertStringNotContainsString(self::SECRET, $dump);
     }
 
-    public function test_search_uses_basic_auth_and_maps_paid_offers_in_downloads(): void
+    public function test_without_a_token_search_uses_basic_auth_and_maps_paid_offers_in_downloads(): void
     {
         $this->routeSearch();
 
@@ -393,7 +393,7 @@ final class ShutterstockTest extends ImagesTestCase
     {
         foreach ([
             'item error' => [fn () => $this->json(['data' => [['image_id' => '1000001', 'error' => 'Media unavailable: see https://example.com/x?token=abc']]]), LicenceRefused::class, 'Media unavailable'],
-            'errors list' => [fn () => $this->json(['errors' => [['message' => 'Subscription is not valid for this media']]]), LicenceRefused::class, 'not valid'],
+            'errors list' => [fn () => $this->json(['errors' => [['message' => 'Media is restricted in your region']]]), LicenceRefused::class, 'restricted in your region'],
             'bad request' => [fn () => $this->http->response(400, 'nope'), LicenceRefused::class, null],
             'token refused' => [fn () => $this->http->response(403, 'nope'), NotConnected::class, null],
         ] as $case => [$answer, $class, $words]) {
@@ -410,6 +410,106 @@ final class ShutterstockTest extends ImagesTestCase
             $this->assertStringNotContainsString('token=abc', $exception->getMessage(), $case);
             $words === null ?: $this->assertStringContainsString($words, $exception->getMessage(), $case);
         }
+    }
+
+    public function test_a_licence_the_plan_doesnt_cover_or_unaccepted_terms_says_so_in_the_editors_words(): void
+    {
+        foreach ([
+            'terms, per item' => ['data' => [['image_id' => '1000001', 'error' => 'Terms of Service must be accepted']]],
+            'terms, per item object' => ['data' => [['image_id' => '1000001', 'error' => ['message' => 'Terms of service must be accepted.']]]],
+            'terms, errors list' => ['errors' => [['message' => 'Terms of Service must be accepted', 'path' => 'images[0]']]],
+            'not valid for the subscription' => ['data' => [['image_id' => '1000001', 'error' => 'Subscription is not valid for this media']]],
+            'errors list beside an item without an error' => ['data' => [['image_id' => '1000001']], 'errors' => [['message' => 'Terms of Service must be accepted']]],
+        ] as $case => $answer) {
+            $this->setUp();
+            $this->routeAccount();
+            $this->routePhoto('1000001');
+            $this->routeLicences(fn () => $this->json($answer));
+
+            $exception = $this->failure(fn () => $this->shutterstock(token: self::FIXED)->license('1000001', $this->quote(), 'record-1', 'Ann'));
+
+            $this->assertInstanceOf(LicenceRefused::class, $exception, $case);
+            $this->assertNotInstanceOf(LicensingUncertain::class, $exception, $case);
+            $this->assertSame(Shutterstock::LICENCE_NOT_COVERED, $exception->getMessage(), $case);
+            $this->assertSame('Shutterstock refused this licence. Your plan may not cover this image (free API plans can only license the free collection), or your account must accept Shutterstock\'s API terms.', $exception->getMessage());
+            $this->assertCount(1, $this->posts('/v2/images/licenses'), "{$case}: sent once, never again.");
+        }
+    }
+
+    public function test_with_a_token_search_and_look_ups_are_made_as_the_user(): void
+    {
+        foreach (['fixed token' => [self::FIXED, false], 'connected account' => [null, true]] as $case => [$token, $connect]) {
+            $this->setUp();
+            $connect && $this->connected();
+            $this->routeSearch();
+            $this->routePhoto('1000001');
+            $library = $this->shutterstock(token: $token);
+
+            $library->search(new SearchQuery('pottery'));
+            $library->photo('1000001');
+            $library->preview('1000001');
+
+            $this->assertCount(3, $this->http->requests, $case);
+
+            foreach ($this->http->requests as $request) {
+                $this->assertSame('Bearer '.($token ?? self::TOKEN), $request->getHeaderLine('Authorization'), "{$case}: ".$request->getUri());
+            }
+
+            $this->assertStringStartsWith(self::API.'/v2/images/search?license=commercial&query=pottery', (string) $this->http->requests[0]->getUri());
+            $this->assertSame([], $this->logs, $case);
+        }
+    }
+
+    public function test_an_expired_connected_token_is_renewed_before_a_search_and_basic_auth_is_used_if_it_cant_be(): void
+    {
+        $this->tokens->put('shutterstock', new TokenSet(self::TOKEN, $this->now->modify('-1 minute'), '3/synthetic-refresh'));
+        $this->route(self::API.'/v2/oauth/access_token', ['access_token' => '1/synthetic-renewed', 'expires_in' => 3600, 'token_type' => 'Bearer']);
+        $this->routeSearch();
+
+        $this->shutterstock()->search(new SearchQuery('pottery'));
+
+        $this->assertSame('Bearer 1/synthetic-renewed', $this->http->requests[1]->getHeaderLine('Authorization'));
+
+        $this->setUp();
+        $this->tokens->put('shutterstock', new TokenSet(self::TOKEN, $this->now->modify('-1 minute'), '3/synthetic-refresh'));
+        $this->route(self::API.'/v2/oauth/access_token', fn () => $this->http->response(503, 'down'));
+        $this->routeSearch();
+
+        $this->assertCount(2, $this->shutterstock()->search(new SearchQuery('pottery')));
+        $this->assertSame('Basic '.base64_encode(self::KEY.':'.self::SECRET), $this->http->requests[1]->getHeaderLine('Authorization'));
+        $this->assertSame(['debug'], array_column($this->logs, 'level'));
+    }
+
+    public function test_a_search_the_users_token_is_refused_for_falls_back_to_basic_auth_and_logs_at_debug(): void
+    {
+        foreach ([401, 403] as $status) {
+            $this->setUp();
+            $this->route(self::API.'/v2/images/search', fn (RequestInterface $request) => str_starts_with($request->getHeaderLine('Authorization'), 'Bearer')
+                ? $this->http->response($status, 'Bad token '.self::FIXED)
+                : $this->json(['data' => [$this->image('1000001'), $this->image('1000002')]]));
+
+            $photos = $this->shutterstock(token: self::FIXED)->search(new SearchQuery('pottery'));
+
+            $this->assertSame(['1000001', '1000002'], array_map(fn (Photo $photo) => $photo->id, $photos), (string) $status);
+            $this->assertSame(['Bearer '.self::FIXED, 'Basic '.base64_encode(self::KEY.':'.self::SECRET)], array_map(fn (RequestInterface $r) => $r->getHeaderLine('Authorization'), $this->http->requests));
+            $this->assertSame(['debug'], array_column($this->logs, 'level'));
+            $this->assertStringNotContainsString(self::FIXED, $this->logs[0]['message']);
+            $this->assertStringNotContainsString(self::SECRET, $this->logs[0]['message']);
+        }
+    }
+
+    public function test_a_look_up_the_users_token_is_refused_for_doesnt_fall_back(): void
+    {
+        $this->route(self::API.'/v2/images/1000001', fn () => $this->http->response(403, 'Bad token '.self::FIXED));
+        $library = $this->shutterstock(token: self::FIXED);
+
+        foreach ([fn () => $library->photo('1000001'), fn () => $library->preview('1000001')] as $call) {
+            $exception = $this->failure($call);
+            $this->assertInstanceOf(NotConnected::class, $exception);
+            $this->assertSame(Shutterstock::TOKEN_REFUSED, $exception->getMessage());
+        }
+
+        $this->assertCount(2, $this->http->requests, 'Search only falls back to basic auth.');
     }
 
     public function test_an_empty_allotment_is_insufficient_balance(): void
@@ -621,7 +721,7 @@ final class ShutterstockTest extends ImagesTestCase
 
     private function shutterstock(bool $sandbox = false, bool $editorial = false, ?string $token = null): Shutterstock
     {
-        return new Shutterstock($this->http, self::KEY, self::SECRET, $this->tokens, $sandbox, $editorial, fn () => $this->now, $token);
+        return new Shutterstock($this->http, self::KEY, self::SECRET, $this->tokens, $sandbox, $editorial, fn () => $this->now, $token, $this->logger());
     }
 
     private function connected(): void

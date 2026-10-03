@@ -2,6 +2,16 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 it follows semantic versioning: a minor or patch release doesn't break the public API.
 
+## Unreleased
+
+### Changed
+
+- **Shutterstock searches as the user when there is a token.** With a fixed token or a connected account's token (`LibraryTokens`, renewed first if it has expired), `search()`, `photo()` and `preview()` send it (Bearer) instead of the app key and secret, so results are what the account can license (a free API subscription can license only the Free collection, and Shutterstock limits a search to it only when the user makes it). Without a token they use basic auth, as before. If the user's token is refused for a search (401, 403), or can't be renewed, the search uses basic auth and says so at debug; a look-up refused with the token isn't retried (`NotConnected`, `TOKEN_REFUSED` for a fixed token). `Shutterstock` takes an optional PSR-3 logger as its new last argument.
+
+### Fixed
+
+- **A Shutterstock licence refused for the plan or the API terms says so.** Shutterstock answers such a licence with a 200 whose item (or `errors` list) says "Terms of Service must be accepted" or that the subscription isn't valid for the media; that is now `LicenceRefused` with `Shutterstock::LICENCE_NOT_COVERED`: "Shutterstock refused this licence. Your plan may not cover this image (free API plans can only license the free collection), or your account must accept Shutterstock's API terms." An item's `error` given as an object, and an `errors` list beside an item without an error, are read too. Nothing was bought.
+
 ## 1.4.0 - 2026-10-03
 
 ### Added
