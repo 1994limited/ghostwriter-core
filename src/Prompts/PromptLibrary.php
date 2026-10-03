@@ -20,7 +20,11 @@ use InvalidArgumentException;
  */
 final class PromptLibrary
 {
-    /** Every prompt core ships. The name is also the agent name a request is sent under. */
+    /**
+     * Every prompt core ships. The name is also the agent name a request is
+     * sent under, apart from `image` and `writer-extras` (a section of the
+     * writer's instructions).
+     */
     public const NAMES = [
         'brief-filler',
         'brief-writer',
@@ -36,6 +40,7 @@ final class PromptLibrary
         'voice-analyst',
         'voice-editor',
         'writer',
+        'writer-extras',
     ];
 
     /** @var (Closure(string): ?string)|null */

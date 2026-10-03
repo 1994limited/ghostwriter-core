@@ -48,6 +48,7 @@
         "document": "# Voice",
         "inputTokens": 100,
         "outputTokens": 50,
-        "images": null
+        "images": null,
+        "extras": null
     }
 }

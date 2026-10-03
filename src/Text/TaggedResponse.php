@@ -7,8 +7,9 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Text;
  * document or draft they are handing back. Tags are used instead of JSON
  * because a long markdown document survives them untouched, on any provider.
  *
- * The writer may also add an `<images>` block of image requests, which is
- * kept apart from the reply.
+ * The writer may also add an `<images>` block of image requests and an
+ * `<extras>` block (Arrange\Extras\ExtrasReader), which are kept apart from
+ * the reply.
  */
 class TaggedResponse
 {
@@ -18,6 +19,7 @@ class TaggedResponse
         public readonly int $inputTokens = 0,
         public readonly int $outputTokens = 0,
         public readonly ?string $images = null,
+        public readonly ?string $extras = null,
     ) {}
 
     /**
@@ -31,10 +33,10 @@ class TaggedResponse
         // A model that ignores the format still said something; show it
         // rather than lose it.
         if ($reply === null) {
-            $reply = trim(Pcre::replace('/<('.$documentTag.'|images)>.*?(<\/\1>|\z)/s', '', $text));
+            $reply = trim(Pcre::replace('/<('.$documentTag.'|images|extras)>.*?(<\/\1>|\z)/s', '', $text));
         }
 
-        return new self($reply, $document, $inputTokens, $outputTokens, self::block($text, 'images'));
+        return new self($reply, $document, $inputTokens, $outputTokens, self::block($text, 'images'), self::block($text, 'extras'));
     }
 
     private static function block(string $text, string $tag): ?string

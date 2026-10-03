@@ -39,4 +39,22 @@ final class SessionUnitsTest extends TestCase
         $back->units = [];
         $this->assertArrayHasKey('units', $back->toArray(), 'a record that had them can be emptied');
     }
+
+    #[DataProvider('formats')]
+    public function test_extras_round_trip_and_are_left_out_until_there_are_some(Format $format): void
+    {
+        $session = Session::start($format, 'page', ['brief' => 'Winter care']);
+
+        $this->assertArrayNotHasKey('extras', $session->toArray());
+
+        $session->extras = [['id' => 'x1', 'kind' => 'stats', 'items' => [['id' => 'x1.1', 'text' => '4 visits', 'source' => ['kind' => 'draft', 'quote' => 'Four visits']]]]];
+        $stored = $session->toArray();
+        $back = Session::fromArray($stored, $format);
+
+        $this->assertSame($session->extras, $back->extras);
+        $this->assertSame($stored, $back->toArray());
+
+        $back->extras = [];
+        $this->assertArrayHasKey('extras', $back->toArray());
+    }
 }
