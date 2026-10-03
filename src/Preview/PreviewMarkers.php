@@ -213,10 +213,10 @@ final class PreviewMarkers
             $at = count($this->blocks);
             $info = ['units' => [], 'assets' => [], 'anchors' => []];
             $marked[$field->handle] = $this->value($data[$field->handle], $field, $path, $key, null, $key, $info);
-            array_splice($this->blocks, $at, 0, [new MappedBlock($key, MappedBlock::FIELD, $path->toString(), $field->label !== '' ? $field->label : $field->handle, null, $info['units'], [], $info['assets'], $info['anchors'], $field->handle)]);
+            $this->insert($at, new MappedBlock($key, MappedBlock::FIELD, $path->toString(), $field->label !== '' ? $field->label : $field->handle, null, $info['units'], [], $info['assets'], $info['anchors'], $field->handle));
         }
 
-        return new PreviewData($marked, new BlockMap(array_values($this->blocks)), $hash);
+        return new PreviewData($marked, new BlockMap($this->blocks), $hash);
     }
 
     /**
@@ -374,7 +374,7 @@ final class PreviewMarkers
             }
 
             $value[$i] = $block;
-            array_splice($this->blocks, $at, 0, [new MappedBlock($key, MappedBlock::BLOCK, $here->toString(), $set->label !== '' ? $set->label : $type, $parent, $info['units'], $fields, $info['assets'], $info['anchors'], $type)]);
+            $this->insert($at, new MappedBlock($key, MappedBlock::BLOCK, $here->toString(), $set->label !== '' ? $set->label : $type, $parent, $info['units'], $fields, $info['assets'], $info['anchors'], $type));
         }
 
         return $value;
@@ -520,6 +520,12 @@ final class PreviewMarkers
                 $info['units'][] = $unit->id;
             }
         }
+    }
+
+    /** A block before the children and sections already added for it. */
+    private function insert(int $at, MappedBlock $block): void
+    {
+        $this->blocks = [...array_slice($this->blocks, 0, $at), $block, ...array_slice($this->blocks, $at)];
     }
 
     private function key(string $prefix): string
