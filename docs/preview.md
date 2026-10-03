@@ -103,3 +103,72 @@ $session->units = $after->sidecar();   // {next, units: {u7: {path, part?, kind,
 `Session::$units` is written only once it has something in it, like `$gaps`. Filament's table needs a `units` JSON column before the addon sets it.
 
 Suggest edits uses `fromEntry()` ids (`u1`…) for one call only and stores anchors as a `FieldPath` plus a `TextQuote`, not ids.
+
+## The preview marker
+
+`NineteenNinetyFour\Ghostwriter\Core\Preview`. In **preview renders only**, every text value carries an invisible code naming its block and field, so the locator (below) can map the rendered page back to the draft.
+
+### Encoding
+
+```
+U+E0067 U+E0077   tag "g", tag "w": the start
+U+E00xx …         the payload, ASCII 0x20–0x7E as U+E0020–U+E007E (1–16 characters)
+U+E007F           cancel tag: the end
+```
+
+`PreviewMarkers::PATTERN` (`/(?<!\x{1F3F4})\x{E0067}\x{E0077}([\x{E0020}-\x{E007E}]{1,16})\x{E007F}/u`) finds one; after the black flag U+1F3F4 the same characters are a subdivision flag, never a marker. Tag characters are default-ignorable: no glyph, no width, no effect on shaping.
+
+**Payloads:** `b7` a block, `f2` a top-level field, `s3` a section of rich text, with an optional field index: `b7.2` is field 2 of block 7's set (its index in `Set::$fields`, as `MappedBlock::$fields` lists). Keys are numbered from 1 in reading order on each `mark()`.
+
+### Where markers go
+
+| Value | Where |
+|---|---|
+| text, long text | the start (after leading whitespace). Values that look like addresses (`https://…`, `/…`, `#…`, `mailto:`, `tel:`) are left alone. |
+| markdown (a markdown field, or rich text stored as markdown) | after the line's leading `#`, `>`, bullet, number or table `|`, and any emphasis delimiters, so `**bold**` and `_em_` still parse. A code block's line is left alone. |
+| HTML | the first text that isn't whitespace (not in `<script>`, `<style>` or `<template>`), inserted into the string: nothing else about the HTML changes. |
+| Bard JSON | the first text node (sets are skipped). |
+| list | its first item |
+| rows, group | each text value in each row, with the rows or group field's index |
+| rich text with more than one unit | also a section marker (`s3`) at the start of each unit: the lead, then each top heading, split exactly as `Units` splits it |
+
+Every writable text value of every block is marked, not only the first: a template that doesn't print one field still prints another. Top-level text fields are `f` keys. Disabled blocks are skipped (they don't render).
+
+### API
+
+```php
+$preview = (new PreviewMarkers(?callable $assetName = null))->mark(array $data, Schema $schema, ?Units $units = null): PreviewData;
+$preview->data;     // the marked copy, for the preview render ONLY
+$preview->map;      // BlockMap: send $preview->map->toArray() to the locator as JSON
+$preview->hash;     // sha1 of the data without markers: the render cache key
+```
+
+- `$data` is apply's data in storage form (`DraftValues` in each addon): rich text as HTML, Bard nodes or markdown, references as stored. Call apply's builder **twice**, and mark only the preview's copy.
+- `$units`, from the draft the data was built from (or `Units::fromEntry()` on the data), fills each `MappedBlock::$units`, matched by position.
+- `$assetName` turns a stored asset reference into the file's basename, for the asset fallback. The default takes what follows the last `/` or `::` of a string (Statamic's `assets::photos/garden.jpg`); Craft passes one that loads the asset by ID.
+
+`MappedBlock` (`toArray()` is what the locator gets):
+
+| Key | |
+|---|---|
+| `key` | `b7`, `f2`, `s3` |
+| `kind` | `block`, `field` or `section` |
+| `path` | a `Gaps\FieldPath` string: `page_builder/#a1b2` |
+| `label` | the set's or field's name, or a section's heading |
+| `parent` | the enclosing block's key (Neo children, nested builders, a rich-text field's sections) |
+| `units` | unit ids it shows itself (a field with sections lists none: its sections do) |
+| `fields` | field index → handle |
+| `assets` | image basenames, for the asset fallback |
+| `anchors` | the first eight normalised words of each value's first line, for the text fallback |
+| `type` | the set handle, or the field handle |
+
+`BlockMap` has `get($key)`, `keys()`, `children(?string $parent)`, `forUnit($unitId)` (the innermost), `depth()`, `toArray()` and `fromArray()`.
+
+The lower-level helpers are public for the addons' own tests: `encode($payload)`, `decode($text)` (payload, key, field and byte offset of each marker), `markText()`, `markMarkdown($markdown, [line => marker])`, `markHtml($html, [topLevelElement|-1 => marker])` and `markBard($nodes, [nodeIndex|-1 => marker])`.
+
+### Never saved
+
+- Only the preview's copy is marked. `PreviewMarkers::strip($anything)` and `stripText($string)` take every marker out, and `contains($anything)` says whether one is there.
+- `Text\Draft::parse()` strips markers, so none can reach a draft (and through it an entry), even pasted.
+- The locator removes them from the frame's DOM as soon as it finds them, so nothing can be copied with one.
+- **`Tests\Contracts\PreviewMarkerContract`**: each addon extends `PreviewMarkerContractTest` with its own `storedValue($markdown, $shape)` (the real apply path) and `renderValue($stored, $shape)` (as the site's templates print it: Statamic's Bard and markdown augmentation, Craft's CKEditor HTML). It proves every shape keeps its markers through rendering, strips back to exactly the unmarked page, carries one marker per section, and that apply's data never holds one. Core runs it for HTML and Bard.

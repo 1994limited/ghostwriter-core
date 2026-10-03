@@ -3,6 +3,7 @@
 namespace NineteenNinetyFour\Ghostwriter\Core\Text;
 
 use InvalidArgumentException;
+use NineteenNinetyFour\Ghostwriter\Core\Preview\PreviewMarkers;
 use Symfony\Component\Yaml\Exception\ParseException;
 
 /**
@@ -26,7 +27,8 @@ class Draft
      */
     public static function parse(string $raw): self
     {
-        $raw = trim($raw);
+        // A preview's markers never reach a draft, so they can't reach an entry.
+        $raw = trim(PreviewMarkers::stripText($raw));
 
         // Models sometimes wrap the whole draft in a code fence, with or
         // without a newline before the closing one.
