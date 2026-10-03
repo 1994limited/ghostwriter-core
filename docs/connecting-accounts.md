@@ -27,6 +27,15 @@ interface ConnectsAccount extends PhotoLibrary
 - The library refreshes expired tokens itself before any call that needs the account. `refresh()` is public for a "Check connection" button.
 - Every failure is a `NotConnected` (a `PhotoUnavailable`) in plain words. No message holds a code, a token or a secret.
 
+## A fixed token instead (Shutterstock)
+
+A site that licenses through one company account can skip Connect account: the account owner clicks **Generate token** on their app's page at shutterstock.com/account/developers/apps, chooses the scopes `licenses.create`, `licenses.view`, `purchases.view` and `user.view`, and the token goes in `.env` (`SHUTTERSTOCK_API_TOKEN`), which the addon passes in as `new Shutterstock(..., token: ...)`. A `v2/` token doesn't expire (until the account's password or email address changes).
+
+- `connected()` and `usesToken()` are true; every account call uses the token; `refresh()` hands it back as it is; a token kept through `LibraryTokens` is never used instead.
+- `authorizationUrl()`, `connect()` and `disconnect()` throw `NotConnected`: "This site uses a token from its settings; remove it to connect an account instead." The settings row should show "Connected with a token from the settings" with no Connect or Disconnect button while `usesToken()`.
+- A 401 or 403 is `NotConnected` saying the token is invalid or lacks those scopes (`Shutterstock::TOKEN_REFUSED`): show it on the settings row and in the License dialog, without "Connect again".
+- By Shutterstock's docs, a production token also works against the sandbox (same applications, same authentication).
+
 ## The three routes
 
 All three are control panel routes for people who may manage Ghostwriter's settings (Statamic `manage ghostwriter settings`, Craft admin or `ghostwriter:settings`, Filament `canManage`).
@@ -65,7 +74,7 @@ Rules:
 
 | Library | What the customer registers | PKCE | Tokens |
 |---|---|---|---|
-| Shutterstock | In their app at shutterstock.com/account/developers/apps, the **Callback URL** field is a comma-separated list of **host names and paths, not full URLs**, such as `cms.example.com/cp/ghostwriter/libraries/shutterstock/callback`. The `redirect_uri` sent "must use a host name that you set up in your application". `localhost` is the default, for testing. The settings row should show the host-and-path to paste. | Not documented, so not used. | Asked for with `expires=true`: an hour, then renewed with the refresh token and the secret, so a leaked token store alone gives an hour at most. Shutterstock has no revoke endpoint: Disconnect forgets the tokens, and the customer can delete the app to revoke them. Scopes: `user.view licenses.create licenses.view purchases.view`. Sign-in always goes to `api.shutterstock.com`, even in sandbox mode. |
+| Shutterstock | In their app at shutterstock.com/account/developers/apps, the **Callback URL** field is a comma-separated list of **host names and paths, not full URLs**, such as `cms.example.com/cp/ghostwriter/libraries/shutterstock/callback`. The `redirect_uri` sent "must use a host name that you set up in your application". `localhost` is the default, for testing. The settings row should show the host-and-path to paste. | Not documented, so not used. | Asked for with `expires=true`: an hour, then renewed with the refresh token and the secret, so a leaked token store alone gives an hour at most. Shutterstock has no revoke endpoint: Disconnect forgets the tokens, and the customer can delete the app to revoke them. Scopes: `user.view licenses.create licenses.view purchases.view`. A fixed token (`token:`) replaces all of this; see above. Sign-in always goes to `api.shutterstock.com`, even in sandbox mode. |
 | Demo (`FakeLibrary`) | Nothing. `authorizationUrl()` returns the callback itself with `code` and `state`, as if the person had allowed access, so the whole flow runs in a browser. | Yes: the code is bound to the state and the callback address, so a different state or address is refused. | An hour, refreshed; `refusesRefresh` and `refusesConnect` script a revoked or refused connection. |
 
 ## Testing it in an addon

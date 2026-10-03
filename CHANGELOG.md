@@ -2,6 +2,13 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 it follows semantic versioning: a minor or patch release doesn't break the public API.
 
+## Unreleased
+
+### Added
+
+- **A fixed Shutterstock access token, instead of Connect account.** `Libraries\Paid\Shutterstock` takes an optional `token` (`#[SensitiveParameter] ?string $token = null`, the last argument): the token the account owner gets with "Generate token" on their app's page, with the scopes `licenses.create`, `licenses.view`, `purchases.view` and `user.view`. While it is set, `connected()` is true, every account call (`account()`, `quotes()`, `license()`, `download()`, `findLicences()`) uses it, `refresh()` hands it back without asking, a token kept by Connect account (`LibraryTokens`) never overrides it, and `authorizationUrl()`, `connect()` and `disconnect()` throw `NotConnected` (`Shutterstock::TOKEN_IN_SETTINGS`). A 401 or 403 with it is `NotConnected` saying the token is invalid or lacks those scopes (`Shutterstock::TOKEN_REFUSED`). It is masked in dumps. New `usesToken()`. See docs/images.md and docs/connecting-accounts.md.
+- `tools/smoke/shutterstock.php` also makes one `account()` call against the sandbox when `SHUTTERSTOCK_API_TOKEN` is set, printing only the subscription count and downloads left.
+
 ## 1.3.0 - 2026-10-03
 
 "Finish this page", the core phases (finish-this-page design). Nothing in the 1.x API changes; the addons' calls work as they are.
