@@ -86,17 +86,23 @@ final class BriefCheck
                 $answer = self::option($question, $answer);
             } else {
                 $answer = self::outsideBrackets($answer, function (string $text) use ($known, $said, $titles, $question, &$problems): string {
-                    $text = (string) preg_replace_callback(self::QUOTE_PATTERN, function (array $match) use ($text, $said, $titles, $question, &$problems): string {
+                    // From the end, so the offsets found stay right; each is judged on the text as written.
+                    $quotes = preg_match_all(self::QUOTE_PATTERN, $text, $matches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER) > 0 ? $matches : [];
+                    $written = $text;
+                    $invented = [];
+
+                    foreach (array_reverse($quotes) as $match) {
                         [$quote, $offset] = $match[0];
 
-                        if (self::isGiven($match[1][0], $said, $titles) || self::isName($text, $offset, $offset + strlen($quote))) {
-                            return $quote;
+                        if (self::isGiven($match[1][0], $said, $titles) || self::isName($written, $offset, $offset + strlen($quote))) {
+                            continue;
                         }
 
-                        $problems[] = "{$question->handle}: a quotation";
+                        $invented[] = "{$question->handle}: a quotation";
+                        $text = substr_replace($text, self::QUOTE, $offset, strlen($quote));
+                    }
 
-                        return self::QUOTE;
-                    }, $text, flags: PREG_OFFSET_CAPTURE);
+                    array_push($problems, ...$invented);
 
                     $titled = self::titled($text, $said, $titles);
                     $figures = [];
