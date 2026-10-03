@@ -2,7 +2,11 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 it follows semantic versioning: a minor or patch release doesn't break the public API.
 
-## Unreleased
+## 1.5.0 - 2026-10-03
+
+### Added
+
+- `Libraries\Paid\Shutterstock` takes an optional PSR-3 logger (`?LoggerInterface $logger = null`, the new last argument), used to note at debug when a user-token search falls back to basic auth.
 
 ### Changed
 
