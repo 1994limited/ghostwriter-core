@@ -19,10 +19,16 @@ use NineteenNinetyFour\Ghostwriter\Core\Text\Slug;
  *   hint, `[Talk to us](#gw-link:contact-page)`. If it is published it goes
  *   nowhere: a same-page fragment. A link field that must hold a whole
  *   address gets `https://example.com/#gw-link:contact-page` (linkUrl()).
+ * - **A count to check:** `[[check: 3 areas | from: Northumberland, Durham
+ *   and the Tyne Valley]]`. Ghostwriter counted a list the editor gave
+ *   (ListCounter, never a model) and the editor confirms the count before
+ *   the page goes live. The value is what the page will say; `from:` is
+ *   the list on one line (a bulleted list's items joined by "; "). Written
+ *   strictly by check(); found leniently, like an ask.
  * - Images have no marker of their own: the striped placeholder and a stock
  *   stand-in are recognised by their asset.
  *
- * The keywords `ask` and `gw-link` are never translated; the hint is in the
+ * The keywords `ask`, `check`, `from` and `gw-link` are never translated; the hint is in the
  * site's language. patterns() gives the same patterns to the front end
  * (resources/gaps/patterns.json), so nothing is retyped in JavaScript.
  */
@@ -32,6 +38,8 @@ final class Markers
 
     public const LINK = 'gw-link';
 
+    public const CHECK = 'check';
+
     /** What a link's target starts with when it is still to choose. */
     public const LINK_PREFIX = '#gw-link:';
 
@@ -40,6 +48,12 @@ final class Markers
 
     /** A fact to add, found leniently. Group 1 is the hint. */
     public const ASK_PATTERN = '/\[\[\s*ask\s*:\s*([^\[\]\s][^\[\]\n]{0,199}?)\s*\]\]/iu';
+
+    /**
+     * A count to check, found leniently. Group 1 is the value ("3 areas"),
+     * group 2 the list it was counted from.
+     */
+    public const CHECK_PATTERN = '/\[\[\s*check\s*:\s*([^\[\]|\n]{1,120}?)\s*\|\s*from\s*:\s*([^\[\]\n]{1,300}?)\s*\]\]/iu';
 
     /**
      * A markdown link still to choose. Group 1 is its words, group 2 the
@@ -67,7 +81,7 @@ final class Markers
         'lorem' => '/\blorem ipsum\b/iu',
         'initials' => '/\b(?:TBC|TBD|TBA|TODO|XXX+)\b/u',
         'questions' => '/\?{3,}/u',
-        'bracketed' => '/\[(?:insert|add|check|tk)\b[^\[\]\n]{0,160}\](?!\()/iu',
+        'bracketed' => '/(?<!\[)\[(?:insert|add|check|tk)\b[^\[\]\n]{0,160}\](?![(\]])/iu',
     ];
 
     /** Near misses a model may write, put right by normalise(). Group 1 is the hint. */
@@ -83,6 +97,79 @@ final class Markers
     public static function ask(string $hint): string
     {
         return '[[ask: '.self::cleanHint($hint).']]';
+    }
+
+    /**
+     * The mark for a count to check: `[[check: 3 areas | from:
+     * Northumberland, Durham and the Tyne Valley]]`. Brackets, bars and
+     * line breaks are taken out of both halves.
+     */
+    public static function check(string $value, string $list): string
+    {
+        $clean = fn (string $text, int $max) => Slug::clip(trim((string) preg_replace('/\s+/u', ' ', str_replace(['[', ']', '|'], ['(', ')', '/'], $text))), $max);
+
+        return '[[check: '.$clean($value, 120).' | from: '.$clean($list, 300).']]';
+    }
+
+    /**
+     * Every count to check in some text, in order, with its value (also
+     * its hint), the list it was counted from, the marker as written, its
+     * byte offset and which occurrence of that value it is.
+     *
+     * @return list<array{hint: string, value: string, list: string, match: string, offset: int, occurrence: int}>
+     */
+    public static function checks(string $text): array
+    {
+        $found = [];
+        $seen = [];
+
+        if (stripos($text, 'check') !== false && preg_match_all(self::CHECK_PATTERN, $text, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE) > 0) {
+            foreach ($matches as $match) {
+                $value = trim($match[1][0]);
+                $key = self::normaliseHint($value);
+                $found[] = ['hint' => $value, 'value' => $value, 'list' => trim($match[2][0]), 'match' => $match[0][0], 'offset' => $match[0][1], 'occurrence' => $seen[$key] = isset($seen[$key]) ? $seen[$key] + 1 : 0];
+            }
+        }
+
+        return $found;
+    }
+
+    /**
+     * Some text with one count to check resolved: the marker (as written,
+     * the given occurrence of it) replaced by $value. "Looks right" passes
+     * the marker's own value, "Change it" the editor's, "Remove it" ''.
+     * The text is unchanged when the marker isn't there.
+     */
+    public static function resolveCheck(string $text, string $match, string $value, int $occurrence = 0): string
+    {
+        $at = -1;
+
+        for ($i = 0; $i <= $occurrence; $i++) {
+            $at = strpos($text, $match, $at + 1);
+
+            if ($at === false) {
+                return $text;
+            }
+        }
+
+        $before = substr($text, 0, $at);
+        $after = substr($text, $at + strlen($match));
+
+        if ($value === '') {
+            // Removing it leaves no double space behind.
+            [$before, $after] = [rtrim($before, ' '), ltrim($after, ' ')];
+            $join = $before !== '' && $after !== '' && preg_match('/^[\s.,;:!?)]/u', $after) !== 1 ? ' ' : '';
+
+            return $before.$join.$after;
+        }
+
+        return $before.$value.$after;
+    }
+
+    /** Some text with each count to check as the plain value it marks: what the page says once it is confirmed. */
+    public static function withoutChecks(string $text): string
+    {
+        return stripos($text, 'check') === false ? $text : (string) preg_replace_callback(self::CHECK_PATTERN, fn (array $match) => trim($match[1]), $text);
     }
 
     /** The target of an inline link still to choose: `#gw-link:contact-page`. */
@@ -191,19 +278,23 @@ final class Markers
         }, $found));
     }
 
-    /** Whether some text holds a fact to add or a link to choose. */
+    /** Whether some text holds a fact to add, a count to check or a link to choose. */
     public static function has(string $text): bool
     {
-        return preg_match(self::ASK_PATTERN, $text) === 1 || preg_match(self::SENTINEL_PATTERN, $text) === 1;
+        return preg_match(self::ASK_PATTERN, $text) === 1 || preg_match(self::SENTINEL_PATTERN, $text) === 1 || preg_match(self::CHECK_PATTERN, $text) === 1;
     }
 
     /**
      * Facts to add written the strict way: `[[ask: hint]]`, from the
      * lenient forms and the near misses a model may write (`[ask: x]`,
-     * `[[Ask - x]]`).
+     * `[[Ask - x]]`). Counts to check are written strictly too.
      */
     public static function normalise(string $text): string
     {
+        if (stripos($text, 'check') !== false) {
+            $text = (string) preg_replace_callback(self::CHECK_PATTERN, fn (array $match) => self::check($match[1], $match[2]), $text);
+        }
+
         if (stripos($text, 'ask') === false) {
             return $text;
         }
@@ -215,10 +306,14 @@ final class Markers
         return $text;
     }
 
-    /** Some text with its facts to add taken out, for a slug or a file name. */
+    /**
+     * Some text with its facts to add taken out, and its counts to check
+     * as their values, for a slug, a file name or a fact check (a count is
+     * checked by the editor, not against a source).
+     */
     public static function withoutAsks(string $text): string
     {
-        return (string) preg_replace(self::ASK_PATTERN, ' ', $text);
+        return (string) preg_replace(self::ASK_PATTERN, ' ', self::withoutChecks($text));
     }
 
     /**
@@ -273,6 +368,7 @@ final class Markers
 
         return [
             'ask' => self::js(self::ASK_PATTERN),
+            'check' => self::js(self::CHECK_PATTERN),
             'link' => self::js(self::LINK_PATTERN),
             'sentinel' => self::js(self::SENTINEL_PATTERN),
             'leftover' => self::js(self::LEFTOVER_PATTERN),

@@ -97,6 +97,18 @@ Each item is kept only when:
 1. **its quote is in its source**: `brief` or `answer` (the person's messages and the questionnaire answers), `draft`, or `entry` (an example the writer was shown, by number), compared after normalising case, whitespace, quotes, dashes and markdown; and
 2. **every fact in it is in that quote**: figures (compared by value, so "4" is given by "four"), quotations and names, by `ScopedEditCheck` with the quote as the text before, so no fact and no link is added. An attribution's names must be in the source it quotes.
 
+**Derived counts.** "3 areas" is not in "Northumberland, Durham and the Tyne Valley", but it is a count of it. When an item's only fact beyond its quote is one whole number (in digits or words), and the quote is a plain list, core counts the list (`Anchor\ListCounter`) and the number becomes core's count, whatever the model wrote: "5 areas" for that list is "3 areas" (logged at info, `ExtrasReader::$counted`). The model only proposes, by quoting the list; the number is never its own. The count goes into the item as a review marker, `[[check: 3 areas | from: Northumberland, Durham and the Tyne Valley]]` (a stat's `value` part gets `[[check: 3 | from: …]]`), and `ExtraItem::$count` keeps the list exactly as it is in the source (`CountedList`: `items`, `text`, `style`, `count()`, `oneLine()`). Layouts place the item marker and all, and Finish this page asks the editor to check it before the page goes live (docs/gaps.md). The writer's `writer-extras` instructions say so in one sentence.
+
+What `ListCounter` counts and skips:
+
+| Counted | Skipped |
+|---|---|
+| Three or more items separated by commas with a final "and" or "or", with or without an Oxford comma; a lead-in before the first item ("We cover …") or a colon is left out | Open lists: "etc.", "and so on", "and more", "such as", "including", "e.g.", "for example", "…" |
+| Two or more bullets (`-`, `*`, `+`, `•`, `1.`), at the outer level only: a nested list belongs to its parent item | Ranges in an item ("Wednesday to Friday", "3–5") |
+| "Durham, Tyne and Wear, and Northumberland" is 3: the Oxford comma says where the last item starts | Prose: an item of more than six words, or one with a pronoun or a verb such as "is" or "have"; two items with no comma ("salt and pepper"); "and" and "or" mixed; an "and" inside an item with no Oxford comma; a quote with two lists |
+
+An item that counts a list but says something else beyond its quote ("3 areas, all in the North East") is dropped as before.
+
 An item that fails, or has no source, is kept only when it holds an `[[ask: …]]` in place of the fact it needs and says nothing else unsourced: `needsAnswer()` is then true, and the panel labels it *needs your answer*. Everything else is dropped (logged at info, with why). An unreadable `<extras>` block is dropped with a warning; the turn goes on. Kinds the site has no slot for, and a second extra of a kind, are dropped.
 
 ### The types
@@ -107,11 +119,19 @@ Extras:    all(); items();               // array<string id, ExtraItem>
            edit('x2.1', $text, ?array $parts); without('x2.1');   // the editor's changes: new Extras
            toArray(); Extras::fromArray($session->extras);
 Extra:     id ("x2"), kind (ExtraKind), items (list<ExtraItem>)
-ExtraItem: id ("x2.1"), text, parts (['question' => …, 'attribution' => …]), source (?Source), askHints, needsAnswer(), part($name)
+ExtraItem: id ("x2.1"), text, parts (['question' => …, 'attribution' => …]), source (?Source), askHints, count (?CountedList), needsAnswer(), needsReview(), countLabel(), state(), part($name)
 Source:    kind (SourceKind: brief, answer, draft, entry, conversation, editor), quote, ref, entryId, entryTitle
 ```
 
-An item the editor changes (`Extras::edit()`) takes their words as its source (`SourceKind::Editor`). Parts by kind: `stats` `value`, `label`; `faq` `question`; `pull_quote` and `testimonial` `attribution`; `cta` `button`; `caption` `for`.
+An item the editor changes (`Extras::edit()`) takes their words as its source (`SourceKind::Editor`), unless it still holds its count to check: it then keeps its source and its list.
+
+**In the extras list** (the Text tab), a derived count shows where it came from and that it needs review:
+
+```php
+$item->countLabel();   // Message 'gaps.extras.counted.answer' ['list' => '…']: "Counted from your answer: “Northumberland, Durham and the Tyne Valley”" (brief, answer, conversation, draft, entry with :title)
+$item->state();        // Message 'gaps.extras.needs-review' ("Needs review"), 'gaps.extras.needs-answer', or null
+Markers::withoutChecks($item->text);   // "3 areas": the text as the page will say it, for display
+``` Parts by kind: `stats` `value`, `label`; `faq` `question`; `pull_quote` and `testimonial` `attribution`; `cta` `button`; `caption` `for`.
 
 ## Plans: what a layout is
 
@@ -167,7 +187,7 @@ $usable     = $validator->valid(list<Plan> $plans, $units, $extras, $draft, $sch
 | `MISSING` | a unit (or piece) of an arranged field isn't placed; media may be left out |
 | `OUTSIDE` | a unit of a field the plan doesn't arrange is placed: it would be there twice |
 | `WORDS` | the arranged fields' words aren't the units' and the placed extras' words (as a multiset, punctuation aside) |
-| `MARKERS` | an `[[ask: …]]` or `#gw-link:` link is lost or doubled |
+| `MARKERS` | an `[[ask: …]]`, a `[[check: …]]` (by its list) or a `#gw-link:` link is lost or doubled |
 | `UNSOURCED_EXTRA` | a placed extra item has no source and isn't waiting on an answer |
 | `BOILERPLATE` | words go into a set the pattern marks as copied whole |
 | `SAME` | it's the same layout as an earlier plan (the writer's included) |

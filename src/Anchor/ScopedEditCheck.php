@@ -136,8 +136,9 @@ final class ScopedEditCheck
     {
         $asksBefore = self::counts(array_column(Markers::asks($before), 'hint'));
         $asksAfter = self::counts(array_column(Markers::asks($after), 'hint'));
-        $linksBefore = self::counts(array_column(Markers::links($before), 'hint'));
-        $linksAfter = self::counts(array_column(Markers::links($after), 'hint'));
+        // A count to check is kept like a link: only the editor resolves it.
+        $linksBefore = self::counts([...array_column(Markers::links($before), 'hint'), ...array_column(Markers::checks($before), 'match')]);
+        $linksAfter = self::counts([...array_column(Markers::links($after), 'hint'), ...array_column(Markers::checks($after), 'match')]);
 
         foreach ($linksBefore as $hint => $count) {
             if (($linksAfter[$hint] ?? 0) < $count) {

@@ -95,7 +95,7 @@ final class PlanRepairTest extends TestCase
         [$plan, , $violations] = $this->edit($draft);
 
         $this->assertCount(1, $plan->fields['page_builder'][2]->children['children'], 'the card that had it is gone');
-        $this->assertSame(['missing: u7#3 is not placed.', 'words: the arranged words are not the draft\'s.', 'markers: an [[ask: …]] or #gw-link: link was lost or doubled.'], $violations);
+        $this->assertSame(['missing: u7#3 is not placed.', 'words: the arranged words are not the draft\'s.', 'markers: an [[ask: …]], a [[check: …]] or a #gw-link: link was lost or doubled.'], $violations);
     }
 
     public function test_a_layout_that_still_fails_is_reported_for_marking_stale(): void
