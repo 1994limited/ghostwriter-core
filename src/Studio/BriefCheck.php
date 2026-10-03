@@ -7,11 +7,18 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Studio;
  * filler is told never to invent facts about the organisation; this
  * checks what came back, as fillGap() does, without asking again:
  *
- * - a figure (a number, price, percentage or year) that the person didn't
- *   give, and that the kind's own text doesn't have, becomes
- *   `[Add: the figure]`; a length or count of the piece itself ("about
- *   600 words", "three sections") is shape, not a fact, and stays;
- * - a quotation the person didn't give becomes `[Add: the quote]`;
+ * - a figure (a number, price, percentage, date or year) that the person
+ *   didn't give, and that the kind's own text doesn't have, becomes
+ *   `[Add: the figure]`. Figures are compared by what they say (Figures):
+ *   "800", "eight hundred" and "800-word" are the same, as are "£12k" and
+ *   "£12,000". A length or count of the piece itself ("about 600 words",
+ *   "a 10-minute read", "three sections") is shape, not a fact, and stays;
+ * - a quotation the person didn't give becomes `[Add: the quote]`, when it
+ *   is speech or a testimonial ("they said …", "Testimonial: …") or can't
+ *   be told apart from one. Quoted titles and names stay: the titles of
+ *   entries the model was given, the working title, terms the person used,
+ *   and titles or headings the brief proposes ("sections: …", "called …");
+ * - a figure inside one of those titles is part of the title, not a fact;
  * - an answer to a question with set answers that isn't one of them is
  *   left empty;
  * - a required question left empty becomes `[Add: <the question>]`, so the
@@ -26,14 +33,23 @@ final class BriefCheck
 
     public const QUOTE = '[Add: the quote]';
 
-    /** A number, with a currency before it or a unit of amount after it. */
-    private const FIGURE_PATTERN = '/(?:[£$€¥]\s?)?(?<!\w)\d+(?:[.,]\d+)*(?:\s?(?:%|per\s?cent|percent|k|m|bn|million|billion|thousand)\b|%)?/iu';
-
     /** What a figure counts when it is the piece's own shape. */
     private const SHAPE_UNITS = 'words?|sentences?|paragraphs?|sections?|headings?|steps?|points?|tips?|items?|minutes?(?:\s+(?:read|reading))?|characters?|lines?|bullets?|bullet\s+points?|examples?|questions?|parts?|images?|photos?|pictures?|links?|blocks?|chapters?|pages?|slides?|reasons?|ways?|things?|ideas?|mistakes?|lessons?';
 
     /** A quotation in straight or curly double quotes, long enough to be one. */
     private const QUOTE_PATTERN = '/["“]([^"“”\n]{12,})["”]/u';
+
+    /** Any text in double quotes, however short ("Mill 2"). */
+    private const QUOTED = '/["“]([^"“”\n]+)["”]/u';
+
+    /** Before a quotation: someone said it. */
+    private const SPEECH_BEFORE = '/(?:\b(?:said|says|saying|told|tells|wrote|writes|put\s+it|in\s+(?:his|her|their|our|my|your)(?:\s+own)?\s+words|according\s+to|quote[sd]?|quotation|testimonials?|reviews?|feedback|praised|described\s+(?:it|us|them|the\s+\w+)\s+as|called\s+(?:it|us|them|the\s+\w+)|recall(?:s|ed)|explain(?:s|ed)|comment(?:s|ed)|remark(?:s|ed)|add(?:s|ed)|insist(?:s|ed)|state[sd]|admit(?:s|ted)|thanks?|loved?|raved?)\b[^.!?]{0,40}$)/iu';
+
+    /** After a quotation: who said it ("…," she said; "…" — Jane, CEO). */
+    private const SPEECH_AFTER = '/\A\s*(?:,?\s*(?:\p{L}+\s+){0,3}?(?:said|says|told|wrote|writes|adds|added|explains|explained|recalls|recalled)\b|[—–-]\s*\p{Lu})/u';
+
+    /** Before a quotation: it names something (a title, a heading, a section). */
+    private const NAMING_BEFORE = '/\b(?:titled|entitled|called|named|headed|headings?|headlines?|titles?|subtitles?|working\s+title|sections?|parts?|chapters?|taglines?|subject\s+lines?|h[1-4]s?|e\.g\.|for\s+example|such\s+as|something\s+like|angle|hook|term|phrase|label)\b[^.!?]*$/iu';
 
     /** Text in single square brackets, not a writer's `[[ask: …]]`. */
     private const BRACKETS = '/(?<!\[)\[(?!\[)[^\[\]\n]+\](?!\])/u';
@@ -45,12 +61,15 @@ final class BriefCheck
      * @param  array<string, string>  $answers  By handle.
      * @param  string  $source  Everything the person said (BriefRequest::source()).
      * @param  array<int, string>  $kept  Questions whose answers the person wrote, left as they are.
+     * @param  array<int, string|null>  $titles  Titles the model was given or gave: the group's entries (which the examples to model it on come from) and the working title.
      * @return array{0: array<string, string>, 1: list<string>}
      */
-    public static function check(ContentKind $kind, array $answers, string $source, array $kept = []): array
+    public static function check(ContentKind $kind, array $answers, string $source, array $kept = [], array $titles = []): array
     {
-        $known = self::figures($source.' '.self::kindText($kind));
-        $said = self::normalise($source.' '.self::kindText($kind));
+        $given = $source."\n".self::kindText($kind);
+        $known = Figures::known($given);
+        $said = ' '.self::loose($given).' ';
+        $titles = array_values(array_filter(array_map(fn (?string $title) => trim((string) $title), $titles), fn (string $title) => self::loose($title) !== ''));
         $problems = [];
         $out = [];
 
@@ -66,25 +85,33 @@ final class BriefCheck
             if ($question->options !== []) {
                 $answer = self::option($question, $answer);
             } else {
-                $answer = self::outsideBrackets($answer, function (string $text) use ($known, $said, $question, &$problems): string {
-                    $text = (string) preg_replace_callback(self::QUOTE_PATTERN, function (array $match) use ($said, $question, &$problems): string {
-                        if (str_contains($said, self::normalise($match[1]))) {
-                            return $match[0];
+                $answer = self::outsideBrackets($answer, function (string $text) use ($known, $said, $titles, $question, &$problems): string {
+                    // From the end, so the offsets found stay right; each is judged on the text as written.
+                    $quotes = preg_match_all(self::QUOTE_PATTERN, $text, $matches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER) > 0 ? $matches : [];
+                    $written = $text;
+                    $invented = [];
+
+                    foreach (array_reverse($quotes) as $match) {
+                        [$quote, $offset] = $match[0];
+
+                        if (self::isGiven($match[1][0], $said, $titles) || self::isName($written, $offset, $offset + strlen($quote))) {
+                            continue;
                         }
 
-                        $problems[] = "{$question->handle}: a quotation";
+                        $invented[] = "{$question->handle}: a quotation";
+                        $text = substr_replace($text, self::QUOTE, $offset, strlen($quote));
+                    }
 
-                        return self::QUOTE;
-                    }, $text);
+                    array_push($problems, ...$invented);
 
-                    // From the end, so the offsets found stay right.
-                    $found = preg_match_all(self::FIGURE_PATTERN, $text, $matches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER) > 0 ? $matches : [];
+                    $titled = self::titled($text, $said, $titles);
                     $figures = [];
 
-                    foreach (array_reverse($found) as $match) {
-                        [$figure, $offset] = $match[0];
+                    // From the end, so the offsets found stay right.
+                    foreach (array_reverse(Figures::find($text)) as $found) {
+                        ['figure' => $figure, 'offset' => $offset] = $found;
 
-                        if (in_array(self::figureKey($figure), $known, true) || self::isShape($text, $offset + strlen($figure))) {
+                        if (Figures::given($found['values'], $known) || self::isShape($text, $offset + strlen($figure)) || self::within($offset, $titled)) {
                             continue;
                         }
 
@@ -117,29 +144,102 @@ final class BriefCheck
     }
 
     /**
-     * The figures in some text, as compared: digits and decimal point only.
+     * Whether quoted text is something the person or the given context
+     * supplied: words the person used, or a title the model was given.
      *
-     * @return list<string>
+     * @param  list<string>  $titles
      */
-    private static function figures(string $text): array
+    private static function isGiven(string $quoted, string $said, array $titles): bool
     {
-        return preg_match_all('/\d+(?:[.,]\d+)*/u', $text, $found) > 0
-            ? array_values(array_unique(array_map(self::figureKey(...), $found[0])))
-            : [];
+        $quoted = self::loose($quoted);
+
+        if ($quoted === '' || str_contains($said, " {$quoted} ")) {
+            return true;
+        }
+
+        foreach ($titles as $title) {
+            $title = self::loose($title);
+
+            if ($title === $quoted || (mb_strlen($quoted) >= 3 && str_contains(" {$title} ", " {$quoted} "))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
-    private static function figureKey(string $figure): string
+    /**
+     * Whether a quotation (from `$start` to `$end` in the text) names
+     * something, such as a proposed title or heading, rather than reports
+     * what someone said. Speech wins when there are signs of both.
+     */
+    private static function isName(string $text, int $start, int $end): bool
     {
-        return preg_match('/\d+(?:[.,]\d+)*/u', $figure, $match) === 1 ? str_replace(',', '', $match[0]) : $figure;
+        // Earlier quotations on the line don't count as words before this one.
+        $line = substr($text, 0, $start);
+        $line = substr($line, (int) strrpos("\n".$line, "\n"));
+        $before = (string) preg_replace(self::QUOTED, '…', $line);
+        $after = substr($text, $end);
+
+        if (preg_match(self::SPEECH_BEFORE, $before) === 1 || preg_match(self::SPEECH_AFTER, $after) === 1) {
+            return false;
+        }
+
+        return preg_match(self::NAMING_BEFORE, $before) === 1;
+    }
+
+    /**
+     * Where the text quotes something given, or names a given title
+     * without quotes: [start, end] in bytes. A figure there is part of a
+     * title.
+     *
+     * @param  list<string>  $titles
+     * @return list<array{0: int, 1: int}>
+     */
+    private static function titled(string $text, string $said, array $titles): array
+    {
+        $spans = [];
+
+        if (preg_match_all(self::QUOTED, $text, $quoted, PREG_OFFSET_CAPTURE | PREG_SET_ORDER) > 0) {
+            foreach ($quoted as $match) {
+                if (self::isGiven($match[1][0], $said, $titles) || (mb_strlen($match[1][0]) >= 12 && self::isName($text, $match[0][1], $match[0][1] + strlen($match[0][0])))) {
+                    $spans[] = [$match[0][1], $match[0][1] + strlen($match[0][0])];
+                }
+            }
+        }
+
+        foreach ($titles as $title) {
+            if (preg_match('/\d/', $title) === 1 && preg_match_all('/(?<!\w)'.preg_quote($title, '/').'(?!\w)/iu', $text, $named, PREG_OFFSET_CAPTURE) > 0) {
+                foreach ($named[0] as [$name, $offset]) {
+                    $spans[] = [$offset, $offset + strlen($name)];
+                }
+            }
+        }
+
+        return $spans;
+    }
+
+    /**
+     * @param  list<array{0: int, 1: int}>  $spans
+     */
+    private static function within(int $offset, array $spans): bool
+    {
+        foreach ($spans as [$start, $end]) {
+            if ($offset >= $start && $offset < $end) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
      * Whether the figure ending at this offset counts the piece itself:
-     * "600 words", "3 short sections".
+     * "600 words", "3 short sections", "800-word", "1,500–2,000 words".
      */
     private static function isShape(string $text, int $end): bool
     {
-        return preg_match('/\G\s*(?:[-–]\s*\d+\s*)?(?:\p{L}+\s+){0,2}?(?:'.self::SHAPE_UNITS.')\b/iu', $text, $match, 0, $end) === 1;
+        return preg_match('/\G(?:\s*|-)(?:\p{L}+[\s-]+){0,2}?(?:'.self::SHAPE_UNITS.')\b/iu', $text, $match, 0, $end) === 1;
     }
 
     /**
@@ -194,8 +294,12 @@ final class BriefCheck
         return implode("\n", array_map('strval', $text));
     }
 
-    private static function normalise(string $text): string
+    /**
+     * Text as compared for quotations and titles: lower case, letters and
+     * digits only, single spaces.
+     */
+    private static function loose(string $text): string
     {
-        return trim((string) preg_replace('/\s+/u', ' ', mb_strtolower(str_replace(['’', '‘'], "'", $text))));
+        return trim((string) preg_replace('/[^\p{L}\p{N}]+/u', ' ', mb_strtolower(str_replace(["'", '’', '‘'], '', $text))));
     }
 }

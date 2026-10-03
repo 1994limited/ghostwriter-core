@@ -528,13 +528,15 @@ final class Studio
                 : trim(is_scalar($answer) ? (string) $answer : '');
         }
 
-        [$answers, $problems] = BriefCheck::check($kind, $answers, $request->source(), $request->previous !== null ? $request->kept : []);
+        $title = preg_match('/<title>(.*?)<\/title>/s', $response->text, $match) === 1 ? trim((string) preg_replace('/\s+/u', ' ', $match[1])) : '';
+
+        // Titles the model was given or gave may be quoted, figures and all.
+        [$answers, $problems] = BriefCheck::check($kind, $answers, $request->source(), $request->previous !== null ? $request->kept : [], [...$request->titles, $request->title, $title]);
 
         if ($problems !== []) {
             $this->log('warning', 'the brief had facts the person did not give, now left for them ('.implode('; ', $problems).')', 'brief-filler', $response->text);
         }
 
-        $title = preg_match('/<title>(.*?)<\/title>/s', $response->text, $match) === 1 ? trim((string) preg_replace('/\s+/u', ' ', $match[1])) : '';
         $title = $request->title !== null && $request->title !== '' ? $request->title : ($title !== '' ? mb_substr($title, 0, 200) : self::opening($request->details, 80));
 
         return new Result(
@@ -674,16 +676,18 @@ final class Studio
     }
 
     /**
-     * Figures in an answer that the text it came from doesn't have.
+     * Figures in an answer that the text it came from doesn't have,
+     * compared by what they say (Figures): "£1.2m" is in a text that says
+     * "£1,200,000", and "8 weeks" in one that says "eight weeks".
      *
      * @return list<string>
      */
     private static function newFigures(string $answer, string $source): array
     {
-        $figures = fn (string $text) => preg_match_all('/\d+(?:[.,]\d+)*/u', $text, $found) > 0 ? array_map(fn (string $figure) => str_replace(',', '', $figure), $found[0]) : [];
-        $known = $figures(Markers::withoutAsks($source));
+        $known = Figures::known(Markers::withoutAsks($source));
+        $added = array_filter(Figures::find($answer), fn (array $figure) => ! Figures::given($figure['values'], $known));
 
-        return array_values(array_unique(array_diff($figures($answer), $known)));
+        return array_values(array_unique(array_map(fn (array $figure) => $figure['figure'], $added)));
     }
 
     /**

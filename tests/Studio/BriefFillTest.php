@@ -81,6 +81,18 @@ final class BriefFillTest extends StudioTestCase
         $this->assertStringNotContainsString('Visitors rose', $this->logged());
     }
 
+    public function test_quoted_titles_and_stated_lengths_are_not_taken_out(): void
+    {
+        // The Filament bug (1.6.1): a quoted entry title and a length the person stated.
+        $this->fake->respond('brief-filler', "<title>The new kiln opens</title>\n<brief>\nclient: The Harbour Trust\nresult: |\n  Model it on \"How we rebuilt Mill 2\", and open with \"The new kiln opens\".\n  The trust said \"it changed everything for us\".\nshape: An 800-word piece; 800 at most.\n</brief>");
+
+        $result = $this->studio()->fillBrief(BriefRequest::fromDetails($this->kind(), 'Kiln opening for the Harbour Trust, eight hundred words.', ['How we rebuilt Mill 2', 'Old kiln']));
+
+        $this->assertSame("Model it on \"How we rebuilt Mill 2\", and open with \"The new kiln opens\".\nThe trust said ".BriefCheck::QUOTE.'.', $result->value->answers['result']);
+        $this->assertSame('An 800-word piece; 800 at most.', $result->value->answers['shape']);
+        $this->assertStringContainsString('(result: a quotation)', $this->logged());
+    }
+
     public function test_square_brackets_are_left_alone(): void
     {
         $this->fake->respond('brief-filler', "<brief>\nclient: \"[Check: could \\\"Mill 2\\\" be evidence here? Say what we did]\"\nresult: \"[Add: the 3 numbers that matter]\"\n</brief>");

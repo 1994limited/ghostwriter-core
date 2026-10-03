@@ -12,6 +12,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Gaps\GapKind;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\GapRefused;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\GapRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\UnreadableReply;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * The gap filler: one small request per click, and never a fact.
@@ -92,6 +93,34 @@ class GapFillerTest extends StudioTestCase
         // Figures the text already has are fine.
         $this->assertSame('It ships for 2 teams.', $this->studio()->fillGap(GapRequest::writeAround($gap))->value);
         $this->assertStringNotContainsString('6–10 weeks', $this->logged(), 'Replies are not logged unless the site asks.');
+    }
+
+    /**
+     * @return array<string, array{0: string, 1: string, 2: bool}>
+     */
+    public static function figuresInAnotherForm(): array
+    {
+        return [
+            'millions' => ['The rebuild cost £1,200,000 over eight weeks.', 'It cost £1.2m over 8 weeks.', true],
+            'a date' => ['It opens on 14 May 2026.', 'Opens 2026-05-14.', true],
+            'a percentage' => ['Visitors rose by forty per cent.', 'Visitors rose 40%.', true],
+            'a range' => ['It takes six to ten weeks.', 'It takes 6–10 weeks.', true],
+            'an invented figure' => ['It takes six weeks.', 'It takes 6–10 weeks.', false],
+            'an invented price' => ['Tickets are £12.', 'Tickets are £15.', false],
+        ];
+    }
+
+    #[DataProvider('figuresInAnotherForm')]
+    public function test_figures_the_text_has_are_fine_in_any_form(string $text, string $answer, bool $used): void
+    {
+        $this->fake->respond('gap-filler', self::reply("<result>{$answer}</result>"));
+
+        try {
+            $this->assertSame($answer, $this->studio()->fillGap(GapRequest::shorten('Intro', $text, 200))->value);
+            $this->assertTrue($used, "Should not have used: {$answer}");
+        } catch (UnreadableReply $exception) {
+            $this->assertFalse($used, "Should have used: {$answer}");
+        }
     }
 
     public function test_a_shortened_text_is_kept_within_its_limit(): void
