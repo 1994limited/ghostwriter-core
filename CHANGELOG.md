@@ -14,6 +14,18 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
   - `Extras` (`all()`, `items()`, `item()`, `extraOf()`, `edit()`, `without()`, `toArray()`, `fromArray()`), `Extra`, `ExtraItem` (ids `x1.2`, parts such as `question` and `attribution`, `needsAnswer()`), `Source`, `SourceKind`, `ExtraKind`, `ExtraSources::fromWriter()`.
 - **`Session::$extras`**: the session's extras (`Extras::toArray()`). Stored like `$units`: only once there is something in it, under `extras` (Filament: a JSON column the addon adds).
 
+- **Layouts: plans, the arranger and the validator (`Arrange\*`), with no model.** A plan arranges the draft's units and extras into a page builder's blocks, a rich-text field's structure or a plain field; it never holds words of its own. See docs/layouts.md.
+  - `Plan`, `PlanBlock`, `Placement`, `PlanOrigin`, `Transform` (`as-is`, `split`, `join`, `lead-in-to-heading`, `heading-to-lead-in`, `paragraphs-to-list`, `list-to-paragraphs`, `heading-level`, `as-quote`), `Plans` (`fromDraft()`, `of()`, `get()`, `writer()`, `suggested()`, `with()`, `toArray()`, `fromArray()`).
+  - `Plans::fromDraft($draft, Units, Schema)`: the writer's plan "w". Arranging it gives the draft back exactly, for every draft in the golden layout fixtures, and `bin/compare-layouts` finds no difference in the entries built from them.
+  - `Arranger::arrange(Plan, Units, Extras, $draft, Schema)`: the draft data a plan gives, for the existing build path; `Arranger::build()` runs `EntryBuilder` on it.
+  - `PlanValidator::check()` and `valid()`, with a `Violation` per rule: unknown blocks, fields and refs, kinds, limits, required fields, empty blocks, units missing, duplicated or outside, the words and markers conserved, unsourced extras, boilerplate, sameness, and the build round trip.
+  - `PlanRepair::repair()`: after an edit, removed units come out and new ones go in after the unit before them; what still fails is marked `stale`.
+  - `PlanReader`: the layout planner's `<plans>` YAML into plans.
+  - `SitePatterns::find()` (every distinct block order, commonest first) and `profile()` (rich-text structure); `Candidates::rank()` marks the plan most like the site's pages `suggested`.
+- **`Session::$plans`** (`Plans::toArray()`) **and `Session::$plan`** (the chosen layout's id), stored like `$units`, under `plans` and `plan`.
+- `PatternFinder::sequences()` and `PatternFinder::sequenceOf()`: the block-order counting `find()` uses, public for `SitePatterns`. `find()` is unchanged.
+- `LayoutLog::export()` records `Plan` and `Plans` as arrays.
+
 ### Changed
 
 - `TaggedResponse`'s constructor takes `$extras` as a new optional last argument; a reply with no `<reply>` block has its `<extras>` block taken out of the text shown, as `<draft>` and `<images>` are.

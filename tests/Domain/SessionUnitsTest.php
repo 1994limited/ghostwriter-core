@@ -57,4 +57,24 @@ final class SessionUnitsTest extends TestCase
         $back->extras = [];
         $this->assertArrayHasKey('extras', $back->toArray());
     }
+
+    #[DataProvider('formats')]
+    public function test_the_layouts_and_the_chosen_one_round_trip_and_are_left_out_until_there_are_some(Format $format): void
+    {
+        $session = Session::start($format, 'page', ['brief' => 'Winter care']);
+
+        $this->assertArrayNotHasKey('plans', $session->toArray());
+        $this->assertArrayNotHasKey('plan', $session->toArray());
+
+        $session->plans = [['id' => 'w', 'origin' => 'writer', 'name' => 'As written', 'description' => '', 'fields' => ['body' => [['type' => 'text', 'placements' => [['field' => '@body', 'from' => ['u2']]]]]]]];
+        $session->plan = 'w';
+        $stored = $session->toArray();
+        $back = Session::fromArray($stored, $format);
+
+        $this->assertSame([$session->plans, 'w'], [$back->plans, $back->plan]);
+        $this->assertSame($stored, $back->toArray());
+
+        $back->plan = null;
+        $this->assertNull($back->toArray()['plan']);
+    }
 }

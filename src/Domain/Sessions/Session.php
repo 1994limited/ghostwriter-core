@@ -54,6 +54,8 @@ final class Session
      * @param  array<int, array<string, string>>  $gaps  What the draft left for a person when it was applied (Gaps\SessionGaps::toArray()). Stored only once there is something in it, under `gaps` (Filament: a JSON column the addon adds).
      * @param  array<string, mixed>  $units  The draft's unit ids (Arrange\Units::sidecar()), carried from turn to turn. Stored like `gaps`: only once there is something in it, under `units` (Filament: a JSON column the addon adds).
      * @param  list<array<string, mixed>>  $extras  The extras the writer prepared with the draft (Arrange\Extras\Extras::toArray()), kept until it sends new ones. Stored like `units`, under `extras`.
+     * @param  list<array<string, mixed>>  $plans  The layouts (Arrange\Plans::toArray()): the writer's first, then the planner's. Stored like `units`, under `plans`.
+     * @param  string|null  $plan  The chosen layout's id, shared by everyone on the piece; null for the writer's. Stored under `plan` once chosen.
      */
     public function __construct(
         public readonly Format $format,
@@ -84,6 +86,8 @@ final class Session
         public array $gaps = [],
         public array $units = [],
         public array $extras = [],
+        public array $plans = [],
+        public ?string $plan = null,
     ) {
         $this->editing = $editing || $source !== null;
     }
@@ -462,6 +466,14 @@ final class Session
             $data['extras'] = $format !== Format::Filament ? $this->extras : ($this->extras === [] ? null : $format->json($this->extras));
         }
 
+        if ($this->plans !== [] || array_key_exists('plans', $this->stored)) {
+            $data['plans'] = $format !== Format::Filament ? $this->plans : ($this->plans === [] ? null : $format->json($this->plans));
+        }
+
+        if ($this->plan !== null || array_key_exists('plan', $this->stored)) {
+            $data['plan'] = $this->plan;
+        }
+
         // Kept where the record has room for it; Filament's table has no
         // column, and falls back on updated_at, which a claim also sets.
         if ($this->startedWorkingAt !== null && $format !== Format::Filament) {
@@ -501,6 +513,8 @@ final class Session
             gaps: self::gaps($data['gaps'] ?? []),
             units: self::units($data['units'] ?? []),
             extras: self::records($data['extras'] ?? []),
+            plans: self::records($data['plans'] ?? []),
+            plan: self::nullableText($data['plan'] ?? null),
         );
     }
 
@@ -535,6 +549,8 @@ final class Session
             gaps: self::gaps($data['gaps'] ?? []),
             units: self::units($data['units'] ?? []),
             extras: self::records($data['extras'] ?? []),
+            plans: self::records($data['plans'] ?? []),
+            plan: self::nullableText($data['plan'] ?? null),
         );
     }
 
@@ -572,6 +588,8 @@ final class Session
             gaps: self::gaps(self::decoded($row['gaps'] ?? null)),
             units: self::units(self::decoded($row['units'] ?? null)),
             extras: self::records(self::decoded($row['extras'] ?? null)),
+            plans: self::records(self::decoded($row['plans'] ?? null)),
+            plan: self::nullableText($row['plan'] ?? null),
         );
     }
 

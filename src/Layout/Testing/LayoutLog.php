@@ -3,6 +3,8 @@
 namespace NineteenNinetyFour\Ghostwriter\Core\Layout\Testing;
 
 use JsonException;
+use NineteenNinetyFour\Ghostwriter\Core\Arrange\Plan;
+use NineteenNinetyFour\Ghostwriter\Core\Arrange\Plans;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\BuiltEntry;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\FoundKind;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\HouseResult;
@@ -25,6 +27,9 @@ use RuntimeException;
  *
  * Outputs are recorded in the addons' array shapes (Pattern::toArray() and
  * the like), so a log from before core and one from after can be compared.
+ * Layouts are recorded too: `LayoutLog::record('plans', $plans)` and
+ * `LayoutLog::record('arrange', $arrangedDraft)`, so each addon's arranged
+ * output for the same plans can be compared with the others'.
  * The IDs Statamic makes at random for new blocks and rows (eight hex
  * characters under an `id` key) are compared as "<id>", and UUIDs (a test
  * suite's entry IDs, new on every run) as "<uuid>".
@@ -75,7 +80,7 @@ final class LayoutLog
     public static function export(mixed $output): mixed
     {
         return match (true) {
-            $output instanceof Pattern, $output instanceof HouseRules, $output instanceof FoundKind, $output instanceof BuiltEntry => $output->toArray(),
+            $output instanceof Pattern, $output instanceof HouseRules, $output instanceof FoundKind, $output instanceof BuiltEntry, $output instanceof Plan, $output instanceof Plans => $output->toArray(),
             $output instanceof HouseResult => ['data' => $output->data, 'toFill' => $output->toFill],
             is_array($output) => array_map(self::export(...), $output),
             default => $output,
