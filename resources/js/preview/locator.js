@@ -19,7 +19,11 @@
  *    is the outermost ancestor of its marks that holds no other block's
  *    marks, and a block printed straight into a shared container (an
  *    unwrapped rich-text block, `<h2><p><p>` in `<main>`) is a run of that
- *    container's children;
+ *    container's children. Core puts each marker at the END of its value
+ *    or section (a leading one breaks filters that capitalise the first
+ *    letter), so a bare run reaches back over the unmarked elements before
+ *    its marks (a section's heading) to the block before, then forward over
+ *    what is left, stopping at the page's header, footer and nav;
  * 3. falls back, per block, in order: markers, then asset file names
  *    (`img`, `srcset`, `background-image`), then the text anchors (a unique
  *    match only), then the elements between two located siblings. A block
@@ -38,7 +42,7 @@ export const PAYLOAD = /^([bfs]\d+)(?:\.(\d+))?$/;
 /** Attributes whose text may carry a marker. */
 export const MARKED_ATTRIBUTES = ['alt', 'title', 'aria-label', 'content'];
 
-/** Elements a block prints bare into a container; a run of them belongs to the block before. */
+/** Elements a block prints bare into a container; a run of them belongs to the marked element at its end. */
 const BARE = new Set(['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'P', 'UL', 'OL', 'DL', 'BLOCKQUOTE', 'FIGURE', 'TABLE', 'PRE', 'HR', 'IMG', 'PICTURE', 'ADDRESS']);
 
 /** Elements that end a run: the page's own furniture. */
@@ -354,8 +358,9 @@ function mark(tags, element, attribute) {
 
 /**
  * Each sibling's region from its evidence: a root, or a run of a shared
- * container's children; bare roots and runs then take the bare,
- * unmarked elements after them, up to the next block.
+ * container's children; bare roots and runs then take the bare, unmarked
+ * elements before them (back to the block before), then after them (up to
+ * the next block).
  */
 function place(siblings, evidence, scope, allMarked, claimed) {
     const placed = new Map();
@@ -372,9 +377,11 @@ function place(siblings, evidence, scope, allMarked, claimed) {
 
         if (!others.some((element) => element === lca || contains(lca, element))) {
             // Its own wrapper: the outermost ancestor holding no other block's evidence, inside the scope.
+            // Within a run (a scope of several elements) that may be one of the run's own elements.
             let root = lca;
+            const within = scope.length > 1 ? inScope : insideScope;
 
-            while (root.parentNode && !scope.includes(root) && !scope.includes(root.parentNode) && insideScope(root.parentNode, scope) && !others.some((element) => contains(root.parentNode, element))) {
+            while (root.parentNode && !scope.includes(root) && within(root.parentNode, scope) && !others.some((element) => contains(root.parentNode, element))) {
                 root = root.parentNode;
             }
 
@@ -406,20 +413,32 @@ function place(siblings, evidence, scope, allMarked, claimed) {
         region.elements.forEach((element) => claimed.add(element));
     }
 
-    // Bare roots and runs take the bare, unmarked elements after them.
+    const free = (element) => element && BARE.has(tagOf(element)) && !isLandmark(element) && !claimed.has(element) && inScope(element, scope)
+        && !allMarked.some((marked) => marked === element || contains(element, marked));
+
+    // Markers are at the end of each value and section, so bare roots and runs
+    // first take the bare, unmarked elements before them (a section's heading
+    // and its first paragraphs), back to the block before; then, for what is
+    // left, the ones after them, up to the next block or the page's furniture.
     for (const key of keys) {
         const region = placed.get(key);
 
-        if (!region || !region.bare) {
-            continue;
+        if (region?.bare) {
+            for (let previous = previousElement(region.elements[0]); free(previous); previous = previousElement(previous)) {
+                region.elements.unshift(previous);
+                claimed.add(previous);
+            }
         }
+    }
 
-        let next = nextElement(region.elements[region.elements.length - 1]);
+    for (const key of keys) {
+        const region = placed.get(key);
 
-        while (next && BARE.has(tagOf(next)) && !isLandmark(next) && !claimed.has(next) && !allMarked.some((element) => element === next || contains(next, element))) {
-            region.elements.push(next);
-            claimed.add(next);
-            next = nextElement(next);
+        if (region?.bare) {
+            for (let next = nextElement(region.elements[region.elements.length - 1]); free(next); next = nextElement(next)) {
+                region.elements.push(next);
+                claimed.add(next);
+            }
         }
     }
 
@@ -621,6 +640,16 @@ function isLandmark(element) {
 
 function elementChildren(element) {
     return Array.from(element?.childNodes ?? []).filter((node) => node.nodeType === ELEMENT);
+}
+
+function previousElement(element) {
+    let previous = element?.previousSibling ?? null;
+
+    while (previous && previous.nodeType !== ELEMENT) {
+        previous = previous.previousSibling;
+    }
+
+    return previous;
 }
 
 function nextElement(element) {

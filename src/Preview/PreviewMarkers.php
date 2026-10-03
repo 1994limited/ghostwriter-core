@@ -31,12 +31,21 @@ use NineteenNinetyFour\Ghostwriter\Core\Text\Utf8;
  *
  * **Where they go:** on every writable text value of every block (and of
  * each top-level field), so a template that doesn't print one field still
- * prints another. Plain text is prefixed; markdown gets it after a line's
- * leading `#`, `>`, bullet or number (and any emphasis); HTML in its first
- * text; Bard in its first text node; a list on its first item. A rich text
- * value with more than one unit also gets a section marker at the start of
- * each unit (MarkdownSections' split). Values that look like addresses
- * (`https://…`, `/…`, `#…`, `mailto:`) are left alone.
+ * prints another. Markers go at the **end**: after a value's last visible
+ * character, before any trailing whitespace or closing tags, because a
+ * template filter that capitalises the first letter (Antlers `title`,
+ * Twig `capitalize`) would lowercase the first word after a leading one.
+ * Plain text gets it before trailing whitespace; markdown at the end of
+ * its last line of text (before a heading's closing `#`s, a table row's
+ * last `|` or a hard break); HTML after its last text, outside inline
+ * elements (`</a>`, `</strong>`) but inside the block that holds it; Bard
+ * at the end of its last text node, or in a text node of its own after it
+ * when that node has marks (a link, bold); a list on its last item. A
+ * rich text value with more than one unit also gets a section marker at
+ * the end of each unit (MarkdownSections' split). A marker is never put
+ * straight after a black flag (U+1F3F4): it would read as a subdivision
+ * flag. Values that look like addresses (`https://…`, `/…`, `#…`,
+ * `mailto:`) are left alone.
  *
  * **Never saved.** Only the preview's copy of the data is marked: apply
  * builds its data separately. strip() removes markers from anything, and
@@ -59,6 +68,15 @@ final class PreviewMarkers
 
     /** How many words of each value go in a block's anchors. */
     public const ANCHOR_WORDS = 8;
+
+    /** For markMarkdown(), markHtml() and markBard(): the end of the whole value. */
+    public const LAST = PHP_INT_MAX;
+
+    /** The black flag: tag characters after it are a subdivision flag. */
+    private const FLAG = "\u{1F3F4}";
+
+    /** Inline elements a marker goes after, not inside, when they close a block's last text. */
+    private const INLINE = ['a', 'abbr', 'b', 'bdi', 'bdo', 'cite', 'code', 'data', 'del', 'dfn', 'em', 'font', 'i', 'ins', 'kbd', 'mark', 'q', 's', 'samp', 'small', 'span', 'strong', 'sub', 'sup', 'time', 'u', 'var'];
 
     /** @var Closure(mixed): ?string */
     private readonly Closure $assetName;
@@ -132,7 +150,9 @@ final class PreviewMarkers
 
     /**
      * Every marker taken out: of a string, or of every string in an array.
-     * Anything else comes back as it was.
+     * A Bard text node that held nothing but markers (markBard() adds one
+     * after a text node with marks) is taken out whole. Anything else
+     * comes back as it was.
      */
     public static function strip(mixed $value): mixed
     {
@@ -141,8 +161,21 @@ final class PreviewMarkers
         }
 
         if (is_array($value)) {
+            $dropped = false;
+
             foreach ($value as $key => $item) {
+                if (is_int($key) && self::isMarkerNode($item)) {
+                    unset($value[$key]);
+                    $dropped = true;
+
+                    continue;
+                }
+
                 $value[$key] = self::strip($item);
+            }
+
+            if ($dropped && array_filter(array_keys($value), 'is_string') === []) {
+                $value = array_values($value);
             }
         }
 
@@ -220,7 +253,7 @@ final class PreviewMarkers
     }
 
     /**
-     * A plain value with a marker at its start (after leading whitespace).
+     * A plain value with a marker at its end (before trailing whitespace).
      */
     public static function markText(string $text, string $marker): string
     {
@@ -228,80 +261,138 @@ final class PreviewMarkers
             return $text;
         }
 
-        $lead = strlen($text) - strlen(ltrim($text));
-
-        return substr($text, 0, $lead).$marker.substr($text, $lead);
+        return self::insertAt($text, strlen(rtrim($text)), $marker);
     }
 
     /**
-     * Markdown with markers at the start of lines' text: [line => marker],
-     * lines counted from 0. A line that starts a code block, a table's
-     * divider or raw HTML is left alone.
+     * Markdown with markers at the end of lines' text: [line => marker],
+     * lines counted from 0. Each marker goes on the last line with text at
+     * or before its line (self::LAST: the last of all), skipping blank
+     * lines, code blocks, a table's divider, raw HTML, rules and link
+     * definitions; on that line, before trailing whitespace, a heading's
+     * closing `#`s, a table row's last `|` and a hard break's `\`. Markers
+     * on one line keep their order.
      *
      * @param  array<int, string>  $markers
      */
     public static function markMarkdown(string $markdown, array $markers): string
     {
         $lines = preg_split('/(\r\n|\r|\n)/', $markdown, -1, PREG_SPLIT_DELIM_CAPTURE) ?: [];
+        $count = intdiv(count($lines) + 1, 2);
+        $eligible = [];
+        $fence = null;
 
-        foreach ($markers as $line => $marker) {
-            $index = $line * 2;
-            $text = $lines[$index] ?? null;
+        for ($n = 0; $n < $count; $n++) {
+            $text = $lines[$n * 2];
 
-            if ($text === null || trim($text) === '' || preg_match('/^\s*(?:`{3,}|~{3,}|<|\|?\s*:?-{3,})/', $text) === 1 || preg_match('/^( {4,}|\t)/', $text) === 1) {
+            if (preg_match('/^\s{0,3}(`{3,}|~{3,})/', $text, $m) === 1) {
+                $fence = $fence === null ? $m[1][0] : ($m[1][0] === $fence ? null : $fence);
+                $eligible[$n] = false;
+
                 continue;
             }
 
-            preg_match('/^\s*(?:(?:#{1,6}|>|[-*+]|\d+[.)]|\|)\s*)*[*_]*/', $text, $syntax);
-            $at = strlen($syntax[0] ?? '');
-            $lines[$index] = substr($text, 0, $at).$marker.substr($text, $at);
+            $eligible[$n] = $fence === null
+                && trim($text) !== ''
+                && preg_match('/^( {4,}|\t)/', $text) !== 1
+                && preg_match('/^\s*(?:<|\|?\s*:?-{3,}|\[[^\]]+\]:|(?:[-*_=]\s*){3,}$)/', $text) !== 1;
+        }
+
+        $byLine = [];
+
+        foreach ($markers as $line => $marker) {
+            $n = min($line, $count - 1);
+
+            while ($n >= 0 && ! $eligible[$n]) {
+                $n--;
+            }
+
+            if ($n >= 0) {
+                $byLine[$n] = ($byLine[$n] ?? '').$marker;
+            }
+        }
+
+        foreach ($byLine as $n => $marker) {
+            $text = $lines[$n * 2];
+            $end = strlen(rtrim($text));
+
+            if (preg_match('/^\s{0,3}#{1,6}\s.*?(\s+#+)\s*$/', $text, $m, PREG_OFFSET_CAPTURE) === 1
+                || preg_match('/^\s*\|.*?(\|)\s*$/', $text, $m, PREG_OFFSET_CAPTURE) === 1
+                || preg_match('/(?<!\\\\)(\\\\)\s*$/', $text, $m, PREG_OFFSET_CAPTURE) === 1) {
+                $end = strlen(rtrim(substr($text, 0, $m[1][1])));
+            }
+
+            $lines[$n * 2] = self::insertAt($text, $end, $marker);
         }
 
         return implode('', $lines);
     }
 
     /**
-     * HTML with markers in the first text of elements at the top level:
-     * [element index => marker], where -1 is the first text of all. Markers
-     * are inserted into the string; nothing else about the HTML changes.
+     * HTML with markers after the last text of top-level elements:
+     * [element index => marker]. Each marker goes after the last text that
+     * isn't whitespace in elements up to that index (text between elements
+     * counts with the element before; -1 is text before the first element;
+     * self::LAST, all of it), and after any inline elements that close
+     * straight after that text (`</a>`, `</strong>`), so it is inside the
+     * block that holds the text but outside its links and emphasis.
+     * Markers are inserted into the string; nothing else about the HTML
+     * changes.
      *
      * @param  array<int, string>  $markers
      */
     public static function markHtml(string $html, array $markers): string
     {
-        $inserts = [];
+        $tokens = self::htmlTokens($html);
+        $ends = [];
 
-        foreach (self::htmlTexts($html) as [$top, $offset]) {
-            foreach ($markers as $element => $marker) {
-                if (! isset($inserts[$element]) && ($element === -1 || $element === $top)) {
-                    $inserts[$element] = [$offset, $marker];
+        foreach ($tokens as $t => $token) {
+            if ($token['text'] && ! $token['raw'] && trim($token['value']) !== '') {
+                $offset = $token['offset'] + strlen(rtrim($token['value']));
+
+                if ($offset === $token['offset'] + strlen($token['value'])) {
+                    for ($next = $t + 1; isset($tokens[$next]) && preg_match('/^<\s*\/\s*([a-z0-9-]+)/i', $tokens[$next]['value'], $close) === 1 && in_array(strtolower($close[1]), self::INLINE, true); $next++) {
+                        $offset = $tokens[$next]['offset'] + strlen($tokens[$next]['value']);
+                    }
                 }
+
+                $ends[] = [$token['element'], $offset];
             }
         }
 
-        // From the end, so earlier offsets stay right; two at one place keep their order.
-        uasort($inserts, fn (array $a, array $b) => $b[0] <=> $a[0]);
         $byOffset = [];
 
         foreach ($markers as $element => $marker) {
-            if (isset($inserts[$element])) {
-                $byOffset[$inserts[$element][0]] = ($byOffset[$inserts[$element][0]] ?? '').$marker;
+            $at = null;
+
+            foreach ($ends as [$in, $offset]) {
+                if ($in <= $element) {
+                    $at = $offset;
+                }
+            }
+
+            if ($at !== null) {
+                $byOffset[$at] = ($byOffset[$at] ?? '').$marker;
             }
         }
 
+        // From the end, so earlier offsets stay right.
         krsort($byOffset);
 
         foreach ($byOffset as $offset => $marker) {
-            $html = substr($html, 0, $offset).$marker.substr($html, $offset);
+            $html = self::insertAt($html, $offset, $marker);
         }
 
         return $html;
     }
 
     /**
-     * Bard (ProseMirror) nodes with markers in the first text node of
-     * top-level nodes: [node index => marker], where -1 is the first text
-     * of all.
+     * Bard (ProseMirror) nodes with markers at the end of the last text of
+     * top-level nodes: [node index => marker]. Each marker goes in the last
+     * node with text up to that index (self::LAST: all of them), at the end
+     * of its last text node; when that text node has marks (a link, bold),
+     * in a text node of its own straight after it, so the marks don't
+     * change. Markers in one place keep their order.
      *
      * @param  array<mixed>  $nodes
      * @param  array<int, string>  $markers
@@ -312,7 +403,7 @@ final class PreviewMarkers
         $byNode = [];
 
         foreach ($markers as $index => $marker) {
-            $node = $index === -1 ? self::firstTextNode($nodes) : $index;
+            $node = self::lastTextNode($nodes, $index);
 
             if ($node !== null) {
                 $byNode[$node] = ($byNode[$node] ?? '').$marker;
@@ -321,7 +412,7 @@ final class PreviewMarkers
 
         foreach ($byNode as $index => $marker) {
             if (is_array($nodes[$index] ?? null)) {
-                $nodes[$index] = self::prefixFirstText($nodes[$index], $marker);
+                $nodes[$index] = self::appendLastText($nodes[$index], $marker);
             }
         }
 
@@ -436,9 +527,13 @@ final class PreviewMarkers
 
         if ($field->kind === Kind::List) {
             if (is_array($value)) {
-                foreach ($value as $k => $item) {
-                    if (is_string($item) && trim($item) !== '') {
-                        $value[$k] = self::markText($item, $marker);
+                // The last item that takes one.
+                foreach (array_reverse(array_keys($value)) as $k) {
+                    $item = $value[$k];
+                    $marked = is_string($item) ? self::markText($item, $marker) : $item;
+
+                    if ($marked !== $item) {
+                        $value[$k] = $marked;
 
                         break;
                     }
@@ -470,13 +565,15 @@ final class PreviewMarkers
             default => [],
         };
 
-        $markers = [];
+        // Each section's marker at the end of its last text; then the field's own, at the very end.
+        $all = [];
 
         if (count($starts) > 1) {
             foreach ($starts as $n => $start) {
                 $key = $this->key('s');
                 $unit = $units[$n] ?? null;
-                $markers[] = [$start, self::encode($key)];
+                $end = isset($starts[$n + 1]) ? $starts[$n + 1] - 1 : self::LAST;
+                $all[$end] = ($all[$end] ?? '').self::encode($key);
                 $this->blocks[] = new MappedBlock(
                     $key,
                     MappedBlock::SECTION,
@@ -493,13 +590,8 @@ final class PreviewMarkers
             $this->addUnits($info, $units);
         }
 
-        // The field's own marker first, at the very start; then each section's.
+        $all[self::LAST] = ($all[self::LAST] ?? '').$marker;
         $html = is_string($value) && self::isHtml($value) && ! self::isMarkdownField($field);
-        $all = [is_string($value) && ! $html ? ($starts[0] ?? 0) : -1 => $marker];
-
-        foreach ($markers as [$start, $sectionMarker]) {
-            $all[$start] = ($all[$start] ?? '').$sectionMarker;
-        }
 
         return match (true) {
             is_array($value) => self::markBard($value, $all),
@@ -720,29 +812,88 @@ final class PreviewMarkers
     }
 
     /**
+     * The index of the last top-level node with text in it, at or before
+     * an index.
+     *
+     * @param  array<mixed>  $nodes
+     */
+    private static function lastTextNode(array $nodes, int $upTo): ?int
+    {
+        $found = null;
+
+        foreach ($nodes as $index => $node) {
+            if (is_int($index) && $index <= $upTo && is_array($node) && self::bardText($node) !== '') {
+                $found = $index;
+            }
+        }
+
+        return $found;
+    }
+
+    /**
+     * A node with a marker at the end of its last text node, or in a text
+     * node of its own after it when that one has marks.
+     *
      * @param  array<mixed>  $node
      * @return array<mixed>
      */
-    private static function prefixFirstText(array $node, string $marker, bool &$done = false): array
+    private static function appendLastText(array $node, string $marker, bool &$done = false): array
     {
-        if (($node['type'] ?? null) === 'text' && is_string($node['text'] ?? null) && trim($node['text']) !== '') {
-            $node['text'] = $marker.$node['text'];
-            $done = true;
-
-            return $node;
-        }
-
         if (($node['type'] ?? null) === 'set' || ! is_array($node['content'] ?? null)) {
             return $node;
         }
 
-        foreach ($node['content'] as $i => $child) {
-            if (! $done && is_array($child)) {
-                $node['content'][$i] = self::prefixFirstText($child, $marker, $done);
+        foreach (array_reverse(array_keys($node['content'])) as $i) {
+            $child = $node['content'][$i];
+
+            if ($done || ! is_array($child)) {
+                continue;
+            }
+
+            if (($child['type'] ?? null) !== 'text') {
+                $node['content'][$i] = self::appendLastText($child, $marker, $done);
+
+                continue;
+            }
+
+            if (! is_string($child['text'] ?? null) || trim($child['text']) === '') {
+                continue;
+            }
+
+            $done = true;
+
+            if (is_array($child['marks'] ?? null) && $child['marks'] !== [] && is_int($i)) {
+                array_splice($node['content'], $i + 1, 0, [['type' => 'text', 'text' => $marker]]);
+            } else {
+                $node['content'][$i]['text'] = self::insertAt($child['text'], strlen(rtrim($child['text'])), $marker);
             }
         }
 
         return $node;
+    }
+
+    /** Whether a value is a Bard text node holding nothing but markers. */
+    private static function isMarkerNode(mixed $node): bool
+    {
+        return is_array($node)
+            && ($node['type'] ?? null) === 'text'
+            && is_string($node['text'] ?? null)
+            && $node['text'] !== ''
+            && count($node) === 2
+            && self::stripText($node['text']) === '';
+    }
+
+    /**
+     * A marker inserted at a byte offset, or before a black flag that ends
+     * there: after U+1F3F4 it would read as a subdivision flag.
+     */
+    private static function insertAt(string $text, int $offset, string $marker): string
+    {
+        while ($offset >= strlen(self::FLAG) && substr($text, $offset - strlen(self::FLAG), strlen(self::FLAG)) === self::FLAG) {
+            $offset -= strlen(self::FLAG);
+        }
+
+        return substr($text, 0, $offset).$marker.substr($text, $offset);
     }
 
     /**

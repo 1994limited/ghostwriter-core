@@ -12,6 +12,12 @@ class Node {
         this.childNodes = [];
     }
 
+    get previousSibling() {
+        const siblings = this.parentNode?.childNodes ?? [];
+
+        return siblings[siblings.indexOf(this) - 1] ?? null;
+    }
+
     get nextSibling() {
         const siblings = this.parentNode?.childNodes ?? [];
 

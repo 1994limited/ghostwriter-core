@@ -124,13 +124,15 @@ U+E007F           cancel tag: the end
 
 | Value | Where |
 |---|---|
-| text, long text | the start (after leading whitespace). Values that look like addresses (`https://…`, `/…`, `#…`, `mailto:`, `tel:`) are left alone. |
-| markdown (a markdown field, or rich text stored as markdown) | after the line's leading `#`, `>`, bullet, number or table `|`, and any emphasis delimiters, so `**bold**` and `_em_` still parse. A code block's line is left alone. |
-| HTML | the first text that isn't whitespace (not in `<script>`, `<style>` or `<template>`), inserted into the string: nothing else about the HTML changes. |
-| Bard JSON | the first text node (sets are skipped). |
-| list | its first item |
+| text, long text | the end, before trailing whitespace. Values that look like addresses (`https://…`, `/…`, `#…`, `mailto:`, `tel:`) are left alone. |
+| markdown (a markdown field, or rich text stored as markdown) | the end of the last line with text, before trailing whitespace, a heading's closing `#`s, a table row's last `|` and a hard break's `\`, so the line still parses. Code blocks, a table's divider, raw HTML, rules and link definitions are skipped. After `**bold**` or `[a link](/x)`, never inside. |
+| HTML | after the last text that isn't whitespace (not in `<script>`, `<style>` or `<template>`) and after any inline elements that close straight after it (`</a>`, `</strong>`…): inside the paragraph or item, outside its links and emphasis. Inserted into the string: nothing else about the HTML changes. |
+| Bard JSON | the end of the last text node (sets are skipped); when that node has marks (a link, bold), a text node of its own straight after it, which `strip()` takes out whole. |
+| list | its last item |
 | rows, group | each text value in each row, with the rows or group field's index |
-| rich text with more than one unit | also a section marker (`s3`) at the start of each unit: the lead, then each top heading, split exactly as `Units` splits it |
+| rich text with more than one unit | also a section marker (`s3`) at the end of each unit: the lead, then each top heading's section, split exactly as `Units` splits it. The last section's marker comes before the field's own. |
+
+**Why the end.** A marker at the start of a value is its first character to a template filter, so Antlers `title` and Twig `capitalize` (first letter up, the rest down) lowercased the value's real first letter (the phase 0 spike). Tag characters have no case, so at the end they change nothing. A marker is never put straight after a black flag (U+1F3F4), where it would read as a subdivision flag: it goes before the flag instead.
 
 Every writable text value of every block is marked, not only the first: a template that doesn't print one field still prints another. Top-level text fields are `f` keys. Disabled blocks are skipped (they don't render).
 
@@ -164,7 +166,7 @@ $preview->hash;     // sha1 of the data without markers: the render cache key
 
 `BlockMap` has `get($key)`, `keys()`, `children(?string $parent)`, `forUnit($unitId)` (the innermost), `depth()`, `toArray()` and `fromArray()`.
 
-The lower-level helpers are public for the addons' own tests: `encode($payload)`, `decode($text)` (payload, key, field and byte offset of each marker), `markText()`, `markMarkdown($markdown, [line => marker])`, `markHtml($html, [topLevelElement|-1 => marker])` and `markBard($nodes, [nodeIndex|-1 => marker])`.
+The lower-level helpers are public for the addons' own tests: `encode($payload)`, `decode($text)` (payload, key, field and byte offset of each marker), `markText()`, `markMarkdown($markdown, [line => marker])`, `markHtml($html, [topLevelElement => marker])` and `markBard($nodes, [nodeIndex => marker])`. Each puts a marker at the end of the last text at or before its index (`PreviewMarkers::LAST`: the end of the whole value; `-1` in HTML: text before the first element).
 
 ### Never saved
 
@@ -197,7 +199,7 @@ const stop = watch(doc, () => { /* scripts added marked text: locate again */ })
 
 **Regions** (`method` says which step found each):
 
-1. `marker`: its own markers and its children's. The block's root is the outermost ancestor of them holding no other sibling's, within its parent's region (the page body at the top). When its markers sit straight in a container shared with other blocks (an unwrapped rich-text block printing `<h2><p><p>` into `<main>`), its region is the **run** of that container's children from the first holding its markers to the last before another block's. A run, or a root that is itself a bare element (`p`, `h2`, `ul`, `figure`…), then takes the bare, unmarked elements after it, up to the next block or the page's furniture (`header`, `footer`, `nav`, `aside`, `form`, or their roles), so a rich text's later paragraphs belong to it and the footer never does.
+1. `marker`: its own markers and its children's. The block's root is the outermost ancestor of them holding no other sibling's, within its parent's region (the page body at the top). When its markers sit straight in a container shared with other blocks (an unwrapped rich-text block printing `<h2><p><p>` into `<main>`), its region is the **run** of that container's children from the first holding its markers to the last before another block's. Markers are at the **end** of each value and section, so a run, or a root that is itself a bare element (`p`, `h2`, `ul`, `figure`…), first takes the bare, unmarked elements **before** it, back to the block before (a section's heading and first paragraphs), then the ones after it that are left, up to the next block or the page's furniture (`header`, `footer`, `nav`, `aside`, `form`, or their roles), so a rich text's heading belongs to it and the header and footer never do.
 2. `asset`: `img` `src`/`srcset`/`data-src`, `picture source`, or a `background-image` whose URL has a path segment naming one of the block's `assets` (compared without the extension, so a transform to `.webp` still matches; Glide's `/img/asset/…/garden.jpg` and `/img/containers/assets/garden.jpg/abc.webp` both do).
 3. `anchor`: the deepest element whose words hold one of the block's `anchors`, when exactly one does.
 4. `gap`: a block found by none of them, between two located siblings in one container, takes the elements between them (one each, when several blocks are missing and the counts agree).
