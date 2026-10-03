@@ -8,13 +8,13 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Ai\Ports;
  */
 interface ProviderSettings
 {
-    /** anthropic, openai or gemini. */
+    /** anthropic, openai, gemini or openrouter. */
     public function textProvider(): string;
 
     /** Null for the provider's default in Models. */
     public function textModel(): ?string;
 
-    /** openai or gemini, or null for the first in Models::IMAGE_ORDER that has a key. */
+    /** openai, gemini or openrouter, or null for the first in Models::IMAGE_ORDER that has a key. */
     public function imageProvider(): ?string;
 
     /** Null for the provider's default in Models. */

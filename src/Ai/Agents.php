@@ -39,6 +39,30 @@ final class Agents
         'gap-filler' => 'low',
     ];
 
+    /** The tier of the agents that write, read and plan: the default. */
+    public const WRITING = 'writing';
+
+    /** The tier of the small, frequent jobs that need little thought. */
+    public const QUICK = 'quick';
+
+    /**
+     * Agents in the quick tier; the rest are in the writing tier. A
+     * provider that offers several models (OpenRouter) gives each tier
+     * its own default (Models::OPENROUTER_TIERS).
+     */
+    public const TIERS = [
+        'photo-researcher' => self::QUICK,
+        'photo-picker' => self::QUICK,
+        'photo-query' => self::QUICK,
+        'photo-scout' => self::QUICK,
+        'gap-filler' => self::QUICK,
+    ];
+
+    public static function tier(string $agent): string
+    {
+        return self::TIERS[$agent] ?? self::WRITING;
+    }
+
     public static function maxTokens(string $agent): int
     {
         return self::MAX_TOKENS[$agent] ?? self::DEFAULT_MAX_TOKENS;

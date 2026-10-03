@@ -2,16 +2,19 @@
 
 namespace NineteenNinetyFour\Ghostwriter\Core\Ai;
 
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Credentials\ConnectedCredentials;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\NotConfigured;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Http\RetryPolicy;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Http\Sleeper;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Http\Transport;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Ports\Credentials;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Ports\HttpClients;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Ports\ModelTiers;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Ports\ProviderSettings;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers\Anthropic;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers\Gemini;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers\OpenAi;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers\OpenRouter;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Testing\FakeProvider;
 use Psr\Log\LoggerInterface;
 
@@ -36,10 +39,11 @@ final class Providers
         'anthropic' => 'Anthropic',
         'openai' => 'OpenAI',
         'gemini' => 'Gemini',
+        'openrouter' => 'OpenRouter',
     ];
 
     /** Providers that write. */
-    public const TEXT = ['anthropic', 'openai', 'gemini'];
+    public const TEXT = ['anthropic', 'openai', 'gemini', 'openrouter'];
 
     private ?FakeProvider $fake = null;
 
@@ -86,7 +90,7 @@ final class Providers
         $handle = $this->textHandle();
 
         if (! in_array($handle, self::TEXT, true)) {
-            throw new NotConfigured("\"{$handle}\" is not a provider Ghostwriter can write with. Choose anthropic, openai or gemini.", $handle);
+            throw new NotConfigured("\"{$handle}\" is not a provider Ghostwriter can write with. Choose anthropic, openai, gemini or openrouter.", $handle);
         }
 
         $key = $this->credentials->key($handle) ?? throw $this->noKey($handle);
@@ -117,7 +121,7 @@ final class Providers
         return $provider instanceof ImageProvider ? $provider : null;
     }
 
-    /** The provider chosen to write with: anthropic, openai or gemini (or fake). */
+    /** The provider chosen to write with: anthropic, openai, gemini or openrouter (or fake). */
     public function textHandle(): string
     {
         return $this->fake !== null ? 'fake' : $this->settings->textProvider();
@@ -205,6 +209,10 @@ final class Providers
 
     private function noKey(string $handle): NotConfigured
     {
+        if ($handle === 'openrouter') {
+            return new NotConfigured('OpenRouter isn\'t connected. Connect with OpenRouter in Ghostwriter\'s settings, or add OPENROUTER_API_KEY to your .env file.', $handle);
+        }
+
         if (! isset(self::LABELS[$handle], Credentials::ENV[$handle])) {
             return new NotConfigured("No API key is set for \"{$handle}\".", $handle);
         }
@@ -221,10 +229,28 @@ final class Providers
         $imageModel = $this->imageModel($handle);
 
         return match ($handle) {
+            'openrouter' => new OpenRouter($key, $transport, $textModel, $imageModel, $baseUrl, $timeout, $this->tierModels($handle), $this->credentials instanceof ConnectedCredentials && $this->credentials->source($handle) === 'connected'),
             'openai' => new OpenAi($key, $transport, $textModel, $imageModel, $baseUrl, $timeout),
             'gemini' => new Gemini($key, $transport, $textModel, $imageModel, $baseUrl, $timeout),
             default => new Anthropic($key, $transport, $textModel, $baseUrl, $timeout, $this->settings->anthropicFallbacks()),
         };
+    }
+
+    /**
+     * A model per tier, where the settings choose them (Ports\ModelTiers).
+     *
+     * @return array<string, string|null>
+     */
+    private function tierModels(string $handle): array
+    {
+        if (! $this->settings instanceof ModelTiers) {
+            return [];
+        }
+
+        return [
+            Agents::WRITING => $this->settings->tierModel($handle, Agents::WRITING),
+            Agents::QUICK => $this->settings->tierModel($handle, Agents::QUICK),
+        ];
     }
 
     /**

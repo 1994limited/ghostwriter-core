@@ -17,15 +17,53 @@ final class Models
         'anthropic' => 'claude-opus-5-5',
         'openai' => 'gpt-6.1-sol',
         'gemini' => 'gemini-3.8-flash',
+        'openrouter' => 'anthropic/claude-opus-5.5',
     ];
 
     public const IMAGE_DEFAULTS = [
         'openai' => 'gpt-image-2.5-sunburst',
         'gemini' => 'gemini-3.1-flash-image',
+        'openrouter' => 'openai/gpt-image-2.5-sunburst',
     ];
 
-    /** Providers that make images, in the order they are tried when none is chosen. */
-    public const IMAGE_ORDER = ['openai', 'gemini'];
+    /**
+     * Providers that make images, in the order they are tried when none is
+     * chosen. OpenRouter comes last, so a site with an OpenAI or Gemini key
+     * keeps making images with it.
+     */
+    public const IMAGE_ORDER = ['openai', 'gemini', 'openrouter'];
+
+    /**
+     * OpenRouter's default model for each tier of agent (Agents::tier()):
+     * the writing jobs, and the quick ones (photo search and choice, gap
+     * fixes). Checked against openrouter.ai/models on 2026-10-03. A site can
+     * choose its own per tier (Ports\ModelTiers) or one for every agent
+     * (ProviderSettings::textModel()).
+     */
+    public const OPENROUTER_TIERS = [
+        Agents::WRITING => 'anthropic/claude-opus-5.5',
+        Agents::QUICK => 'anthropic/claude-sonnet-5.5',
+    ];
+
+    /**
+     * Text models to offer in a settings dropdown when OpenRouter is the
+     * provider, by OpenRouter model id. Any other id OpenRouter lists works
+     * too. Checked against openrouter.ai/models on 2026-10-03.
+     */
+    public const OPENROUTER_TEXT_CHOICES = [
+        'anthropic/claude-opus-5.5' => 'Claude Opus 5.5 (Anthropic)',
+        'anthropic/claude-sonnet-5.5' => 'Claude Sonnet 5.5 (Anthropic)',
+        'openai/gpt-6.1-sol' => 'GPT-6.1 Sol (OpenAI)',
+        'google/gemini-3.8-flash' => 'Gemini 3.8 Flash (Google)',
+    ];
+
+    /** Image models to offer when OpenRouter makes images. */
+    public const OPENROUTER_IMAGE_CHOICES = [
+        'openai/gpt-image-2.5-sunburst' => 'GPT Image 2.5 Sunburst (OpenAI)',
+        'openai/gpt-image-2.5-flare' => 'GPT Image 2.5 Flare (OpenAI, faster)',
+        'google/gemini-3.1-flash-image' => 'Gemini 3.1 Flash Image (Google)',
+        'google/gemini-3-pro-image' => 'Gemini 3 Pro Image (Google)',
+    ];
 
     /**
      * Anthropic models with refusal classifiers, which take server-side
@@ -42,6 +80,21 @@ final class Models
     }
 
     /**
+     * The default model for one agent: the tier's model on OpenRouter, the
+     * provider's one default elsewhere.
+     *
+     * @throws InvalidArgumentException for a provider that doesn't write.
+     */
+    public static function defaultTextFor(string $provider, string $agent): string
+    {
+        if ($provider === 'openrouter') {
+            return self::OPENROUTER_TIERS[Agents::tier($agent)] ?? self::defaultText($provider);
+        }
+
+        return self::defaultText($provider);
+    }
+
+    /**
      * @throws InvalidArgumentException for a provider that doesn't make images.
      */
     public static function defaultImage(string $provider): string
@@ -54,9 +107,18 @@ final class Models
      * - Anthropic: Opus, Sonnet and Fable 4.6 and later (not Haiku), as `output_config.effort`.
      * - OpenAI: the GPT-6 family, as `reasoning_effort`.
      * - Gemini: 2.5 and 3.x, as `thinkingConfig.thinkingLevel`.
+     * - OpenRouter: the same models by their OpenRouter ids
+     *   (`anthropic/claude-opus-5.5`, `openai/gpt-6.1-sol`,
+     *   `google/gemini-3.8-flash`), as `reasoning.effort`. Other ids don't.
      */
     public static function takesEffort(string $provider, string $model): bool
     {
+        if ($provider === 'openrouter') {
+            $native = self::nativeModel($model);
+
+            return $native !== null && self::takesEffort($native[0], $native[1]);
+        }
+
         return match ($provider) {
             'anthropic' => self::anthropicVersion($model) >= [4, 6],
             'openai' => (bool) preg_match('/^gpt-6(?:[.-]|$)/', $model),
@@ -74,6 +136,27 @@ final class Models
         $base = (string) preg_replace('/-\d{8}$/', '', $model);
 
         return in_array($base, self::ANTHROPIC_FALLBACK_MODELS, true);
+    }
+
+    /**
+     * The provider and model an OpenRouter id stands for, in that
+     * provider's own spelling: `anthropic/claude-opus-5.5` is anthropic's
+     * `claude-opus-5-5`. A variant suffix (`:free`, `:batch`) is dropped.
+     * Null for an id from anyone else.
+     *
+     * @return array{string, string}|null
+     */
+    public static function nativeModel(string $openRouterId): ?array
+    {
+        if (! preg_match('#^(anthropic|openai|google)/([^:]+)#', $openRouterId, $m)) {
+            return null;
+        }
+
+        return match ($m[1]) {
+            'anthropic' => ['anthropic', str_replace('.', '-', $m[2])],
+            'openai' => ['openai', $m[2]],
+            default => ['gemini', $m[2]],
+        };
     }
 
     /**

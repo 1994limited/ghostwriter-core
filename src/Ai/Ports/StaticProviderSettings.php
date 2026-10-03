@@ -6,10 +6,11 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Ai\Ports;
  * Provider settings held as plain values. For tests, and for hosts that
  * read their settings from config once.
  */
-final class StaticProviderSettings implements ProviderSettings
+final class StaticProviderSettings implements ModelTiers, ProviderSettings
 {
     /**
      * @param  array<string, string|null>  $baseUrls  By provider.
+     * @param  array<string, array<string, string|null>>  $tierModels  By provider, then tier (Agents::WRITING, Agents::QUICK).
      */
     public function __construct(
         public string $textProvider = 'anthropic',
@@ -19,7 +20,15 @@ final class StaticProviderSettings implements ProviderSettings
         public int $timeout = 300,
         public array $baseUrls = [],
         public bool $anthropicFallbacks = true,
+        public array $tierModels = [],
     ) {}
+
+    public function tierModel(string $provider, string $tier): ?string
+    {
+        $model = $this->tierModels[$provider][$tier] ?? null;
+
+        return is_string($model) && trim($model) !== '' ? trim($model) : null;
+    }
 
     public function textProvider(): string
     {
