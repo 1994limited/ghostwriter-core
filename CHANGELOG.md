@@ -2,7 +2,7 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 it follows semantic versioning: a minor or patch release doesn't break the public API.
 
-## Unreleased
+## 1.3.0 - 2026-10-03
 
 "Finish this page", the core phases (finish-this-page design). Nothing in the 1.x API changes; the addons' calls work as they are.
 
