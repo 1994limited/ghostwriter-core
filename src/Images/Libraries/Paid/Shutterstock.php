@@ -28,6 +28,8 @@ use NineteenNinetyFour\Ghostwriter\Core\Images\Photo;
 use NineteenNinetyFour\Ghostwriter\Core\Images\PhotoFile;
 use NineteenNinetyFour\Ghostwriter\Core\Images\PhotoUnavailable;
 use NineteenNinetyFour\Ghostwriter\Core\Text\Slug;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use SensitiveParameter;
 
 /**
@@ -37,8 +39,15 @@ use SensitiveParameter;
  * SHUTTERSTOCK_API_KEY and SHUTTERSTOCK_API_SECRET. Nothing here reads the
  * environment.
  *
- * - **Search and look-ups** use basic auth with the key and secret: no
- *   connected account is needed to search.
+ * - **Search and look-ups** (search(), photo(), preview()) are made as
+ *   the user when there is a token (the fixed one, or a connected
+ *   account's), so the results are what that account can license: a free
+ *   API subscription, for one, can license only the Free collection, and
+ *   Shutterstock limits a search to it only when the user makes it.
+ *   Without a token they use basic auth with the key and secret, so no
+ *   connected account is needed to search. A search the user's token is
+ *   refused for (401, 403) is made again with basic auth, and logged at
+ *   debug; a look-up isn't.
  * - **Licensing** needs an OAuth user token with the licenses.create,
  *   licenses.view, purchases.view and user.view scopes, got through
  *   ConnectsAccount ("Connect account"). Tokens are asked for with
@@ -80,6 +89,9 @@ final class Shutterstock implements ConnectsAccount, LicensableLibrary
     /** When Shutterstock refuses the fixed token (401 or 403). */
     public const TOKEN_REFUSED = 'Shutterstock refused the access token in the settings: it is invalid, or it lacks the scopes licensing needs (licenses.create, licenses.view, purchases.view, user.view). Generate a new token with those scopes.';
 
+    /** When Shutterstock refuses a licence because of the plan or its API terms. */
+    public const LICENCE_NOT_COVERED = 'Shutterstock refused this licence. Your plan may not cover this image (free API plans can only license the free collection), or your account must accept Shutterstock\'s API terms.';
+
     /** When the terms this adapter follows were last read. */
     public const TERMS_CHECKED_AT = '2026-10-02';
 
@@ -97,6 +109,14 @@ final class Shutterstock implements ConnectsAccount, LicensableLibrary
 
     public const EDITORIAL_RESTRICTIONS = 'Editorial use only: not for commercial, promotional, advertorial or endorsement use. Credit: Artist/Shutterstock.com.';
 
+    /**
+     * Refusals that mean the plan doesn't cover the image or the account
+     * hasn't accepted the API terms. Shutterstock words a licence of an
+     * image outside a free plan's collection as "Terms of Service must be
+     * accepted".
+     */
+    private const NOT_COVERED = '/terms (of (service|use) )?(must|need to|have to) be accepted|accept(ed)? (the |our )?(api )?terms|not (valid|available|included|covered|allowed|permitted|eligible) (for|in|by|under) (this|your|the) (subscription|plan|account|media|image|asset)|subscription (is )?not valid|(only|can only) license (the )?free/i';
+
     /** The image sizes offered, largest first: the first is the default. */
     private const SIZES = ['huge', 'medium', 'small'];
 
@@ -107,6 +127,8 @@ final class Shutterstock implements ConnectsAccount, LicensableLibrary
 
     /** The fixed token from the settings, if any. Masked in dumps (TokenSet). */
     private readonly ?TokenSet $fixed;
+
+    private readonly LoggerInterface $logger;
 
     /** @var array<string, string> Download addresses from licences bought in this request, by licence ID. Never kept. */
     private array $downloads = [];
@@ -123,8 +145,10 @@ final class Shutterstock implements ConnectsAccount, LicensableLibrary
         private readonly bool $editorial = false,
         ?Closure $clock = null,
         #[SensitiveParameter] ?string $token = null,
+        ?LoggerInterface $logger = null,
     ) {
         $this->downloader = new Downloader($http);
+        $this->logger = $logger ?? new NullLogger;
         $this->clock = $clock ?? fn () => new DateTimeImmutable;
         $token = trim((string) $token);
         $this->fixed = $token === '' ? null : new TokenSet($token);
@@ -192,7 +216,7 @@ final class Shutterstock implements ConnectsAccount, LicensableLibrary
 
         // `license` is a repeated parameter: commercial only, unless editorial is allowed and asked for.
         $url = $this->api('/v2/images/search').'?license=commercial'.($editorial ? '&license=editorial' : '');
-        $data = $this->downloader->json($url, $params, $this->basic(), label: 'Shutterstock');
+        $data = $this->searchAs($url, $params);
         $photos = [];
 
         foreach (is_array($data['data'] ?? null) ? $data['data'] : [] as $item) {
@@ -208,7 +232,7 @@ final class Shutterstock implements ConnectsAccount, LicensableLibrary
 
     public function photo(string $id): Photo
     {
-        return $this->lookup($id)[0];
+        return $this->withToken(fn () => $this->lookup($id)[0]);
     }
 
     public function fetch(string $id): PhotoFile
@@ -222,7 +246,7 @@ final class Shutterstock implements ConnectsAccount, LicensableLibrary
      */
     public function preview(string $id): Preview
     {
-        [, $data] = $this->lookup($id);
+        [, $data] = $this->withToken(fn () => $this->lookup($id));
         $url = $this->string($data, 'assets', 'preview_1500', 'url')
             ?? $this->string($data, 'assets', 'preview_1000', 'url')
             ?? $this->string($data, 'assets', 'preview', 'url');
@@ -385,13 +409,16 @@ final class Shutterstock implements ConnectsAccount, LicensableLibrary
         ] + ($editorial ? ['editorial_acknowledgement' => true] : []);
 
         $answer = $this->downloader->post($this->api('/v2/images/licenses'), ['images' => [$image]], $this->bearer($token), timeout: 90, label: 'Shutterstock', purchase: true);
+        // A refusal comes back as a 200: per image, as `data[n].error`, or as a top-level `errors` list.
         $item = is_array($answer['data'][0] ?? null) ? $answer['data'][0] : null;
-        $error = $item !== null ? $this->string($item, 'error') : $this->firstError($answer);
+        $error = ($item !== null ? ($this->string($item, 'error') ?? $this->string($item, 'error', 'message')) : null) ?? $this->firstError($answer);
 
         if ($error !== null) {
-            throw preg_match('/allotment|downloads? (left|limit|remaining)|insufficient|no (more )?downloads|quota|credits?|exceeded/i', $error)
-                ? new InsufficientBalance('Your Shutterstock subscription has nothing left to license this with.')
-                : new LicenceRefused('Shutterstock wouldn\'t license that photograph: '.$this->plain($error));
+            throw match (true) {
+                (bool) preg_match('/allotment|downloads? (left|limit|remaining)|insufficient|no (more )?downloads|quota|credits?|exceeded/i', $error) => new InsufficientBalance('Your Shutterstock subscription has nothing left to license this with.'),
+                (bool) preg_match(self::NOT_COVERED, $error) => new LicenceRefused(self::LICENCE_NOT_COVERED),
+                default => new LicenceRefused('Shutterstock wouldn\'t license that photograph: '.$this->plain($error)),
+            };
         }
 
         $url = $item !== null ? $this->string($item, 'download', 'url') : null;
@@ -694,6 +721,62 @@ final class Shutterstock implements ConnectsAccount, LicensableLibrary
     }
 
     /**
+     * A search, made as the user when there is a token, so it finds only
+     * what the account can license; with basic auth otherwise, or when
+     * the user's token is refused (logged at debug, never with the token).
+     *
+     * @param  array<string, scalar>  $params
+     * @return array<mixed>
+     *
+     * @throws PhotoUnavailable
+     */
+    private function searchAs(string $url, array $params): array
+    {
+        $token = $this->searchToken();
+
+        if ($token !== null) {
+            try {
+                return $this->downloader->json($url, $params, $this->bearer($token), label: 'Shutterstock', account: true);
+            } catch (NotConnected) {
+                $this->logger->debug('Shutterstock refused the user token for a search (401 or 403); searching with the app key and secret instead, so results may include images the account cannot license.', [
+                    'library' => $this->id(),
+                    'fixed_token' => $this->fixed !== null,
+                ]);
+            }
+        }
+
+        return $this->downloader->json($url, $params, $this->basic(), label: 'Shutterstock');
+    }
+
+    /**
+     * The token searches and look-ups are made with: the fixed one, or the
+     * connected account's (renewed first if it has expired). None when no
+     * account is connected or its token can't be renewed: then basic auth.
+     */
+    private function searchToken(): ?TokenSet
+    {
+        if ($this->fixed !== null) {
+            return $this->fixed;
+        }
+
+        if (! $this->available() || ($tokens = $this->tokens->get($this->id())) === null) {
+            return null;
+        }
+
+        if (! $tokens->isExpired(($this->clock)())) {
+            return $tokens;
+        }
+
+        try {
+            return $this->refresh($tokens);
+        } catch (PhotoUnavailable) {
+            $this->logger->debug('Shutterstock: the connected account\'s token could not be renewed for a search; using the app key and secret.', ['library' => $this->id()]);
+
+            return null;
+        }
+    }
+
+    /**
      * The account's image subscriptions.
      *
      * @return array<int, array<string, mixed>> Each with a string `id`.
@@ -761,7 +844,8 @@ final class Shutterstock implements ConnectsAccount, LicensableLibrary
     private function lookup(string $id): array
     {
         $this->checkId($id);
-        $data = $this->downloader->json($this->api("/v2/images/{$id}"), ['view' => 'full'], $this->basic(), label: 'Shutterstock');
+        $token = $this->searchToken();
+        $data = $this->downloader->json($this->api("/v2/images/{$id}"), ['view' => 'full'], $token !== null ? $this->bearer($token) : $this->basic(), label: 'Shutterstock', account: $token !== null);
 
         return [$this->result($data) ?? throw new PhotoUnavailable('That photograph could not be found.'), $data];
     }
