@@ -58,6 +58,12 @@ use SensitiveParameter;
  * - `$sandbox` points every API call at api-sandbox.shutterstock.com,
  *   where licensing charges nothing, returns a watermarked file and
  *   doesn't do editorial. Sign-in always goes to api.shutterstock.com.
+ * - `$token` is a fixed user access token instead of Connect account: the
+ *   one the account owner gets with "Generate token" on their app's page
+ *   (a `v2/` token doesn't expire), with the SCOPES. While it is set it is
+ *   used for every account call, the account counts as connected, a token
+ *   kept by Connect account is never used, and authorizationUrl(),
+ *   connect() and disconnect() refuse (TOKEN_IN_SETTINGS).
  */
 final class Shutterstock implements ConnectsAccount, LicensableLibrary
 {
@@ -67,6 +73,12 @@ final class Shutterstock implements ConnectsAccount, LicensableLibrary
 
     /** The scopes asked for at sign-in. */
     public const SCOPES = ['user.view', 'licenses.create', 'licenses.view', 'purchases.view'];
+
+    /** Why Connect account is refused while a fixed token is set. */
+    public const TOKEN_IN_SETTINGS = 'This site uses a token from its settings; remove it to connect an account instead.';
+
+    /** When Shutterstock refuses the fixed token (401 or 403). */
+    public const TOKEN_REFUSED = 'Shutterstock refused the access token in the settings: it is invalid, or it lacks the scopes licensing needs (licenses.create, licenses.view, purchases.view, user.view). Generate a new token with those scopes.';
 
     /** When the terms this adapter follows were last read. */
     public const TERMS_CHECKED_AT = '2026-10-02';
@@ -93,6 +105,9 @@ final class Shutterstock implements ConnectsAccount, LicensableLibrary
     /** @var Closure(): DateTimeImmutable */
     private readonly Closure $clock;
 
+    /** The fixed token from the settings, if any. Masked in dumps (TokenSet). */
+    private readonly ?TokenSet $fixed;
+
     /** @var array<string, string> Download addresses from licences bought in this request, by licence ID. Never kept. */
     private array $downloads = [];
 
@@ -107,9 +122,18 @@ final class Shutterstock implements ConnectsAccount, LicensableLibrary
         private readonly bool $sandbox = false,
         private readonly bool $editorial = false,
         ?Closure $clock = null,
+        #[SensitiveParameter] ?string $token = null,
     ) {
         $this->downloader = new Downloader($http);
         $this->clock = $clock ?? fn () => new DateTimeImmutable;
+        $token = trim((string) $token);
+        $this->fixed = $token === '' ? null : new TokenSet($token);
+    }
+
+    /** Whether a fixed token from the settings is used instead of Connect account. */
+    public function usesToken(): bool
+    {
+        return $this->fixed !== null;
     }
 
     public function id(): string
@@ -212,6 +236,11 @@ final class Shutterstock implements ConnectsAccount, LicensableLibrary
 
     public function account(): Account
     {
+        return $this->withToken(fn () => $this->accountNow());
+    }
+
+    private function accountNow(): Account
+    {
         $token = $this->token();
         $products = [];
 
@@ -246,7 +275,7 @@ final class Shutterstock implements ConnectsAccount, LicensableLibrary
     {
         $this->checkId($id);
 
-        return $this->options($id, $this->token())[0];
+        return $this->withToken(fn () => $this->options($id, $this->token())[0]);
     }
 
     /**
@@ -316,6 +345,11 @@ final class Shutterstock implements ConnectsAccount, LicensableLibrary
     }
 
     public function license(string $id, Quote $quote, string $key, string $licensedBy): Licence
+    {
+        return $this->withToken(fn () => $this->licenseNow($id, $quote, $key, $licensedBy));
+    }
+
+    private function licenseNow(string $id, Quote $quote, string $key, string $licensedBy): Licence
     {
         $this->checkId($id);
         $token = $this->token();
@@ -409,6 +443,11 @@ final class Shutterstock implements ConnectsAccount, LicensableLibrary
      */
     public function download(Licence $licence): PhotoFile
     {
+        return $this->withToken(fn () => $this->downloadNow($licence));
+    }
+
+    private function downloadNow(Licence $licence): PhotoFile
+    {
         $this->checkId($licence->photoId);
         $url = $this->downloads[$licence->orderId] ?? null;
 
@@ -438,6 +477,14 @@ final class Shutterstock implements ConnectsAccount, LicensableLibrary
      * ledger ID it was bought under (`key`, from `metadata.customer_id`).
      */
     public function findLicences(string $id): array
+    {
+        return $this->withToken(fn () => $this->findLicencesNow($id));
+    }
+
+    /**
+     * @return array<int, Licence>
+     */
+    private function findLicencesNow(string $id): array
     {
         $this->checkId($id);
         $data = $this->downloader->json($this->api('/v2/images/licenses'), ['image_id' => $id, 'sort' => 'newest', 'per_page' => 50], $this->bearer($this->token()), label: 'Shutterstock', account: true);
@@ -475,8 +522,13 @@ final class Shutterstock implements ConnectsAccount, LicensableLibrary
         return $licences;
     }
 
+    /**
+     * @throws NotConnected while a fixed token is set.
+     */
     public function authorizationUrl(string $state, string $redirectUri): string
     {
+        $this->refuseWithToken();
+
         return self::API.'/v2/oauth/authorize?'.http_build_query([
             'client_id' => $this->key,
             'redirect_uri' => $redirectUri,
@@ -489,6 +541,8 @@ final class Shutterstock implements ConnectsAccount, LicensableLibrary
 
     public function connect(string $code, string $redirectUri, string $state = ''): TokenSet
     {
+        $this->refuseWithToken();
+
         if (trim($code) === '' || ! $this->available()) {
             throw new NotConnected('Shutterstock didn\'t accept the sign-in. Try connecting again.');
         }
@@ -503,8 +557,16 @@ final class Shutterstock implements ConnectsAccount, LicensableLibrary
         ], null, 'Shutterstock didn\'t accept the sign-in. Try connecting again.');
     }
 
+    /**
+     * With a fixed token, that token, as it is: it doesn't expire, and
+     * nothing is asked or kept.
+     */
     public function refresh(TokenSet $tokens): TokenSet
     {
+        if ($this->fixed !== null) {
+            return $this->fixed;
+        }
+
         if ($tokens->expiresAt === null) {
             return $tokens;
         }
@@ -525,15 +587,18 @@ final class Shutterstock implements ConnectsAccount, LicensableLibrary
 
     public function connected(): bool
     {
-        return $this->tokens->get($this->id()) !== null;
+        return $this->fixed !== null || $this->tokens->get($this->id()) !== null;
     }
 
     /**
      * Shutterstock has no endpoint to revoke a token: it is forgotten here,
      * and the customer can delete the app to revoke it.
+     *
+     * @throws NotConnected while a fixed token is set.
      */
     public function disconnect(): void
     {
+        $this->refuseWithToken();
         $this->tokens->forget($this->id());
     }
 
@@ -542,7 +607,7 @@ final class Shutterstock implements ConnectsAccount, LicensableLibrary
      */
     public function __debugInfo(): array
     {
-        return ['key' => '***', 'secret' => '***', 'sandbox' => $this->sandbox, 'editorial' => $this->editorial];
+        return ['key' => '***', 'secret' => '***', 'token' => $this->fixed === null ? null : '***', 'sandbox' => $this->sandbox, 'editorial' => $this->editorial];
     }
 
     /**
@@ -580,12 +645,45 @@ final class Shutterstock implements ConnectsAccount, LicensableLibrary
     }
 
     /**
-     * The connected account's token, renewed first if it has expired.
+     * @throws NotConnected
+     */
+    private function refuseWithToken(): void
+    {
+        if ($this->fixed !== null) {
+            throw new NotConnected(self::TOKEN_IN_SETTINGS);
+        }
+    }
+
+    /**
+     * Runs an account call; with a fixed token, a refusal (401, 403) says
+     * the token is invalid or lacks scopes, not "connect again".
+     *
+     * @template T
+     *
+     * @param  Closure(): T  $call
+     * @return T
+     */
+    private function withToken(Closure $call): mixed
+    {
+        try {
+            return $call();
+        } catch (NotConnected $exception) {
+            throw $this->fixed !== null ? new NotConnected(self::TOKEN_REFUSED, 0, $exception) : $exception;
+        }
+    }
+
+    /**
+     * The fixed token, or the connected account's token, renewed first if
+     * it has expired. A kept token never overrides the fixed one.
      *
      * @throws NotConnected
      */
     private function token(): TokenSet
     {
+        if ($this->fixed !== null) {
+            return $this->fixed;
+        }
+
         if (! $this->available()) {
             throw new NotConnected('Shutterstock has no API key and secret set.');
         }

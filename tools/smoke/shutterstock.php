@@ -14,6 +14,12 @@
  * ~/Dev/gw-test-filament/.env) and are never printed. Only counts, IDs and
  * yes/no checks are printed; no answer is saved. Never commit anything it
  * shows.
+ *
+ * When SHUTTERSTOCK_API_TOKEN (a fixed token from "Generate token") is set
+ * in the same file, it also makes one account() call with it against the
+ * sandbox: no retry, no licensing. It prints only how many subscriptions
+ * there are and each one's downloads left, never the token, user name or
+ * subscription IDs. Without the token it says so and skips that check.
  */
 
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Http\GuzzleHttpClients;
@@ -45,10 +51,11 @@ $read = function (string $file, string $name): string {
 
 $key = $read($envFile, 'SHUTTERSTOCK_API_KEY');
 $secret = $read($envFile, 'SHUTTERSTOCK_API_SECRET');
+$token = $read($envFile, 'SHUTTERSTOCK_API_TOKEN');
 
-// Whatever is printed, the key and secret are taken out first.
-$say = function (string $line) use ($key, $secret): void {
-    echo str_replace(array_filter([$key, $secret, base64_encode($key.':'.$secret)]), '***', $line), "\n";
+// Whatever is printed, the key, secret and token are taken out first.
+$say = function (string $line) use ($key, $secret, $token): void {
+    echo str_replace(array_filter([$key, $secret, $token, base64_encode($key.':'.$secret)]), '***', $line), "\n";
 };
 
 if ($key === '' || $secret === '') {
@@ -84,6 +91,22 @@ try {
     }
 } catch (Throwable $exception) {
     $check(get_class($exception).': '.$exception->getMessage(), false);
+}
+
+// The fixed token: one account() call against the sandbox, once. Never licenses.
+if ($token === '') {
+    $say('SHUTTERSTOCK_API_TOKEN isn\'t set: the token check is skipped.');
+} else {
+    $say('Shutterstock sandbox: account() with the token from SHUTTERSTOCK_API_TOKEN (one call, no licensing)');
+
+    try {
+        $withToken = new Shutterstock(new GuzzleHttpClients, $key, $secret, new InMemoryLibraryTokens, sandbox: true, token: $token);
+        $account = $withToken->account();
+        $remaining = array_map(fn (array $product) => $product['remaining']?->label() ?? 'unknown', $account->products);
+        $check('token accepted: '.count($account->products).' image subscription(s), downloads left: '.($remaining === [] ? 'none' : implode(', ', $remaining)), true);
+    } catch (Throwable $exception) {
+        $check('token refused or failed: '.get_class($exception).': '.$exception->getMessage(), false);
+    }
 }
 
 $say($ok ? 'Smoke test passed.' : 'Smoke test failed.');

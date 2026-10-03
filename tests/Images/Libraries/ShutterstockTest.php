@@ -44,6 +44,8 @@ final class ShutterstockTest extends ImagesTestCase
 
     private const TOKEN = '1/synthetic-access-token';
 
+    private const FIXED = 'v2/synthetic-fixed-token';
+
     private const API = 'https://api.shutterstock.com';
 
     private const CALLBACK = 'https://cms.example.com/cp/ghostwriter/libraries/shutterstock/callback';
@@ -501,6 +503,97 @@ final class ShutterstockTest extends ImagesTestCase
         $this->assertSame([], $this->posts('/v2/images/licenses'), 'Nothing bought again.');
     }
 
+    public function test_a_fixed_token_is_used_for_every_account_call_and_counts_as_connected(): void
+    {
+        $this->routeAccount();
+        $this->routePhoto('1000001');
+        $this->routeLicences(fn () => $this->json(['data' => [['image_id' => '1000001', 'download' => ['url' => 'https://download.example.com/gatekeeper/abc/shutterstock_1000001.jpg'], 'allotment_charge' => 1, 'license_id' => 'e1licence01']]]), ['data' => [$this->history('e1licence01', 'record-1')]]);
+        $this->route('https://download.example.com/', $this->jpegResponse(60, 40));
+        $this->route(self::API.'/v2/images/licenses/e1licence01/downloads', ['url' => 'https://download.example.com/gatekeeper/def/shutterstock_1000001.jpg']);
+        $library = $this->shutterstock(token: ' '.self::FIXED.' ');
+
+        $this->assertTrue($library->connected(), 'No account is connected, but the token counts.');
+        $this->assertTrue($library->usesToken());
+        $this->assertFalse($this->shutterstock()->usesToken());
+        $this->assertFalse($this->shutterstock(token: '  ')->connected(), 'A blank token is no token.');
+
+        $this->assertSame('742 downloads', $library->account()->product('s1000')['remaining']?->label());
+        $this->assertCount(3, $library->quotes('1000001'));
+        $licence = $library->license('1000001', $this->quote(), 'record-1', 'Ann');
+        $library->download($licence);
+        $this->assertSame(['e1licence01'], array_map(fn (Licence $l) => $l->orderId, $library->findLicences('1000001')));
+        $library->download(new Licence('shutterstock', '1000001', 'e1licence01', $this->now, 'Ann', 's1000:huge'));
+
+        $bearer = array_values(array_filter($this->http->requests, fn (RequestInterface $r) => str_starts_with($r->getHeaderLine('Authorization'), 'Bearer')));
+        $this->assertGreaterThanOrEqual(5, count($bearer));
+
+        foreach ($bearer as $request) {
+            $this->assertSame('Bearer '.self::FIXED, $request->getHeaderLine('Authorization'), (string) $request->getUri());
+        }
+
+        $this->assertSame([], $this->posts('/v2/oauth/access_token'), 'Nothing is refreshed.');
+        $this->assertNull($this->tokens->get('shutterstock'), 'Nothing is kept.');
+    }
+
+    public function test_a_kept_connected_token_never_overrides_the_fixed_one(): void
+    {
+        $this->tokens->put('shutterstock', new TokenSet(self::TOKEN, $this->now->modify('-1 hour'), '3/synthetic-refresh'));
+        $this->routeAccount();
+        $library = $this->shutterstock(token: self::FIXED);
+
+        $library->account();
+        $refreshed = $library->refresh(new TokenSet(self::TOKEN, $this->now->modify('-1 hour'), '3/synthetic-refresh'));
+
+        $this->assertSame('Bearer '.self::FIXED, $this->http->requests[0]->getHeaderLine('Authorization'));
+        $this->assertSame(self::FIXED, $refreshed->accessToken, 'refresh() isn\'t needed: the fixed token comes back.');
+        $this->assertSame([], $this->posts('/v2/oauth/access_token'));
+        $this->assertSame(self::TOKEN, $this->tokens->get('shutterstock')?->accessToken, 'The kept token is left alone.');
+    }
+
+    public function test_connect_account_is_refused_while_a_fixed_token_is_set(): void
+    {
+        $this->tokens->put('shutterstock', new TokenSet(self::TOKEN));
+        $library = $this->shutterstock(token: self::FIXED);
+
+        foreach ([fn () => $library->authorizationUrl('state', self::CALLBACK), fn () => $library->connect('code', self::CALLBACK, 'state'), fn () => $library->disconnect()] as $call) {
+            $exception = $this->failure($call);
+            $this->assertInstanceOf(NotConnected::class, $exception);
+            $this->assertSame('This site uses a token from its settings; remove it to connect an account instead.', $exception->getMessage());
+        }
+
+        $this->assertSame([], $this->http->requests);
+        $this->assertNotNull($this->tokens->get('shutterstock'), 'Disconnect forgot nothing.');
+    }
+
+    public function test_a_refused_fixed_token_says_it_is_invalid_or_lacks_scopes(): void
+    {
+        $this->routePhoto('1000001');
+        $this->route(self::API.'/v2/user/subscriptions', fn () => $this->http->response(403, 'Bad token '.self::FIXED));
+        $this->routeLicences(fn () => $this->http->response(401, 'Bad token '.self::FIXED), ['data' => []]);
+        $library = $this->shutterstock(token: self::FIXED);
+
+        foreach ([fn () => $library->account(), fn () => $library->quotes('1000001'), fn () => $library->license('1000001', $this->quote(), 'record-1', 'Ann')] as $call) {
+            $exception = $this->failure($call);
+            $this->assertInstanceOf(NotConnected::class, $exception);
+            $this->assertSame(Shutterstock::TOKEN_REFUSED, $exception->getMessage());
+            $this->assertStringContainsString('lacks the scopes', $exception->getMessage());
+            $this->assertStringNotContainsString(self::FIXED, $exception->getMessage());
+        }
+
+        $this->assertTrue($library->connected(), 'The token stays: only the settings can remove it.');
+    }
+
+    public function test_a_fixed_token_never_shows_in_dumps(): void
+    {
+        $library = $this->shutterstock(token: self::FIXED);
+
+        $this->assertStringNotContainsString(self::FIXED, print_r($library, true));
+        ob_start();
+        var_dump($library);
+        $this->assertStringNotContainsString(self::FIXED, (string) ob_get_clean());
+        $this->assertStringContainsString("'token' => '***'", var_export($library->__debugInfo(), true));
+    }
+
     protected function library(): PhotoLibrary
     {
         return $this->shutterstock();
@@ -526,9 +619,9 @@ final class ShutterstockTest extends ImagesTestCase
         return self::SECRET;
     }
 
-    private function shutterstock(bool $sandbox = false, bool $editorial = false): Shutterstock
+    private function shutterstock(bool $sandbox = false, bool $editorial = false, ?string $token = null): Shutterstock
     {
-        return new Shutterstock($this->http, self::KEY, self::SECRET, $this->tokens, $sandbox, $editorial, fn () => $this->now);
+        return new Shutterstock($this->http, self::KEY, self::SECRET, $this->tokens, $sandbox, $editorial, fn () => $this->now, $token);
     }
 
     private function connected(): void
