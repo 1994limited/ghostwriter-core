@@ -208,4 +208,29 @@ Children (`parent` set: Neo children, nested builders, rich-text sections) are l
 
 **Run the tests:** `node --test tests/js/*.test.js` (Node 22, nothing to install; `tests/js/dom.js` is a small DOM). `tests/Fixtures/preview/page.json` is a page marked by `PreviewMarkers` and printed by a plain template; `LocatorFixtureTest` keeps it current (`GHOSTWRITER_UPDATE_FIXTURES=1 vendor/bin/phpunit tests/Preview/LocatorFixtureTest.php` rewrites it), so the PHP that writes markers and the JavaScript that reads them are tested against each other.
 
-**Not here yet** (later phases): the overlay (outlines, labels, pins, the closed shadow root), re-measuring on resize, image and font loads, cancelling link clicks, and gap highlights from `patterns.json`.
+## Gap markers on the page (`resources/js/preview/markers.js`)
+
+The site's templates print Ghostwriter's gap markers as they are, so `[[ask: adult ticket price]]` reads as code on the rendered page. `markers.js` shows each as what it means. Like the locator it is a dependency-free ES module that each addon **copies as it is**, with a checksum test against core's copy. It holds core's `ask`, `check`, `link` and `sentinel` patterns, and a Node test keeps them equal to `resources/gaps/patterns.json`. Everything it does is display only. It never changes a stored value, and nothing it writes is read back into a field.
+
+```js
+import { locate } from './locator.js';
+import { markGaps, countByRegion } from './markers.js';
+
+const result = locate(doc, map);               // first: strips the preview's markers
+const chips = markGaps(doc, { labels });       // then: the chips, inside each block's region
+countByRegion(result.regions, chips);          // {b1: 1, b3: 2}: chips per located block (a parent counts its children's)
+```
+
+| Marker | On the page | Tooltip (`title`) | Hidden label |
+|---|---|---|---|
+| `[[ask: adult ticket price]]` | an amber chip reading "adult ticket price" (`span.gw-gap.gw-gap-ask`) | "Only you know this: add it before publishing" | "Fact to add:" |
+| `[[check: 3 areas \| from: …]]` | "3 areas" with a dotted amber underline (`span.gw-gap.gw-gap-check`) | "Counted from '…'. Check it before publishing" | "Count to check:" |
+| `a[href*="#gw-link:"]` | the link with a dashed amber underline (`gw-gap gw-gap-link` added to its classes) | "Link to choose" | "(link to choose)" |
+
+- **`markGaps(root, {labels, onActivate, styles})`** splits the text nodes that hold a marker and returns every chip under the root in document order, as `{kind, hint, value?, list?, element}`. Text in scripts, styles, `<title>`, form controls and existing chips is left alone, so running it again (after the locator's `watch()`) changes nothing. The styles go into the document's `<head>` once (`#gw-gap-styles`, `!important` on the few properties that matter), so the site's CSS is never changed. Each chip carries `data-gw-gap-kind` and `data-gw-gap-hint`, and a count also carries `data-gw-gap-list`. With `onActivate(chip)`, chips become `role="button"` with `tabindex="0"`, and a click, Enter or Space calls it.
+- **`labels`** are the addon's translations of `LABELS`: `ask`, `check` (`:list` is the counted list), `link`, the hidden `askSpoken`, `checkSpoken` and `linkSpoken`, and the row's `askRow`, `checkRow` and `linkRow` (`:hint`).
+- **For places without a DOM to rewrite:** `segments(text)` gives the pieces (`text`, `ask`, `check`, and markdown `[words](#gw-link:…)` links as `link`). `toPlainText(text)` gives each marker as its words. `toHtml(text, {labels})` gives escaped HTML with the same chips, for a list that prints HTML. `gapsIn(text)` gives one line per gap ("Add: adult ticket price"), and `chipRow(doc, text)` builds a `div.gw-gap-row` of them for under a plain text `<input>`, whose text can't be highlighted. `has(text)`, `find(text)`, `linkHint(href)`, `injectStyles(doc)` and `STYLES` are there too.
+
+The tests are `tests/js/markers.test.js`.
+
+**Not here yet** (later phases): placeholder images ("Swap me") and the preview toolbar's gap count.
