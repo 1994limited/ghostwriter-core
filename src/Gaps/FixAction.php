@@ -11,6 +11,16 @@ enum FixAction: string
     /** Type the fact into the inline answer box. Never a model's value. */
     case Answer = 'answer';
 
+    /**
+     * "Looks right": replace a count to check with Fix::$value, the count
+     * as it stands or, when its list has changed, the new count
+     * (Markers::resolveCheck()).
+     */
+    case Confirm = 'confirm';
+
+    /** "Change it": an editable value, prefilled with Fix::$value, that replaces the count to check. */
+    case Change = 'change';
+
     /** Point the link at the target in Fix::$value (or, with none, an address the editor types). */
     case Link = 'link';
 
@@ -38,7 +48,7 @@ enum FixAction: string
     /** Move focus to the field and select the gap's text. */
     case Focus = 'focus';
 
-    /** Remove the text (a leftover placeholder). */
+    /** Remove the text (a leftover placeholder, a count to check). */
     case Remove = 'remove';
 
     /** "It's fine": hidden for this entry, in this view. */

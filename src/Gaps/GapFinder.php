@@ -5,6 +5,7 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Gaps;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\AskMarkers;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\AskValues;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\BrokenLinks;
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\CheckMarkers;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\EmptyImages;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\EmptyLinks;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\ExpectedFields;
@@ -48,6 +49,7 @@ final class GapFinder
         return new self([
             new AskMarkers,
             new AskValues,
+            new CheckMarkers,
             new LinkMarkers,
             new EmptyLinks,
             new BrokenLinks,

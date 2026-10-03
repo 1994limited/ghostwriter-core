@@ -26,6 +26,12 @@ final class Fix
         return new self($action, new Message('gaps.fix.'.$action->value, $params), $value, $cost, $primary);
     }
 
+    /** The same fix under another label key, with the same parameters: "Use 4 areas" for a confirm. */
+    public function withLabel(string $key): self
+    {
+        return new self($this->action, new Message($key, $this->label->params), $this->value, $this->cost, $this->primary);
+    }
+
     /**
      * @return array{action: string, label: array{key: string, params: array<string, scalar|null>}, value: mixed, cost: string, primary: bool}
      */

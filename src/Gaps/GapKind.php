@@ -12,6 +12,12 @@ enum GapKind: string
     /** `[[ask: …]]` in text. */
     case Ask = 'ask';
 
+    /**
+     * `[[check: 3 areas | from: …]]` in text: a count Ghostwriter made
+     * from a list the editor gave, to confirm before the page goes live.
+     */
+    case Check = 'check';
+
     /** A fact meant for a field that can't hold text, which is empty. */
     case AskValue = 'ask-value';
 
@@ -51,7 +57,7 @@ enum GapKind: string
     public function severity(): Severity
     {
         return match ($this) {
-            self::Ask, self::AskValue, self::LinkToChoose, self::LinkBroken, self::ImagePlaceholder, self::StockPreview, self::LeftoverToken => Severity::Blocks,
+            self::Ask, self::AskValue, self::Check, self::LinkToChoose, self::LinkBroken, self::ImagePlaceholder, self::StockPreview, self::LeftoverToken => Severity::Blocks,
             self::LinkEmpty, self::ImageEmpty, self::Required => Severity::Required,
             default => Severity::Suggestion,
         };

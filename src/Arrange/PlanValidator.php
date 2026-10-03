@@ -166,7 +166,7 @@ final class PlanValidator
         }
 
         if (self::markers($expectedText) !== self::markers($actualText)) {
-            $violations[] = new Violation(Violation::MARKERS, 'an [[ask: …]] or #gw-link: link was lost or doubled.');
+            $violations[] = new Violation(Violation::MARKERS, 'an [[ask: …]], a [[check: …]] or a #gw-link: link was lost or doubled.');
         }
 
         // 6. Distinctness.
@@ -478,6 +478,12 @@ final class PlanValidator
 
         foreach (Markers::asks($text) as $ask) {
             $key = 'ask:'.Markers::normaliseHint($ask['hint']);
+            $found[$key] = ($found[$key] ?? 0) + 1;
+        }
+
+        foreach (Markers::checks($text) as $check) {
+            // By its list: a stat's value and label may be placed apart from its text.
+            $key = 'check:'.Markers::normaliseHint($check['list']);
             $found[$key] = ($found[$key] ?? 0) + 1;
         }
 

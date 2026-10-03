@@ -6,7 +6,8 @@ use NineteenNinetyFour\Ghostwriter\Core\Gaps\Markers;
 
 /**
  * What every addon's apply path must do with Ghostwriter's markers: a fact
- * to add (`[[ask: …]]`) and a link to choose (`#gw-link:`) put into a
+ * to add (`[[ask: …]]`), a count to check (`[[check: 3 areas | from: …]]`)
+ * and a link to choose (`#gw-link:`) put into a
  * field by the addon's **real** apply path (Statamic `MarkdownToBard` and
  * its entry writer, Craft's `Applier`, Filament's `FormState`), then read
  * back with the addon's own dialect, come back unchanged. The guide and
@@ -72,6 +73,20 @@ trait MarkerRoundTripContract
 
         $this->assertSame(['adult ticket price', 'link to the contact page'], array_column(Markers::asks($out), 'hint'), "Plain text lost a marker:\n{$out}");
         $this->assertStringContainsString('[[ask: adult ticket price]]', $out);
+    }
+
+    public function test_every_shape_keeps_a_count_to_check(): void
+    {
+        $check = Markers::check('3 areas', 'Northumberland, Durham & the Tyne Valley');
+        $bullets = Markers::check('4 visits', 'November; December; January; February');
+
+        foreach ($this->markerShapes() as $shape) {
+            $markdown = $shape === 'plain' ? "We visit gardens in {$check}, {$bullets} a winter." : "## Across {$check}\n\n- **{$bullets}** a winter, in *every* garden.";
+            $out = $this->roundTripMarkers($markdown, $shape);
+
+            $this->assertSame([$check, $bullets], array_column(Markers::checks($out), 'match'), "{$shape} changed a count to check:\n{$out}");
+            $this->assertSame([], Markers::asks($out), "{$shape} turned a count into something else:\n{$out}");
+        }
     }
 
     public function test_text_without_markers_has_none_after(): void

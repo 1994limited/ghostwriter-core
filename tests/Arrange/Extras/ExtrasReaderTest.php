@@ -75,7 +75,7 @@ final class ExtrasReaderTest extends TestCase
         $this->assertFalse($item->needsAnswer());
         $this->assertSame('2', $extras->item('x1.2')?->source?->ref);
         $this->assertSame(ExtraKind::Stats, $extras->extraOf('x1.2.label')?->kind);
-        $this->assertNull($extras->item('x1.3'), 'a count the quote does not give is a number of its own');
+        $this->assertSame('[[check: 3 areas | from: Northumberland, Durham and the Tyne Valley]]: Northumberland, Durham, Tyne Valley', $extras->item('x1.3')?->text, 'a count of the quoted list is core\'s count, to be checked (DerivedCountsTest)');
     }
 
     public function test_an_invented_number_is_dropped_even_when_the_quote_matched(): void

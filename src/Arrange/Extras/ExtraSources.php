@@ -3,6 +3,7 @@
 namespace NineteenNinetyFour\Ghostwriter\Core\Arrange\Extras;
 
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Message;
+use NineteenNinetyFour\Ghostwriter\Core\Domain\Sessions\Session;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\Conversation;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\Layout;
 use Symfony\Component\Yaml\Yaml;
@@ -66,6 +67,16 @@ final class ExtraSources
         }
 
         return new self($brief, $draft ?? $conversation->draft ?? '', $entries);
+    }
+
+    /**
+     * A session's sources as they stand now: the person's messages and
+     * answers, and the draft. What GapContext::$sources takes (`all()`), so
+     * a count whose list has since been edited says so.
+     */
+    public static function fromSession(Session $session): self
+    {
+        return self::fromWriter(new Conversation($session->messages, $session->draft, $session->answers), $session->draft, new Layout('', []));
     }
 
     /**

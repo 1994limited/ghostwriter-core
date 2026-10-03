@@ -27,6 +27,13 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
   - `SessionLayouts`, what the addons call: `afterWriter()` (extras read, unit ids carried, the writer's layout re-derived, the others repaired; on the first draft, the planner called, its plans validated, ranked and stored), `afterEdit()`, `refresh()`, `plans()`, `choose()`, `chosen()`, `draftData()`, `build()`, `extras()`, `editExtra()`, `deleteExtra()`, `needsPlanner()`. With `LayoutContext` (schema, pattern, entries, defaults, example ids).
   - A first draft is two calls (the writer with extras, then the planner); later turns are the writer only; choosing and applying a layout, and editing extras, call nothing.
 - **`Session::$plans`** (`Plans::toArray()`) **and `Session::$plan`** (the chosen layout's id), stored like `$units`, under `plans` and `plan`.
+- **Derived counts: counted in code, marked for review.** An extra may now say "3 areas" for "Northumberland, Durham and the Tyne Valley". See docs/layouts.md and docs/gaps.md.
+  - `Anchor\ListCounter` (`find()`, `count()`, `fromMarker()`, `numbers()`, `numberIn()`) and `Anchor\CountedList` (`items`, `text`, `style`, `count()`, `oneLine()`, `sameItems()`, `shared()`): plain lists (commas with a final "and" or "or", Oxford comma or not; bullets, outer level only) counted with no model. Open lists ("etc.", "such as", "including"…), ranges, prose and ambiguous lists are skipped.
+  - `ExtrasReader`: an item whose only fact beyond its quote is one whole number, where the quote is a plain list, is a derived count. The number is core's count, whatever the model wrote ("5 areas" becomes "3 areas"; `ExtrasReader::$counted`, logged at info), and goes in as a `[[check: 3 areas | from: …]]` marker. `ExtraItem::$count` keeps the list; `needsReview()`, `countLabel()` ("Counted from your answer: …") and `state()` ("Needs review") are for the extras list.
+  - The review marker: `Markers::CHECK`, `CHECK_PATTERN`, `check()`, `checks()`, `resolveCheck()`, `withoutChecks()`; `has()` and `normalise()` know it, and `patterns()` (`resources/gaps/patterns.json`) has `check`.
+  - `GapKind::Check` (blocks), found by `Detectors\CheckMarkers` in `GapFinder::standard()`: "I counted 3 areas from “…”. Is that right?", with the fixes `FixAction::Confirm` ("Looks right"), `FixAction::Change` ("Change it") and `Remove`. When the list has changed since (`GapContext::$sources`), `meta.stale` is `changed` (with `newCount` and `newValue`, and "Use “4 areas”"), `gone` or `count`. `PublishReadiness` blocks or warns until it is resolved.
+  - `GapContext::$sources` (named, optional) and `ExtraSources::fromSession()`; `Fix::withLabel()`; the strings in `resources/lang/en/gaps.php` (`check*`, `fix.confirm`, `fix.change`, `fix.use-count`, `extras.*`).
+  - `Tests\Contracts\MarkerRoundTripContract` checks a count to check in every shape: each addon's apply path must keep it.
 - `PatternFinder::sequences()` and `PatternFinder::sequenceOf()`: the block-order counting `find()` uses, public for `SitePatterns`. `find()` is unchanged.
 - `LayoutLog::export()` records `Plan` and `Plans` as arrays.
 
@@ -34,6 +41,8 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 - `TaggedResponse`'s constructor takes `$extras` as a new optional last argument; a reply with no `<reply>` block has its `<extras>` block taken out of the text shown, as `<draft>` and `<images>` are.
 - `PromptLibrary::NAMES` lists `writer-extras` and `layout-planner`; `Agents` has `layout-planner`.
+- `writer-extras` says, in one sentence, that a stat may count a list by quoting it, and that Ghostwriter counts it.
+- `Markers::withoutAsks()` also writes each count to check as its value; the `bracketed` placeholder-text pattern no longer matches inside `[[…]]`. `PlanValidator`'s `MARKERS` rule and `ScopedEditCheck` keep counts to check like links: one lost or doubled fails.
 
 ## 1.7.0 - 2026-10-03
 

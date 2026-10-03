@@ -24,11 +24,18 @@ use NineteenNinetyFour\Ghostwriter\Core\Schema\Schema;
  *   say which empty fields are expected to be filled.
  * - `session`: the gap list kept when a draft was applied; it only makes
  *   messages better and says which fields the draft meant to have filled.
+ * - `sources`: the texts a count to check may have been counted from (the
+ *   brief, the answers and the draft: `ExtraSources::fromSession()->all()`).
+ *   With them, a count whose list has since changed says so; without
+ *   them, a count is only checked against its own list.
  *
  * Use named arguments: the order may grow.
  */
 final class GapContext
 {
+    /**
+     * @param  array<int, string>  $sources
+     */
     public function __construct(
         public readonly Schema $schema,
         public readonly EntryData $entry,
@@ -40,6 +47,7 @@ final class GapContext
         public readonly ?StockImages $stock = null,
         public readonly ?Pattern $pattern = null,
         public readonly SessionGaps $session = new SessionGaps,
+        public readonly array $sources = [],
     ) {}
 
     /** How often entries of this group fill this place, 0 when unknown. */

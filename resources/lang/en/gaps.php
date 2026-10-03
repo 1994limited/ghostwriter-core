@@ -5,13 +5,17 @@
  * `gaps.` prefix (Gaps\Message). Each addon's build copies them into its
  * own format. Parameters are Laravel-style: `:label`, `:hint`.
  *
- * The marker keywords `ask` and `gw-link` are never translated.
+ * The marker keywords `ask`, `check`, `from` and `gw-link` are never translated.
  */
 
 return [
     // What the guide says about each kind of gap.
     'ask' => 'I left a gap in :label: :hint. Only you know this. What should it say?',
     'ask-value' => ':label is empty: :hint. This one needs you.',
+    'check' => 'I counted :hint from “:list”. Is that right?',
+    'check-changed' => 'I counted :hint from “:list”, but that list has changed since. It now has :newCount. Use “:newValue” instead?',
+    'check-gone' => 'I counted :hint from “:list”, but that list isn\'t in what you gave me any more. Is :hint still right?',
+    'check-count' => 'This says :hint, but “:list” has :newCount. Use “:newValue” instead?',
     'link' => 'The “:words” link in :label doesn\'t go anywhere yet.',
     'link-field' => ':label doesn\'t link anywhere yet.',
     'link-empty' => ':label is empty. Pages like this usually link somewhere here.',
@@ -30,6 +34,7 @@ return [
     // The mark's speech label, by kind.
     'speech.ask' => 'Fill this in',
     'speech.ask-value' => 'Fill this in',
+    'speech.check' => 'Check me',
     'speech.link' => 'Needs a link',
     'speech.link-empty' => 'Needs a link',
     'speech.link-broken' => 'Broken link',
@@ -46,6 +51,9 @@ return [
 
     // Fixes.
     'fix.answer' => 'Type it in',
+    'fix.confirm' => 'Looks right',
+    'fix.use-count' => 'Use “:value”',
+    'fix.change' => 'Change it',
     'fix.link' => 'Link to :title',
     'fix.add-link' => 'Add the address',
     'fix.choose-entry' => 'Choose an entry',
@@ -86,6 +94,7 @@ return [
     // ...each thing in its list...
     'publish.item.ask' => ':label (:hint)',
     'publish.item.ask-value' => ':label (:hint)',
+    'publish.item.check' => ':label (a count to check: :hint)',
     'publish.item.link' => ':label (a link to choose)',
     'publish.item.link-broken' => ':label (a link to a deleted page)',
     'publish.item.image-placeholder' => ':label (the image placeholder)',
@@ -95,9 +104,19 @@ return [
     // ...and what each field says.
     'publish.field.ask' => 'Add :hint before publishing.',
     'publish.field.ask-value' => 'Add :hint before publishing.',
+    'publish.field.check' => 'Check “:hint” before publishing.',
     'publish.field.link' => 'Choose where this link goes before publishing.',
     'publish.field.link-broken' => 'This links to a page that\'s been deleted. Choose another before publishing.',
     'publish.field.image-placeholder' => 'Replace the image placeholder before publishing.',
     'publish.field.stock-preview' => 'This is a :library preview, not licensed yet. License it, or choose another image, before publishing.',
     'publish.field.leftover-token' => 'Remove the template text “:hint” before publishing.',
+
+    // The extras list: where a counted extra came from, and its state.
+    'extras.counted.brief' => 'Counted from your brief: “:list”',
+    'extras.counted.answer' => 'Counted from your answer: “:list”',
+    'extras.counted.conversation' => 'Counted from your message: “:list”',
+    'extras.counted.draft' => 'Counted from the draft: “:list”',
+    'extras.counted.entry' => 'Counted from :title: “:list”',
+    'extras.needs-review' => 'Needs review',
+    'extras.needs-answer' => 'Needs your answer',
 ];
