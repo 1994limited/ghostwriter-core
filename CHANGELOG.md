@@ -2,6 +2,19 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 it follows semantic versioning: a minor or patch release doesn't break the public API.
 
+## Unreleased
+
+### Added
+
+- **Shared anchoring (`Anchor\*`), for page preview's comments and Suggest edits.** Both point at a field and a quoted range of its text, and both are scoped edits, so they share one layer. No model is involved. See docs/preview.md.
+  - `TextQuote` (`exact` ≤ 300 characters, `prefix` and `suffix` ≤ 32, `around()`, `toArray()`, `fromArray()`), as the W3C `TextQuoteSelector`.
+  - `QuoteFinder::find(TextQuote, $text, ?int $occurrence = null, bool $markdown = false): ?QuoteMatch`: exact after normalising whitespace, NBSP, curly quotes, dashes and invisible characters (with `$markdown`, inline syntax too); repeats picked by the prefix and suffix, then by `$occurrence`; otherwise one fuzzy match (trigram Dice ≥ 0.9, quotes of 16 characters or more), and null when two places match. `QuoteMatch` (`offset`, `length`, `occurrence`, `fuzzy`, `text()`, `requote()`) counts in characters.
+  - `NormalisedText` (`of()`, `string()`, `words()`, `original()`): the normalising, with a map back to the original.
+  - `Sentences` (`split()`, `covering()`, `inOneBlock()`).
+  - `SourceCheck::unsourced($new, $sources)`: figures (compared as `Studio\Figures` compares them), quotations and names in new text that no source has.
+  - `ScopedEditCheck::check($before, $after, $sources, $minRatio, $maxRatio, ?TextQuote $quote, $mayFillAsks, $mayAddMarkers)`: `scope`, `markers`, `link`, `facts` and `size`.
+  - `resources/anchor/quote-cases.json`: QuoteFinder's cases, for every front-end port of it to run.
+
 ## 1.6.1 - 2026-10-03
 
 ### Fixed
