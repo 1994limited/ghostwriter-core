@@ -25,14 +25,47 @@ class Node {
     }
 
     appendChild(node) {
+        node.parentNode?.removeChild(node);
         node.parentNode = this;
         this.childNodes.push(node);
 
         return node;
     }
 
+    insertBefore(node, before) {
+        node.parentNode?.removeChild(node);
+        const at = this.childNodes.indexOf(before);
+        node.parentNode = this;
+        this.childNodes.splice(at < 0 ? this.childNodes.length : at, 0, node);
+
+        return node;
+    }
+
+    removeChild(node) {
+        const at = this.childNodes.indexOf(node);
+
+        if (at >= 0) {
+            this.childNodes.splice(at, 1);
+            node.parentNode = null;
+        }
+
+        return node;
+    }
+
     get textContent() {
         return this.nodeType === 3 ? this.nodeValue : this.childNodes.map((child) => child.textContent).join('');
+    }
+
+    set textContent(value) {
+        if (this.nodeType === 3) {
+            this.nodeValue = String(value);
+
+            return;
+        }
+
+        this.childNodes.forEach((child) => (child.parentNode = null));
+        this.childNodes = [];
+        this.appendChild(new Text(String(value), this.ownerDocument));
     }
 }
 
@@ -50,6 +83,19 @@ class Element extends Node {
         this.tagName = tag.toUpperCase();
         this.nodeName = this.tagName;
         this.attributes = new Map(attributes);
+        this.listeners = {};
+    }
+
+    addEventListener(type, listener) {
+        (this.listeners[type] ??= []).push(listener);
+    }
+
+    /** Calls the listeners for an event, for tests: `{type, key?}`. */
+    dispatch(event) {
+        const full = { preventDefault() { this.prevented = true; }, stopPropagation() {}, ...event };
+        (this.listeners[event.type] ?? []).forEach((listener) => listener(full));
+
+        return full;
     }
 
     getAttribute(name) {
@@ -109,6 +155,8 @@ export function parse(html) {
     doc.head = head;
     doc.body = body;
     doc.defaultView = { scrollX: 0, scrollY: 0 };
+    doc.createElement = (tag) => new Element(tag, [], doc);
+    doc.createTextNode = (value) => new Text(String(value), doc);
 
     const stack = [body];
     const tokens = html.matchAll(/<!--[\s\S]*?-->|<\/?([a-zA-Z][\w-]*)((?:\s+[^\s=>\/]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?)*)\s*\/?>|[^<]+/g);

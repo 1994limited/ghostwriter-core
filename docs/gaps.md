@@ -14,6 +14,8 @@ What an editor must finish before a page goes live, how core finds it, and how t
 
 The keywords `ask`, `check`, `from` and `gw-link` are never translated.
 
+**Showing them.** Printed as they are, the markers read as code. `resources/js/preview/markers.js` displays them as chips: an amber chip for an ask, a dotted underline for a count to check and a dashed underline for a link to choose, each with a tooltip. It works in the preview's frame (after the locator) and, without a DOM, in the CP's lists and under plain text inputs. It is display only, and the stored marker is never changed. See docs/preview.md, "Gap markers on the page".
+
 ```php
 Markers::asks($text);          // list<{hint, match, offset, occurrence}>
 Markers::checks($text);        // list<{hint, value, list, match, offset, occurrence}>; hint is the value

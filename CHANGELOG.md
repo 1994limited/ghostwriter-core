@@ -2,6 +2,12 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 it follows semantic versioning: a minor or patch release doesn't break the public API.
 
+## Unreleased
+
+### Added
+
+- **Gap markers shown as chips, not raw text (`resources/js/preview/markers.js`).** A dependency-free ES module the addons copy as they copy the locator, with a checksum test. Run after the locator in the preview's frame, `markGaps()` turns `[[ask: …]]` into an amber chip reading the hint ("Only you know this: add it before publishing") and `[[check: 3 areas | from: …]]` into the value with a dotted amber underline ("Counted from '…'. Check it before publishing"). It gives `#gw-link:` links a dashed underline ("Link to choose"). Each has a visually hidden label for screen readers, and the styles go into the frame, never the site's CSS. `countByRegion()` counts the chips in each located block. For places without a DOM to rewrite (the Extras list, a row under a plain text input), there are `segments()`, `toPlainText()`, `toHtml()` (escaped), `gapsIn()` and `chipRow()`. It is display only and never changes a stored marker. Its patterns are core's, and a Node test keeps them equal to `resources/gaps/patterns.json`. See docs/preview.md.
+
 ## 1.8.1 - 2026-10-04
 
 ### Fixed
