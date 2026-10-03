@@ -216,7 +216,7 @@ final class PreviewMarkers
             array_splice($this->blocks, $at, 0, [new MappedBlock($key, MappedBlock::FIELD, $path->toString(), $field->label !== '' ? $field->label : $field->handle, null, $info['units'], [], $info['assets'], $info['anchors'], $field->handle)]);
         }
 
-        return new PreviewData($marked, new BlockMap($this->blocks), $hash);
+        return new PreviewData($marked, new BlockMap(array_values($this->blocks)), $hash);
     }
 
     /**
