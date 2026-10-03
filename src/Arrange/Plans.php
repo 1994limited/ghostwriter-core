@@ -157,7 +157,7 @@ final class Plans implements Countable, IteratorAggregate
             if ($existing->id === $plan->id) {
                 $plans[$i] = $plan;
 
-                return new self($plans);
+                return new self(array_values($plans));
             }
         }
 

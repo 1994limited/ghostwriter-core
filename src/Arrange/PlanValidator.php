@@ -341,7 +341,7 @@ final class PlanValidator
                 continue;
             }
 
-            if (isset($parsed['extra'])) {
+            if ($parsed['extra'] !== null) {
                 $item = $extras->item($parsed['extra']);
                 $key = $ref;
 
@@ -358,7 +358,7 @@ final class PlanValidator
                 continue;
             }
 
-            $unit = $units->get($parsed['unit']);
+            $unit = $parsed['unit'] === null ? null : $units->get($parsed['unit']);
 
             if ($unit === null) {
                 continue;

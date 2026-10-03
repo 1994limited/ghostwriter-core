@@ -21,18 +21,19 @@ final class Content
 
     /**
      * A ref taken apart: a unit, with a piece (1-based) and a side of a
-     * lead-in; or an extra item, with a part. Null for anything else.
+     * lead-in; or an extra item, with a part. The other keys are null.
+     * Null for anything else.
      *
-     * @return array{unit: string, piece: int|null, side: string|null}|array{extra: string, part: string|null}|null
+     * @return array{unit: string|null, piece: int|null, side: string|null, extra: string|null, part: string|null}|null
      */
     public static function parse(string $ref): ?array
     {
         if (preg_match('/^(u\d+)(?:#(\d+)(?::(lead|rest))?)?$/', $ref, $m) === 1) {
-            return ['unit' => $m[1], 'piece' => isset($m[2]) && $m[2] !== '' ? (int) $m[2] : null, 'side' => $m[3] ?? null];
+            return ['unit' => $m[1], 'piece' => isset($m[2]) && $m[2] !== '' ? (int) $m[2] : null, 'side' => $m[3] ?? null, 'extra' => null, 'part' => null];
         }
 
         if (preg_match('/^(x\d+\.\d+)(?:\.([a-z_]+))?$/', $ref, $m) === 1) {
-            return ['extra' => $m[1], 'part' => $m[2] ?? null];
+            return ['unit' => null, 'piece' => null, 'side' => null, 'extra' => $m[1], 'part' => $m[2] ?? null];
         }
 
         return null;
@@ -51,13 +52,13 @@ final class Content
             return null;
         }
 
-        if (isset($parsed['extra'])) {
+        if ($parsed['extra'] !== null) {
             $item = $this->extras->item($parsed['extra']);
 
             return $item === null ? null : $this->extraPieces($item, $parsed['part'], $this->extras->extraOf($parsed['extra'])?->kind);
         }
 
-        $unit = $this->units->get($parsed['unit']);
+        $unit = $parsed['unit'] === null ? null : $this->units->get($parsed['unit']);
 
         if ($unit === null) {
             return null;
@@ -96,7 +97,7 @@ final class Content
     public function rowPieces(string $ref): ?array
     {
         $parsed = self::parse($ref);
-        $item = isset($parsed['extra']) && $parsed['part'] === null ? $this->extras->item($parsed['extra']) : null;
+        $item = $parsed !== null && $parsed['extra'] !== null && $parsed['part'] === null ? $this->extras->item($parsed['extra']) : null;
 
         if ($item === null) {
             return $this->pieces($ref);

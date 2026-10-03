@@ -36,7 +36,7 @@ final class PlanRepair
         foreach ((new Plan('', PlanOrigin::Model, '', '', $fields))->refs() as $ref) {
             $parsed = Content::parse($ref);
 
-            if (isset($parsed['unit'])) {
+            if ($parsed !== null && $parsed['unit'] !== null) {
                 $placed[$parsed['unit']] = true;
             }
         }
@@ -139,7 +139,7 @@ final class PlanRepair
             $from = $placement->from;
             array_splice($from, $k + 1, 0, [$unit->id]);
             $placements = $blocks[$i]->placements;
-            $placements[$j] = $placement->with($from);
+            $placements[$j] = $placement->with(array_values($from));
             $blocks[$i] = $blocks[$i]->with(array_values($placements));
 
             return array_values($blocks);
