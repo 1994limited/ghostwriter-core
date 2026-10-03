@@ -53,7 +53,7 @@ Which model is used, first match wins:
 | | |
 |---|---|
 | Text URL | `{base_url ?? https://openrouter.ai/api/v1}/chat/completions` |
-| Headers | `Authorization: Bearer …`, plus app attribution: `HTTP-Referer: https://1994.co.uk`, `X-OpenRouter-Title: Ghostwriter` and the older `X-Title: Ghostwriter`. |
+| Headers | `Authorization: Bearer …`, plus app attribution: `HTTP-Referer: https://ghostwriterplugins.com`, `X-OpenRouter-Title: Ghostwriter` and the older `X-Title: Ghostwriter`. |
 | Body | `model`, `max_tokens`, `messages` = system + history + the user turn (images as `image_url` data URIs after the text), `reasoning.effort` when it applies. |
 | Stop reason | OpenRouter normalises them: `stop` → End; `length` → MaxTokens; `content_filter` → Safety; `tool_calls` and others → Other; `error` → thrown (below). A `message.refusal` with no content → `Refused`. |
 | Usage | `prompt_tokens`, `completion_tokens`. |
