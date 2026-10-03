@@ -2,6 +2,18 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 it follows semantic versioning: a minor or patch release doesn't break the public API.
 
+## Unreleased
+
+### Fixed
+
+- **`BriefCheck` no longer takes out what the person or the context gave (1.6.1).** Quoted post titles became `[Add: the quote]`, and a length the person stated became `[Add: the figure]`. Now:
+  - figures are compared by what they say, not how they're written: "800-word", "eight hundred" and "about 800"; "£12k", "£12,000" and "twelve thousand pounds"; "40%" and "forty per cent"; "2026-05-14", "14/05/2026" and "14 May 2026"; ranges ("£5–10k", "1,500 to 2,000"), and millions. A price or a percentage must be given as one or as a plain number, so "40 pounds" doesn't allow "40%". "800-word" counts as the piece's own length;
+  - only speech and testimonials are bracketed. Quoted titles of the group's entries (the `titles` the model was given, which the examples come from), the working title, terms the person used, and proposed titles or headings ("Sections: …", "called …") stay, and a figure inside one of them is part of the title;
+  - invented prices, client quotes, years and team sizes are still taken out.
+
+  `BriefCheck::check()` takes the titles as a new optional last argument (`$titles`); `Studio::fillBrief()` passes the request's titles and the working title.
+- **`Studio::fillGap()` compares figures the same way**, so a summary or shortened text that writes "£1,200,000" as "£1.2m", or "eight weeks" as "8 weeks", is no longer refused. Both use the new internal `Studio\Figures`.
+
 ## 1.6.0 - 2026-10-03
 
 ### Added
