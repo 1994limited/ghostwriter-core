@@ -52,6 +52,7 @@ final class Session
      * @param  string|null  $variant  The blueprint or entry type of the record being edited (Statamic, Craft).
      * @param  int|null  $siteId  The site the record is in (Craft).
      * @param  array<int, array<string, string>>  $gaps  What the draft left for a person when it was applied (Gaps\SessionGaps::toArray()). Stored only once there is something in it, under `gaps` (Filament: a JSON column the addon adds).
+     * @param  array<string, mixed>  $units  The draft's unit ids (Arrange\Units::sidecar()), carried from turn to turn. Stored like `gaps`: only once there is something in it, under `units` (Filament: a JSON column the addon adds).
      */
     public function __construct(
         public readonly Format $format,
@@ -80,6 +81,7 @@ final class Session
         public ?int $siteId = null,
         public bool $editing = false,
         public array $gaps = [],
+        public array $units = [],
     ) {
         $this->editing = $editing || $source !== null;
     }
@@ -450,6 +452,10 @@ final class Session
             $data['gaps'] = $format !== Format::Filament ? $this->gaps : ($this->gaps === [] ? null : $format->json($this->gaps));
         }
 
+        if ($this->units !== [] || array_key_exists('units', $this->stored)) {
+            $data['units'] = $format !== Format::Filament ? $this->units : ($this->units === [] ? null : $format->json($this->units));
+        }
+
         // Kept where the record has room for it; Filament's table has no
         // column, and falls back on updated_at, which a claim also sets.
         if ($this->startedWorkingAt !== null && $format !== Format::Filament) {
@@ -487,6 +493,7 @@ final class Session
             startedWorkingAt: self::nullableText($data['started_working_at'] ?? null),
             variant: self::nullableText($data['blueprint'] ?? null),
             gaps: self::gaps($data['gaps'] ?? []),
+            units: self::units($data['units'] ?? []),
         );
     }
 
@@ -519,6 +526,7 @@ final class Session
             variant: self::nullableText($data['entry_type'] ?? null),
             siteId: self::int($data['site_id'] ?? null),
             gaps: self::gaps($data['gaps'] ?? []),
+            units: self::units($data['units'] ?? []),
         );
     }
 
@@ -554,6 +562,7 @@ final class Session
             group: self::nullableText($row['resource'] ?? null),
             editing: $editing,
             gaps: self::gaps(self::decoded($row['gaps'] ?? null)),
+            units: self::units(self::decoded($row['units'] ?? null)),
         );
     }
 
@@ -599,6 +608,20 @@ final class Session
     {
         /** @var array<string, array<string, mixed>> */
         return array_filter(is_array($images) ? $images : [], 'is_array');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function units(mixed $units): array
+    {
+        $out = [];
+
+        foreach (is_array($units) ? $units : [] as $key => $value) {
+            $out[(string) $key] = $value;
+        }
+
+        return $out;
     }
 
     /**

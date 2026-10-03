@@ -14,6 +14,12 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
   - `SourceCheck::unsourced($new, $sources)`: figures (compared as `Studio\Figures` compares them), quotations and names in new text that no source has.
   - `ScopedEditCheck::check($before, $after, $sources, $minRatio, $maxRatio, ?TextQuote $quote, $mayFillAsks, $mayAddMarkers)`: `scope`, `markers`, `link`, `facts` and `size`.
   - `resources/anchor/quote-cases.json`: QuoteFinder's cases, for every front-end port of it to run.
+- **Units: stable ids for every piece of draft text (`Arrange\*`).** A comment points at units, not block positions, so it follows its words into another layout and across turns. See docs/preview.md.
+  - `Units::fromDraft(Draft|array, Schema, ?RichTextDialect)` and `Units::fromEntry(EntryData, Schema, RichTextDialect)` (block IDs in the paths, for Suggest edits): a unit per text, long text or list value, per section of rich text or a markdown field (split by its top headings, with any lead as prose), per row of a rows field, and per image field with something in it. Ids `u1`… in reading order. Also `get()`, `all()`, `ids()`, `inBlock()`, `at()`, `count()`, `toArray()`, `fromArray()`, `of()`.
+  - `Unit` (`id`, `kind`, `path`, `markdown`, `pieces`, `blockType`, `assets`, `part`, `hash()`, `where()`), `UnitKind`, `Piece`.
+  - `UnitMatcher::carry(Units $before, Units $after): Units`: an id is kept at the same place when the text is ≥ 60% similar (word-pair Jaccard), else by the best match anywhere ≥ 50%; ids are never reused.
+  - `Units::sidecar()` and `restore()`: the ids stored beside the draft, never in its YAML.
+- **`Session::$units`**, the draft's `Units::sidecar()`. Stored like `$gaps`: only once there is something in it, under `units`, so a store with no place for it yet (Filament's table) is never sent the key.
 
 ## 1.6.1 - 2026-10-03
 

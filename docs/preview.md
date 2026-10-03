@@ -63,3 +63,43 @@ A fact is a figure in digits (compared by what it says, as `Studio\Figures` does
 - **Page preview's revision:** `check($unitBefore, $unitAfter, [$comment, $brief, …], 0.4, 1.6, $textQuote, mayFillAsks: true, mayAddMarkers: true)` for a text comment; without `$textQuote` for a block comment.
 
 Size isn't checked when `$before` has fewer than three words. `#gw-link:` links can never be dropped.
+
+## Units: stable ids for draft text
+
+`NineteenNinetyFour\Ghostwriter\Core\Arrange`. A unit is what an editor means by "this bit": a field value inside a block, a top-level field, or one section of a rich-text value. Comments point at unit ids, so they follow their words into another layout and across the writer's turns.
+
+```php
+Units::fromDraft(Draft|array $draft, Schema $schema, ?RichTextDialect $richText = null): Units   // rich text is markdown already
+Units::fromEntry(EntryData $entry, Schema $schema, RichTextDialect $richText): Units            // stored values, read as markdown; block IDs in the paths
+$units->get('u7'); $units->all(); $units->ids(); $units->inBlock(FieldPath $block); $units->at(FieldPath $value); $units->next;
+```
+
+| A value of kind | Units |
+|---|---|
+| `text` | one `text` unit |
+| `longtext` | one `prose` unit (a markdown field: as rich text) |
+| `richtext` | split by its **top** headings (the highest level it uses): any lead before the first is `prose`, then one `section` per heading, up to the next heading of that level. With no headings: one unit, `list` or `quote` when that's all it is, else `prose`. `part` is its index in the value (0, 1…). |
+| `list` | one `list` unit, an `item` piece per item |
+| `rows` | one `row` unit per row with text, a `field` piece per text field |
+| an image field (`files`) | one `media` unit with its stored references in `assets`, when it holds something |
+
+Each `Unit` has `id` ("u7"), `kind` (`UnitKind`), `path` (`Gaps\FieldPath`: by position in a draft, `page_builder/2/text`; with block IDs in an entry, `page_builder/#a1b2/text`), `part`, `markdown` (as written), `pieces` (`Piece`: `paragraph`, `heading` with its level, `item`, `quote`, `table`, `code`, `field`), `blockType` and `assets`. `hash()` is its normalised text hashed; `where()` is its path and part (`body~1`).
+
+`inBlock()` and `at()` compare paths **by position** (`FieldPath::dotted()`), so a draft's units are found by an entry's path and the other way round.
+
+### Carrying ids between turns
+
+Ids are never in the draft's YAML, so no prompt or hand edit can corrupt them. They're stored beside it in `Session::$units`:
+
+```php
+// After any change to the draft (a writer's turn, click-to-edit, Edit YAML, a revision):
+$before = Units::fromDraft($oldDraft, $schema)->restore($session->units);
+$after = (new UnitMatcher)->carry($before, Units::fromDraft($newDraft, $schema));
+$session->units = $after->sidecar();   // {next, units: {u7: {path, part?, kind, hash}}}
+```
+
+`carry()` keeps an id when the new unit is at the same place, of the same kind, and ≥ 60% similar; else for the best match anywhere ≥ 50% (Jaccard of word pairs; single words when either text has fewer than four). Media units match only by identical assets. Every other unit gets a new id from `next`: **ids are never reused**, so a comment whose unit is gone stays detached rather than landing on other words.
+
+`Session::$units` is written only once it has something in it, like `$gaps`. Filament's table needs a `units` JSON column before the addon sets it.
+
+Suggest edits uses `fromEntry()` ids (`u1`…) for one call only and stores anchors as a `FieldPath` plus a `TextQuote`, not ids.
