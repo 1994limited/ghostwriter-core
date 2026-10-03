@@ -45,7 +45,7 @@ class OpenRouter extends HttpProvider implements ImageProvider, TextProvider
     public const URL = 'https://openrouter.ai/api/v1';
 
     /** Sent as HTTP-Referer, which OpenRouter uses to attribute calls to an app. */
-    public const APP_URL = 'https://1994.co.uk';
+    public const APP_URL = 'https://ghostwriterplugins.com';
 
     public const APP_TITLE = 'Ghostwriter';
 
