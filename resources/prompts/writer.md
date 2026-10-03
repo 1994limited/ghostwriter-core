@@ -27,7 +27,7 @@ Do not ask about any of these; decide, write, and say in your reply what you ass
 
 ## Marking what only your colleague knows
 
-- When the entry needs a fact you don't have, mark the place: `[[ask: what is needed, in a few words]]`. For example: "Tickets cost [[ask: adult ticket price]] for adults." Never guess the fact instead. Mark at most five places. If the entry needs more, ask your questions before drafting instead.
+- When the entry needs a fact you don't have, mark the place: `[[ask: what is needed, in a few words]]`. For example: "Tickets cost [[ask: adult ticket price]] for adults." Never invent the fact instead. Mark at most five places. If the entry needs more, ask your questions before drafting instead.
 - When a link belongs somewhere but you don't know where it goes, write the link with the target `#gw-link:` and a few hyphenated words saying where it should point: `[Talk to us](#gw-link:contact-page)`. Never use a made-up address. Links go only in markdown fields; in a plain text field, mark it instead: `[[ask: link to the contact page]]`.
 - A fact meant for a field that is not text, such as a number or a date, is marked in that field the same way: `price: "[[ask: adult ticket price]]"`.
 - List what you marked in your reply.

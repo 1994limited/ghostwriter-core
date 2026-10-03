@@ -438,6 +438,11 @@ final class Studio
      * a person to correct: an answer (plain text, possibly empty) for every
      * question, by handle.
      *
+     * @deprecated 1.6.0 The brief screen's "Fill in the brief". The brief is
+     *             now filled in the conversation with fillBrief(), which also
+     *             keeps facts the person didn't give out. Kept, unchanged,
+     *             through 1.x.
+     *
      * @param  array<int, string>  $titles  Titles of existing entries of this kind's group, newest first.
      * @return Result<array<string, string>>
      *
@@ -446,19 +451,7 @@ final class Studio
      */
     public function draftBrief(ContentKind $kind, string $title, string $notes = '', array $titles = []): Result
     {
-        $questions = implode("\n", array_map(
-            fn (Question $question) => "- `{$question->handle}`".($question->required ? ' (required)' : ' (optional)').': '.$question->label.($question->instructions === '' ? '' : ' '.$question->instructions)
-                .($question->options === [] ? '' : ' One of: '.implode(', ', array_keys($question->options)).'.'),
-            $kind->questions,
-        ));
-
-        $instructions = strtr($this->prompt('brief-writer'), [
-            '{{ type_title }}' => $kind->title,
-            '{{ type_description }}' => $kind->description,
-            '{{ type_guidance }}' => $kind->guidance,
-            '{{ questions }}' => $questions,
-            '{{ entries }}' => $titles !== [] ? implode("\n", array_map(fn (string $title) => '- '.$title, $titles)) : 'None yet.',
-        ]);
+        $instructions = $this->briefInstructions('brief-writer', $kind, $titles);
 
         $response = $this->ask('brief-writer', "Working title: {$title}\n\nNotes:\n".(trim($notes) !== '' ? trim($notes) : '(none)'), instructions: $instructions);
         $failed = 'Ghostwriter could not put a brief together from that. Try again, or fill it in by hand.';
@@ -487,6 +480,112 @@ final class Studio
         }
 
         return new Result($out, $response->usage);
+    }
+
+    /**
+     * The brief, filled in for the conversation's brief card from what the
+     * person said (their quick details, or a plan idea): a working title,
+     * an answer for every one of the kind's questions, and the records to
+     * model it on (the request's, as the brief screen ticked them). One
+     * call. For "Try again", pass `$request->tryAgain($brief, $edited)`.
+     *
+     * Facts about the organisation are never invented: the prompt forbids
+     * it, and BriefCheck turns any figure or quotation the person didn't
+     * give into `[Add: …]` for them to fill in, without asking again.
+     *
+     * @return Result<Brief>
+     *
+     * @throws UnreadableReply when there is no brief to read.
+     * @throws ProviderException
+     */
+    public function fillBrief(BriefRequest $request): Result
+    {
+        $kind = $request->kind;
+        $response = $this->ask('brief-filler', $this->briefFillerPrompt($request), instructions: $this->briefInstructions('brief-filler', $kind, $request->titles));
+        $failed = 'Ghostwriter could not fill in the brief from that. Try again, or say a little more about it.';
+        $block = TaggedResponse::parse($response->text, 'brief')->document;
+
+        if ($block === null) {
+            $this->unreadable('the brief could not be read (there was no <brief> block)', 'brief-filler', $response->text);
+
+            throw new UnreadableReply($failed, 'brief-filler', 'there was no <brief> block');
+        }
+
+        try {
+            $parsed = (array) LenientYaml::parse((string) preg_replace('/\A```(?:yaml|yml)?\s*\n(.*?)\n?```\s*\z/su', '$1', trim($block)));
+        } catch (Throwable $exception) {
+            $this->unreadable('the brief could not be read ('.self::yamlProblem($exception, forLog: true).')', 'brief-filler', $response->text);
+
+            throw new UnreadableReply($failed, 'brief-filler', self::yamlProblem($exception));
+        }
+
+        $answers = [];
+
+        foreach ($kind->questions as $question) {
+            $answer = $parsed[$question->handle] ?? null;
+            $answers[$question->handle] = in_array($question->handle, $request->kept, true) && $request->previous !== null
+                ? ($request->previous->answers[$question->handle] ?? '')
+                : trim(is_scalar($answer) ? (string) $answer : '');
+        }
+
+        [$answers, $problems] = BriefCheck::check($kind, $answers, $request->source(), $request->previous !== null ? $request->kept : []);
+
+        if ($problems !== []) {
+            $this->log('warning', 'the brief had facts the person did not give, now left for them ('.implode('; ', $problems).')', 'brief-filler', $response->text);
+        }
+
+        $title = preg_match('/<title>(.*?)<\/title>/s', $response->text, $match) === 1 ? trim((string) preg_replace('/\s+/u', ' ', $match[1])) : '';
+        $title = $request->title !== null && $request->title !== '' ? $request->title : ($title !== '' ? mb_substr($title, 0, 200) : self::opening($request->details, 80));
+
+        return new Result(
+            new Brief($title, $answers, $request->examples, $request->previous !== null ? $request->previous->attempt + 1 : 1),
+            $response->usage,
+        );
+    }
+
+    /**
+     * What the brief filler is sent: what the person said, and for "Try
+     * again" the brief they didn't take.
+     */
+    public function briefFillerPrompt(BriefRequest $request): string
+    {
+        $said = $request->title !== null && $request->title !== ''
+            ? "Working title: {$request->title}\n\nNotes:\n".($request->details !== '' ? $request->details : '(none)')
+            : "What your colleague said:\n".($request->details !== '' ? $request->details : '(nothing)');
+
+        if ($request->previous === null) {
+            return $said;
+        }
+
+        $previous = trim(Yaml::dump($request->previous->answers, 2, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK));
+        $kept = $request->kept !== []
+            ? 'Keep these exactly, your colleague wrote them: '.implode(', ', array_map(fn (string $handle) => "`{$handle}`", $request->kept)).'.'
+            : 'Your colleague changed none of the answers.';
+
+        return $said."\n\n<previous_brief>\n<title>{$request->previous->title}</title>\n{$previous}\n</previous_brief>\n\n"
+            ."Your colleague asked you to try again. {$kept} Answer the rest afresh.";
+    }
+
+    /**
+     * The brief writer's or filler's instructions for a kind, filled in.
+     *
+     * @param  array<int, string>  $titles
+     */
+    private function briefInstructions(string $agent, ContentKind $kind, array $titles): string
+    {
+        $questions = implode("\n", array_map(
+            fn (Question $question) => "- `{$question->handle}`".($question->required ? ' (required)' : ' (optional)').': '.$question->label.($question->instructions === '' ? '' : ' '.$question->instructions)
+                .($question->options === [] ? '' : ' One of: '.implode(', ', array_keys($question->options)).'.'),
+            $kind->questions,
+        ));
+
+        return strtr($this->prompt($agent), [
+            '{{ type_title }}' => $kind->title,
+            '{{ type_description }}' => $kind->description,
+            '{{ type_guidance }}' => $kind->guidance,
+            '{{ questions }}' => $questions,
+            '{{ entries }}' => $titles !== [] ? implode("\n", array_map(fn (string $title) => '- '.$title, $titles)) : 'None yet.',
+        ]);
     }
 
     /**
@@ -618,13 +717,19 @@ final class Studio
     }
 
     /**
-     * The questionnaire answers as the opening message of a session.
+     * The questionnaire answers as the opening message of a session: the
+     * message the writer starts from. With a working title (the brief
+     * card's), it comes first.
      *
      * @param  array<string, mixed>  $answers  By question handle.
      */
-    public function brief(ContentKind $kind, array $answers): string
+    public function brief(ContentKind $kind, array $answers, ?string $title = null): string
     {
         $lines = ["Here is the brief for a new {$this->prompts->vocabulary()->item}: {$kind->title}.", ''];
+
+        if ($title !== null && trim($title) !== '') {
+            array_push($lines, '**Working title**', trim($title), '');
+        }
 
         foreach ($kind->questions as $question) {
             $answer = $answers[$question->handle] ?? '';

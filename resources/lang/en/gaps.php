@@ -10,8 +10,8 @@
 
 return [
     // What the guide says about each kind of gap.
-    'ask' => 'I left a gap in :label: :hint. I didn\'t want to guess. What should it say?',
-    'ask-value' => ':label is empty: :hint. I didn\'t want to guess it.',
+    'ask' => 'I left a gap in :label: :hint. Only you know this. What should it say?',
+    'ask-value' => ':label is empty: :hint. This one needs you.',
     'link' => 'The “:words” link in :label doesn\'t go anywhere yet.',
     'link-field' => ':label doesn\'t link anywhere yet.',
     'link-empty' => ':label is empty. Pages like this usually link somewhere here.',
@@ -74,7 +74,7 @@ return [
     'guide.done' => 'All done. Nothing left to fill in, so this page is ready to publish.',
     'guide.skipped' => 'That\'s everything I could help with. :count still need you; they stay highlighted until they\'re filled in.',
     'guide.skipped-one' => 'That\'s everything I could help with. 1 still needs you; it stays highlighted until it\'s filled in.',
-    'guide.reason.draft' => 'I didn\'t want to guess.',
+    'guide.reason.draft' => 'Only you know this.',
 
     // The publish guard: one message for the page...
     'publish.ready' => 'Ready to publish.',

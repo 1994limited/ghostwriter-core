@@ -1,0 +1,101 @@
+{
+    "addon": "filament",
+    "job": "fillBrief",
+    "inputs": [
+        {
+            "@": "BriefRequest",
+            "kind": {
+                "@": "ContentKind",
+                "handle": "project",
+                "title": "Project write-up",
+                "description": "One project, told from the brief to the result.",
+                "guidance": "Lead with the outcome.\nName the client only when the brief does.",
+                "checklist": [
+                    "Says what was made.",
+                    "Has one figure."
+                ],
+                "questions": [
+                    {
+                        "@": "Question",
+                        "handle": "client",
+                        "label": "Who was it for?",
+                        "instructions": "As the client would name themselves.",
+                        "required": true,
+                        "options": []
+                    },
+                    {
+                        "@": "Question",
+                        "handle": "scope",
+                        "label": "What was the work?",
+                        "instructions": "",
+                        "required": false,
+                        "options": {
+                            "site": "A website",
+                            "app": "An app"
+                        }
+                    },
+                    {
+                        "@": "Question",
+                        "handle": "result",
+                        "label": "What changed?",
+                        "instructions": "",
+                        "required": false,
+                        "options": []
+                    }
+                ]
+            },
+            "details": "Kiln opening. Opens in May, for the trust.",
+            "title": null,
+            "titles": [
+                "Harbour Trust",
+                "Mill Lane"
+            ],
+            "examples": [
+                "7",
+                "9"
+            ],
+            "previous": null,
+            "kept": []
+        }
+    ],
+    "replies": {
+        "brief-filler": [
+            "<title>The new kiln opens</title>\n<brief>\nclient: The Harbour Trust\nscope: site\nresult: \"[Add: what changed for the trust]\"\n</brief>"
+        ]
+    },
+    "requests": [
+        {
+            "agent": "brief-filler",
+            "instructions": "You help a colleague at an organisation start a piece of writing for their app. They have told you, in a line or two, what it is called and what it should say. You fill in the brief their writer works from: a set of questions, listed below. Your colleague checks your answers in the conversation, changes what is wrong, and only then starts the writing. You are saving them typing, not deciding for them.\n\n## How to answer\n\n- Give a working title first. Use theirs if they gave one; otherwise make a plain, specific one from what they said.\n- Answer every question, in the order given, in your colleague's own plain register: short, direct, the way a busy person fills in a form. No headings, no preamble.\n- Build on what they said. Anything they said goes in, under the question it belongs to, in their words where you can.\n- Where they said nothing, answer as they most likely would, reasoning from the title, the kind of content this is, and the site's other records listed below.\n- The angle, the reader, the argument, the structure, the length: propose these with confidence. That is the help they want.\n- Never invent facts about the organisation. Its projects, clients, people, results, figures, dates, prices and quotes come only from what your colleague said. Where a question needs one they did not give, write what is needed in square brackets, for example `[Add: one project where we repaired a site the client expected to rebuild]`. Your colleague looks for square brackets to see what only they can fill in. Never put a figure or a quotation outside square brackets unless your colleague gave it.\n- The records listed at the end are titles only. You do not know what happened in them, so never describe one. You may point at one as a candidate, in square brackets: `[Check: could \"Title\" be evidence here? Say what we did]`.\n- For a question about what must not appear, give the sensible defaults for this site (usually client names that are not already public) and nothing invented.\n- For a question with set answers, give one of the values listed, exactly, or an empty string.\n- An optional question with nothing useful to say is left as an empty string.\n\n## Trying again\n\nIf your colleague asks you to try again, you are shown the brief they did not take. Answers they changed themselves are listed as kept: copy those exactly. Answer every other question afresh, from a different angle where the last one did not suit. Anything still unknown stays in square brackets.\n\n## How you reply\n\nThe working title inside a `<title>` block, then one YAML document inside a `<brief>` block, and nothing else. Keys are the question handles exactly as given. Multi-line answers are YAML block scalars (`handle: |`). Quote any single-line answer containing a colon followed by a space, and always with double quotes: text has apostrophes in it, which break single quotes.\n\n<title>Working title</title>\n<brief>\nhandle: answer\n</brief>\n\n## What is being written: Project write-up\n\nOne project, told from the brief to the result.\n\nLead with the outcome.\nName the client only when the brief does.\n\n## The questions\n\n- `client` (required): Who was it for? As the client would name themselves.\n- `scope` (optional): What was the work? One of: site, app.\n- `result` (optional): What changed?\n\n## Other records in this part of the app\n\n- Harbour Trust\n- Mill Lane",
+            "prompt": "What your colleague said:\nKiln opening. Opens in May, for the trust.",
+            "history": [],
+            "images": [],
+            "maxTokens": 6000,
+            "effort": null,
+            "model": null,
+            "timeout": null
+        }
+    ],
+    "result": {
+        "@": "Result",
+        "value": {
+            "@": "Brief",
+            "examples": [
+                "7",
+                "9"
+            ],
+            "title": "The new kiln opens",
+            "answers": {
+                "client": "The Harbour Trust",
+                "scope": "site",
+                "result": "[Add: what changed for the trust]"
+            },
+            "attempt": 1
+        },
+        "usage": {
+            "@": "Usage",
+            "input": 100,
+            "output": 50
+        }
+    }
+}

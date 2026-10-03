@@ -329,6 +329,13 @@ final class Session
             return trim($m[1], " \t\"'");
         }
 
+        // The brief card's working title, in the conversation (1.6).
+        $card = BriefThread::card($this);
+
+        if ($card !== null && trim($card->title) !== '') {
+            return mb_strimwidth(trim($card->title), 0, 80, '…');
+        }
+
         foreach ($this->answers as $answer) {
             if ($this->format === Format::Statamic) {
                 if ($answer) {

@@ -79,7 +79,7 @@ class GapFinderTest extends TestCase
         $this->assertTrue($gap->fixes[0]->primary);
         $this->assertNull($gap->fixes[0]->value, 'Facts come only from the editor: no value is ever suggested.');
         $this->assertSame(FixCost::Model, $gap->fixes[1]->cost);
-        $this->assertSame('I left a gap in Hero: Intro: how long a typical Capacitor project takes. I didn\'t want to guess. What should it say?', $gap->message()->english());
+        $this->assertSame('I left a gap in Hero: Intro: how long a typical Capacitor project takes. Only you know this. What should it say?', $gap->message()->english());
         $this->assertSame('gaps.speech.ask', $gap->toArray()['speech']);
         $this->assertSame('Fill this in', (new Message($gap->kind->speech()))->english());
     }
@@ -161,7 +161,7 @@ class GapFinderTest extends TestCase
 
         $this->assertSame('ask-value|page_builder/#o1/price|adult ticket price|0', $gap->id);
         $this->assertSame(Severity::Required, $gap->severity, 'Not required, so counted rather than blocking.');
-        $this->assertSame('Offer: Price is empty: adult ticket price. I didn\'t want to guess it.', $gap->message()->english());
+        $this->assertSame('Offer: Price is empty: adult ticket price. This one needs you.', $gap->message()->english());
         $this->assertTrue($gap->meta['fromDraft']);
         $this->assertSame('draft', $gap->meta['reason']);
 
