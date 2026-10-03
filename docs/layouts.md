@@ -1,8 +1,61 @@
 # Layouts and extras
 
-How drafting works: the writer writes the draft and, in the same call, prepares **extras** for the block types the site has; a second call proposes up to two other **layouts** of the same words. The writer's draft is layout 1. Switching layouts costs nothing, and **Use this draft** applies the chosen one through the same build path as before. This page is the API the addons call. The design is `page-preview-layouts-design.md` (§5, §6.1, §6.2).
+How drafting works: the writer writes the draft and, in the same call, prepares **extras** for the block types the site has. Then one more call, the **layout planner**, proposes up to two other **layouts** of the same words. The writer's draft is layout 1. Choosing between layouts costs nothing, and **Use this draft** applies the chosen one through the same build path as before. Nothing here is a setting: an addon that calls this API gets layouts and extras for every site. The design is `page-preview-layouts-design.md` (§5, §6.1, §6.2).
 
-Everything here is `NineteenNinetyFour\Ghostwriter\Core\Arrange` (no model) or `Studio` (the model calls).
+Everything is in `NineteenNinetyFour\Ghostwriter\Core\Arrange` (no model) or `Studio` (the model calls). Addons call `Arrange\SessionLayouts`; the classes under it are documented further down.
+
+## What the addon calls: `SessionLayouts`
+
+```php
+$sessionLayouts = new SessionLayouts(Studio $studio, Layout\Layouts $layouts, ?LoggerInterface $logger);
+$site = new LayoutContext(Schema $schema, ?Pattern $pattern, array $entries, array $defaults = [], array $exampleIds = []);
+// $entries: the group's entries the pattern was found from, newest first (EntryData); $exampleIds: the ids of the examples the writer was shown.
+```
+
+**Build the plans: after every writer turn**, in the same queued job:
+
+```php
+$response = $studio->write($conversation, $writerContext);       // Layout::fromSchema(): the writer is offered extras
+$before = $session->draft;
+$session->answer($response->reply, $response->document, $response->inputTokens, $response->outputTokens);
+$usage = $sessionLayouts->afterWriter($session, $before, $response, $conversation, $writerContext, $site);
+// then save the session (SessionGuard), as after any change
+```
+
+- It reads the writer's extras (keeping only sourced ones) into `Session::$extras`. A later turn that sends no `<extras>` keeps the session's.
+- It carries the unit ids over (`Session::$units`), re-derives the writer's layout `w`, and repairs the other layouts to the new text (marking any that no longer fit `stale`).
+- **On the first draft** (`$before` is null) it then calls the layout planner once, validates its plans, ranks them, and stores `Session::$plans`. The planner's tokens are added to `Session::$usage` and returned. It doesn't call the planner when there's nothing to arrange: no page builder and no rich text with more than one section in the draft, or fewer than three units.
+- If the planner fails (a provider error, an unreadable reply, every plan invalid), only the writer's layout is stored, with a warning in the log. Show "No other layouts this time. [Try again]", never an error.
+
+**After any other change to the draft** (Edit YAML, click-to-edit, a revision): `$sessionLayouts->afterEdit($session, $before, $site)`. No model.
+
+**Refresh layouts** (a click): `$sessionLayouts->refresh($session, $site)`. One planner call.
+
+**List them:** `$sessionLayouts->plans($session)` gives `Plans` in display order, the writer's first. Each `Plan` has `id`, `name`, `description` (from the plan), `follows` (a site pattern id), `suggested` (one plan is), `stale` ("Needs refreshing"), `blockCount()` and `sequences()`. For a card's "Like Garden design, 6 pages", look `follows` up in `SitePatterns::find()`.
+
+**Choose one:** `$sessionLayouts->choose($session, 'p1')`. The choice is stored on the session (`Session::$plan`, null for the writer's), so it's shared by everyone on the piece (E7). It throws `InvalidArgumentException` for an unknown or stale layout. `chosen($session)` gives the chosen layout, or the writer's when the choice is gone or stale.
+
+**Apply the chosen plan** ("Use this draft", and the preview's data):
+
+```php
+$data  = $sessionLayouts->draftData($session, $site);      // the chosen layout's draft data (or pass a plan id)
+$built = $layouts->builder()->build($data, $schema, $pattern, $defaults);   // then HouseStyle, placeholders, images, as today
+// or: $built = $sessionLayouts->build($session, $site);
+```
+
+The session's `draft` stays the writer's text; a layout is applied by arranging it. With the writer's layout chosen, `draftData()` is the draft itself, so apply is exactly what it was.
+
+**Read and change the extras** (the Text tab): `$sessionLayouts->extras($session)` gives `Extras`; `editExtra($session, 'x1.2', $text, ?$parts, ?$site)` and `deleteExtra($session, 'x1.2', $site)`. Deleting an extra a layout uses re-arranges that layout without it.
+
+**Cost.** First draft: the writer (with extras) plus the planner, two calls. A later turn: the writer only. Refresh layouts: one planner call. Choosing, applying, editing or deleting extras, and every check: no call.
+
+## The layout planner
+
+`Studio::planLayouts(LayoutBrief $brief): Result` (value: `list<Plan>`, unvalidated, numbered p1, p2…). `SessionLayouts` makes the brief and calls it; you don't need to.
+
+- **Agent** `layout-planner`, prompt `resources/prompts/layout-planner.md` (`{{ count }}` is filled). `Agents`: 4000 max tokens, effort `low`. It isn't in `StudioOptions::WHOLE`: a cut-off reply is asked for again with more room, and then keeps the plans already complete.
+- **Input** (`LayoutBrief::prompt()`): the units, each with its kind, word count, place and first 25 words, and its numbered pieces with any bold lead-in; the extras with their parts (and whether one still needs an answer); the page builders' sets with their fields, kinds, required fields and limits, and which are copied whole; the rich-text constructs and the site's profile; the site's other patterns ("p-1: page_builder: hero, cards, faq, cta (used by 6 entries, e.g. Garden design)"); and the writer's layout. No voice guide and no examples: it writes nothing.
+- **Reply:** one `<plans>` YAML block, read by `PlanReader` (see its docblock for the format). Names are cut to 40 characters and descriptions to 120.
 
 ## Extras
 
@@ -26,13 +79,14 @@ $slots->kinds(); $slots->has(ExtraKind::Faq); $slots->slots(ExtraKind::Faq); $sl
 | `testimonial` | testimonial, review | a quote set with an attribution field |
 | `intro` | intro, lede, standfirst, excerpt; or a top-level field so named | the first paragraph |
 
-The writer's instructions get the `writer-extras` section whenever the layout has a schema (`Studio\Layout::fromSchema()`) with a slot for at least one kind. With no slot, the instructions are exactly as they were. Nothing is configured: an addon that gives the writer its schema gets extras.
+The writer's instructions get the `writer-extras` section whenever the layout has a schema (`Studio\Layout::fromSchema()`) with a slot for at least one kind. With no slot, the instructions are exactly as they were.
 
 ### Reading them
 
+`SessionLayouts::afterWriter()` does this for you:
+
 ```php
-$response = $studio->write($conversation, $context);            // as before; $response->extras is the <extras> block
-$extras = $studio->extras($response, $conversation, $context, $exampleIds);   // Extras, checked
+$extras = $studio->extras($response, $conversation, $context, $exampleIds);   // Extras, checked; $response->extras is the <extras> block
 $session->extras = $extras->toArray();
 ```
 
@@ -140,3 +194,8 @@ $ranked   = (new Candidates)->rank(Plans $plans, $patterns, $profile, $units, $e
 ```
 
 `SitePatterns` uses `PatternFinder::sequences()` and `sequenceOf()`, the code `PatternFinder::find()` takes its commonest sequence from. "Suggested" goes to the plan whose page builders are closest to the site's patterns (one minus the normalised Levenshtein distance over block types, weighted by each pattern's share) plus, for rich text, whose structure is closest to the profile. Ties go to the earlier plan, so the writer's. It means *like your pages*, not *best*.
+
+## Checking parity
+
+- **Layout 1 is today's draft.** `tests/Arrange/WriterPlanParityTest` arranges the writer's plan for every draft in the golden layout fixtures (`tests/Fixtures/layout/*`) and gets the draft back byte for byte; it builds each one through the arranger's building path too, and runs `bin/compare-layouts` on the entries built from the draft and from layout 1: "The layouts are the same." An addon can do the same with `LayoutLog::record('build', …)` around its own apply.
+- **The writer's request** (`bin/compare-requests`, before and after this change): a `Layout` from fields an addon described (no schema) sends exactly the same request. A `Layout::fromSchema()` with a slot for an extra differs in one place: the instructions end with the "Extras you may prepare" section (`writer-extras`). The layout planner is a new agent, so its requests are new.

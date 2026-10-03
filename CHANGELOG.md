@@ -22,6 +22,10 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
   - `PlanRepair::repair()`: after an edit, removed units come out and new ones go in after the unit before them; what still fails is marked `stale`.
   - `PlanReader`: the layout planner's `<plans>` YAML into plans.
   - `SitePatterns::find()` (every distinct block order, commonest first) and `profile()` (rich-text structure); `Candidates::rank()` marks the plan most like the site's pages `suggested`.
+- **The layout planner: drafting now proposes up to two other layouts.** See docs/layouts.md.
+  - `Studio::planLayouts(LayoutBrief): Result` (`list<Plan>`): one call to the new agent `layout-planner` (prompt `resources/prompts/layout-planner.md`; `Agents`: 4000 tokens, effort `low`; not in `WHOLE`, so a cut-off reply keeps its whole plans). `LayoutBrief` summarises the units, extras, blocks and fields, the site's patterns and the writer's layout.
+  - `SessionLayouts`, what the addons call: `afterWriter()` (extras read, unit ids carried, the writer's layout re-derived, the others repaired; on the first draft, the planner called, its plans validated, ranked and stored), `afterEdit()`, `refresh()`, `plans()`, `choose()`, `chosen()`, `draftData()`, `build()`, `extras()`, `editExtra()`, `deleteExtra()`, `needsPlanner()`. With `LayoutContext` (schema, pattern, entries, defaults, example ids).
+  - A first draft is two calls (the writer with extras, then the planner); later turns are the writer only; choosing and applying a layout, and editing extras, call nothing.
 - **`Session::$plans`** (`Plans::toArray()`) **and `Session::$plan`** (the chosen layout's id), stored like `$units`, under `plans` and `plan`.
 - `PatternFinder::sequences()` and `PatternFinder::sequenceOf()`: the block-order counting `find()` uses, public for `SitePatterns`. `find()` is unchanged.
 - `LayoutLog::export()` records `Plan` and `Plans` as arrays.
@@ -29,7 +33,7 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 ### Changed
 
 - `TaggedResponse`'s constructor takes `$extras` as a new optional last argument; a reply with no `<reply>` block has its `<extras>` block taken out of the text shown, as `<draft>` and `<images>` are.
-- `PromptLibrary::NAMES` lists `writer-extras`.
+- `PromptLibrary::NAMES` lists `writer-extras` and `layout-planner`; `Agents` has `layout-planner`.
 
 ## 1.7.0 - 2026-10-03
 

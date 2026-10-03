@@ -15,6 +15,8 @@ use NineteenNinetyFour\Ghostwriter\Core\Arrange\Extras\Extras;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Extras\ExtraSlots;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Extras\ExtraSources;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Extras\ExtrasReader;
+use NineteenNinetyFour\Ghostwriter\Core\Arrange\Plan;
+use NineteenNinetyFour\Ghostwriter\Core\Arrange\PlanReader;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Stock\ModelInputGuard;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\GapRefused;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Markers;
@@ -722,6 +724,39 @@ final class Studio
         $response = $this->ask('writer', $prompt, $messages, instructions: $this->writerInstructions($context));
 
         return TaggedResponse::parse($response->text, 'draft', $response->usage->input, $response->usage->output);
+    }
+
+    /**
+     * Up to `$brief->count` other layouts of a draft, from one call to the
+     * layout planner, which sees summaries of the units and extras, the
+     * blocks it may use and the site's patterns, never the voice guide or
+     * examples. The plans are unvalidated (Arrange\PlanValidator decides),
+     * numbered p1, p2… An unreadable reply gives none, with a warning; a
+     * cut-off one keeps the plans already complete.
+     *
+     * @return Result<list<Plan>>
+     *
+     * @throws ProviderException
+     */
+    public function planLayouts(LayoutBrief $brief): Result
+    {
+        $instructions = strtr($this->prompt('layout-planner'), ['{{ count }}' => (string) $brief->count]);
+        $response = $this->ask('layout-planner', $brief->prompt(), instructions: $instructions);
+        $block = preg_match('/<plans>(.*?)(?:<\/plans>|$)/s', $response->text, $m) === 1 ? $m[1] : null;
+
+        if ($block !== null && $response->truncated()) {
+            // Keep the plans that are whole: drop the one the cut-off ended in.
+            $block = (string) preg_replace('/\n- [^\n]*(?:\n(?!- ).*)*\z/u', '', rtrim($block));
+        }
+
+        $reader = new PlanReader;
+        $plans = array_slice($reader->read($block, $brief->schema), 0, max(0, $brief->count));
+
+        if ($plans === []) {
+            $this->unreadable("the layout planner's reply had no usable plans ({$reader->problem})", 'layout-planner', $response->text);
+        }
+
+        return new Result($plans, $response->usage);
     }
 
     /**

@@ -32,6 +32,7 @@ final class PromptLibrary
         'image',
         'imagery-analyst',
         'kind-finder',
+        'layout-planner',
         'photo-picker',
         'photo-query',
         'photo-researcher',
