@@ -5,6 +5,8 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Tests\Studio;
 use Closure;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Image;
 use NineteenNinetyFour\Ghostwriter\Core\Prompts\Vocabulary;
+use NineteenNinetyFour\Ghostwriter\Core\Studio\Brief;
+use NineteenNinetyFour\Ghostwriter\Core\Studio\BriefRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\ContentKind;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\Conversation;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\ImagerySample;
@@ -143,6 +145,19 @@ final class ParityCases
                 'job' => 'draftBrief',
                 'inputs' => [$kind, 'Kiln opening', "Opens in May.\nFor the trust.", ['Harbour Trust', 'Mill Lane']],
                 'replies' => ['brief-writer' => ["<brief>\nclient: The Harbour Trust\nscope: site\nresult: More visitors.\n</brief>"]],
+            ],
+            'brief-fill' => [
+                'job' => 'fillBrief',
+                'inputs' => [BriefRequest::fromDetails($kind, 'Kiln opening. Opens in May, for the trust.', ['Harbour Trust', 'Mill Lane'], [$one, $two])],
+                'replies' => ['brief-filler' => ["<title>The new kiln opens</title>\n<brief>\nclient: The Harbour Trust\nscope: site\nresult: \"[Add: what changed for the trust]\"\n</brief>"]],
+            ],
+            'brief-try-again' => [
+                'job' => 'fillBrief',
+                'inputs' => [BriefRequest::fromIdea($kind, 'Kiln opening', 'Nothing on the kiln yet.', ['Harbour Trust'], [$one])->tryAgain(
+                    new Brief('Kiln opening', ['client' => 'The trust', 'scope' => 'site', 'result' => 'More visitors.'], [$one]),
+                    ['client' => 'The Harbour Trust'],
+                )],
+                'replies' => ['brief-filler' => ["<title>Kiln opening</title>\n<brief>\nclient: Someone else\nscope: app\nresult: \"[Add: what changed]\"\n</brief>"]],
             ],
             'write-first' => [
                 'job' => 'write',

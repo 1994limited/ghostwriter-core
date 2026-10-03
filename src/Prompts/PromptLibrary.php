@@ -22,6 +22,7 @@ final class PromptLibrary
 {
     /** Every prompt core ships. The name is also the agent name a request is sent under. */
     public const NAMES = [
+        'brief-filler',
         'brief-writer',
         'gap-filler',
         'image',

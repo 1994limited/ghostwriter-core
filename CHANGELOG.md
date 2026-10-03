@@ -21,12 +21,27 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
   docs/connecting-accounts.md describes the routes and the settings row.
 - `Http\Transport::get()`, and an optional error reader (`$errors`, the new last constructor argument, and `withErrors()`) that a provider uses to read its own error responses first.
+- **The brief in the conversation (`Domain\Sessions\BriefThread`, `BriefStage`).** After the kind is chosen, Ghostwriter asks for the quick details in one message ("What’s it called, and what should it say? A line or two is plenty."), fills in the kind's whole brief from the reply and shows it as a card to check, with "Looks right, start writing" and "Try again". Agreeing stores the brief on the piece and starts the writing, which goes on as before; the agreed card collapses to "Show the brief" and stays editable. "Draft this" from the plan skips the question and fills the card from the idea. All of it is kept in the session's messages (each step under a `brief` key), so no store or table changes, and pieces from before carry on as they were. `BriefThread::stage()` (`Details`, `Filling`, `Proposed`, `Writing`, `Questions`, `Drafting`), `fills()`, `card()`, `agreed()`, `text()`, `visible()` (what to render, by message index), `request()`, `step()` and `forWriter()`. See docs/studio.md.
+- **`SessionGuard::open()`, `openFromIdea()`, `details()`, `propose()`, `tryAgain()`, `agree()` and `editBrief()`**, under the session's lock with the usual refusals (`Busy` while a run works, `Conflict` for a step out of turn). A failed fill is tried again with `retry()`.
+- **`Studio::fillBrief(BriefRequest): Result<Brief>`** and the `brief-filler` prompt (`Agents`: 6,000 tokens): one call gives a working title, an answer for every question and the examples to model on (the request's, chosen as the brief screen chose them, at most six). `BriefRequest::fromDetails()`, `fromIdea()` and `tryAgain()` (the previous brief, with the answers the person changed kept exactly). `Studio::briefFillerPrompt()`.
+- **`Studio\BriefCheck`: facts about the organisation are never invented.** A figure or quotation in a filled brief that the person didn't give, and the kind's text doesn't have, becomes `[Add: the figure]` or `[Add: the quote]` (lengths and counts of the piece itself stay); a set-answer question gets one of its values or nothing; a required question left blank gets `[Add: <question>]`. Logged, without the reply.
+- `Studio\Brief` (`title`, `answers`, `examples`, `attempt`, `open()`, `with()`, `toArray()`, `fromArray()`, `MAX_EXAMPLES`).
+- `Studio::brief()` takes an optional working title (`?string $title = null`), written first.
+- `resources/lang/en/brief.php`: the English for the ask, the card, its buttons and the announcement, for the addons to copy.
 
 ### Changed
 
 - A provider's key parameter is `#[SensitiveParameter]`.
 - The "not a provider Ghostwriter can write with" message now lists openrouter.
 - Requests to Anthropic, OpenAI and Gemini are unchanged. `compare-requests` shows no difference, and neither do their HTTP requests.
+- `Studio\Conversation` leaves out the brief's own messages before it was agreed, so the writer starts from the agreed brief as it did from the brief screen's.
+- `Session::title()` uses the brief card's working title until there is a draft.
+- **No "guess" in what people read.** `gaps.ask` is now "I left a gap in :label: :hint. Only you know this. What should it say?", `gaps.ask-value` ":label is empty: :hint. This one needs you." and `gaps.guide.reason.draft` "Only you know this." The prompts' rule says "invent" instead of "guess": the writer's "Never invent the fact instead", the gap filler's "never invent what one stands for" and the brief writer's "are never invented". Every addon's writer and brief-writer requests change by that word (`tests/Fixtures/studio/*`).
+
+### Deprecated
+
+- `Studio::draftBrief()` (the brief screen's "Fill in the brief") and the `brief-writer` prompt: use `fillBrief()`. `SessionGuard::start()` with a brief from the screen still works, for pieces started that way.
+
 
 ## 1.5.0 - 2026-10-03
 

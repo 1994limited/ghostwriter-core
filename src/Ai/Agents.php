@@ -21,6 +21,7 @@ final class Agents
         'writer' => 16000,
         'planner' => 16000,
         'kind-finder' => 8000,
+        'brief-filler' => 6000,
         'brief-writer' => 6000,
         'imagery-analyst' => 6000,
         'photo-researcher' => 2000,

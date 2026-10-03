@@ -15,7 +15,8 @@ All under `NineteenNinetyFour\Ghostwriter\Core\Domain`, apart from the placehold
 | `Viewer` | The person asking: user ID, `manager` (the settings permission), `admin` (a Statamic super user). | |
 | `Sessions\Session` | A piece: brief, conversation, draft, status, usage, examples, images, the record it is for, who started, touched and ran it. | `claim()`, `isStale()`, `recoverIfStale()`, `answer()`, `fail()`, `markApplied()`, `canRetry()`, `waitingOn()`, `title()`. |
 | `Sessions\SessionAccess` | Who may see, resume and delete (E7, Q1). | `canSee()`, `canResume()`, `canDelete()`, `visible()`. |
-| `Sessions\SessionGuard` | Every change to a session, under its lock, with the rules. | `find()`, `visible()`, `start()`, `send()`, `retry()`, `edit()`, `change()`, `applied()`, `delete()`. |
+| `Sessions\SessionGuard` | Every change to a session, under its lock, with the rules. | `find()`, `visible()`, `start()`, `send()`, `retry()`, `edit()`, `change()`, `applied()`, `delete()`; the brief in the conversation (1.6): `open()`, `openFromIdea()`, `details()`, `propose()`, `tryAgain()`, `agree()`, `editBrief()`. |
+| `Sessions\BriefThread`, `BriefStage` | The brief in the conversation (1.6), kept in the messages: where a piece has got to (`Details`, `Filling`, `Proposed`, `Writing`, `Questions`, `Drafting`), the card, what to show. See [studio.md](studio.md#the-brief-in-the-conversation-16). | `stage()`, `fills()`, `card()`, `agreed()`, `text()`, `visible()`, `request()`, `step()`, `forWriter()`. |
 | `Sessions\Progress`, `Record` | Where a piece has got to, and whether it's finished (E6). | `Progress::of($session, $record, $options)`. |
 | `Sessions\SessionImages` | The images chosen for a draft's fields. | `startMaking()`, `made()`, `failed()`, `offer()`, `choose()`, `copy()`, `mergeTurn()`. |
 | `Planning\Idea`, `PlanState`, `Plan` | The content plan, its screen's state, and its rules (E3, E8). | `receive()`, `keep()`, `drop()`, `putBack()`, `dismiss()`, `start()`, `release()`, `clear()`, `openByGroup()`. |
@@ -84,7 +85,10 @@ $viewer = new Viewer((int) $user->id, manager: Plugin::canManage($user));       
 ## In the controllers and jobs
 
 ```php
-// Starting a piece, then its job
+// Starting a piece (1.6): the conversation asks for the quick details; see studio.md
+$session = $sessions->open(Session::start($options->format, $type->handle, [], $viewer->id, $examples), $viewer);
+
+// Before 1.6, from the brief screen (still works)
 $session = Session::start($options->format, $type->handle, $answers, $viewer->id, $examples);
 $session = $sessions->start($session, $studio->brief($kind, $answers), $viewer);
 RunSessionTurn::start($session->id);
