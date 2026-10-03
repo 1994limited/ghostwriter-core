@@ -259,12 +259,7 @@ final class PatternFinder
      */
     private function commonest(array $sequences): array
     {
-        $counts = [];
-
-        foreach ($sequences as $sequence) {
-            $key = implode('>', $sequence);
-            $counts[$key] = ($counts[$key] ?? 0) + 1;
-        }
+        $counts = self::sequences($sequences);
 
         if ($counts === []) {
             return [];
@@ -273,6 +268,48 @@ final class PatternFinder
         $best = array_search(max($counts), $counts, true);
 
         return $best === '' ? [] : explode('>', (string) $best);
+    }
+
+    /**
+     * How many entries use each distinct order of blocks, keyed by the
+     * types joined with ">", in the order first seen (newest first). The
+     * commonest is the pattern's `sequence`; Arrange\SitePatterns keeps
+     * them all.
+     *
+     * @param  array<int, array<int, string>>  $sequences
+     * @return array<string, int>
+     */
+    public static function sequences(array $sequences): array
+    {
+        $counts = [];
+
+        foreach ($sequences as $sequence) {
+            $key = implode('>', $sequence);
+            $counts[$key] = ($counts[$key] ?? 0) + 1;
+        }
+
+        return $counts;
+    }
+
+    /**
+     * The order of a page builder's blocks in one entry's value: the types
+     * of its blocks, leaving out any switched off.
+     *
+     * @return array<int, string>
+     */
+    public static function sequenceOf(mixed $blocks): array
+    {
+        $sequence = [];
+
+        foreach ((array) $blocks as $set) {
+            if (! is_array($set) || ! isset($set['type']) || ! is_scalar($set['type']) || ($set['enabled'] ?? true) === false) {
+                continue;
+            }
+
+            $sequence[] = (string) $set['type'];
+        }
+
+        return $sequence;
     }
 
     /**
