@@ -66,8 +66,8 @@ final class BriefCheck
             if ($question->options !== []) {
                 $answer = self::option($question, $answer);
             } else {
-                $answer = self::outsideBrackets($answer, function (string $text) use ($known, $said, $question, &$problems) {
-                    $text = (string) preg_replace_callback(self::QUOTE_PATTERN, function (array $match) use ($said, $question, &$problems) {
+                $answer = self::outsideBrackets($answer, function (string $text) use ($known, $said, $question, &$problems): string {
+                    $text = (string) preg_replace_callback(self::QUOTE_PATTERN, function (array $match) use ($said, $question, &$problems): string {
                         if (str_contains($said, self::normalise($match[1]))) {
                             return $match[0];
                         }
@@ -77,17 +77,24 @@ final class BriefCheck
                         return self::QUOTE;
                     }, $text);
 
-                    return (string) preg_replace_callback(self::FIGURE_PATTERN, function (array $match) use ($known, $question, $text, &$problems) {
+                    // From the end, so the offsets found stay right.
+                    $found = preg_match_all(self::FIGURE_PATTERN, $text, $matches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER) > 0 ? $matches : [];
+                    $figures = [];
+
+                    foreach (array_reverse($found) as $match) {
                         [$figure, $offset] = $match[0];
 
                         if (in_array(self::figureKey($figure), $known, true) || self::isShape($text, $offset + strlen($figure))) {
-                            return $figure;
+                            continue;
                         }
 
-                        $problems[] = "{$question->handle}: a figure ({$figure})";
+                        array_unshift($figures, "{$question->handle}: a figure ({$figure})");
+                        $text = substr_replace($text, self::FIGURE, $offset, strlen($figure));
+                    }
 
-                        return self::FIGURE;
-                    }, $text, flags: PREG_OFFSET_CAPTURE);
+                    array_push($problems, ...$figures);
+
+                    return $text;
                 });
             }
 
