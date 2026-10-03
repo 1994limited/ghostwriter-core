@@ -69,3 +69,19 @@ jobs:
 
       - name: Tests
         run: vendor/bin/phpunit
+
+  locator:
+    name: Preview locator (Node)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # The preview locator has no dependencies, and its tests bring their
+      # own small DOM, so Node's own test runner is enough: no install.
+      - name: Tests
+        run: node --test tests/js/*.test.js

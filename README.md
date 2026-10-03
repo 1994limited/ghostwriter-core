@@ -94,6 +94,10 @@ $house = $layouts->houseStyle()->apply($built->data, $schema, $pattern->house, $
 $studioLayout = Layout::fromSchema($schema, $pattern, $layouts->describer());   // for the Studio
 ```
 
+### Anchoring and the page preview: `…\Core\Anchor`, `…\Core\Arrange` and `…\Core\Preview`
+
+What page preview's comments and Suggest edits share: quotes of a range of text and where they are now (`Anchor\TextQuote`, `QuoteFinder`), the checks every scoped edit passes (`SourceCheck`, `ScopedEditCheck`), stable ids for every piece of draft text, carried from turn to turn (`Arrange\Units`, `UnitMatcher`), and the preview's invisible markers (`Preview\PreviewMarkers`) with the framework-free locator that maps a rendered page back to its blocks (`resources/js/preview/locator.js`, copied into each addon). Nothing here calls a model. See [docs/preview.md](docs/preview.md).
+
 ### Images: `NineteenNinetyFour\Ghostwriter\Core\Images`
 
 Photo search for an image field: free photo libraries searched, the results judged by a model against the page, and the chosen file downloaded safely. Each addon supplies the words around the field, the images already in that place (if any) and storage for the photo that's chosen. See [docs/images.md](docs/images.md) for the wiring.

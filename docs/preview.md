@@ -172,3 +172,38 @@ The lower-level helpers are public for the addons' own tests: `encode($payload)`
 - `Text\Draft::parse()` strips markers, so none can reach a draft (and through it an entry), even pasted.
 - The locator removes them from the frame's DOM as soon as it finds them, so nothing can be copied with one.
 - **`Tests\Contracts\PreviewMarkerContract`**: each addon extends `PreviewMarkerContractTest` with its own `storedValue($markdown, $shape)` (the real apply path) and `renderValue($stored, $shape)` (as the site's templates print it: Statamic's Bard and markdown augmentation, Craft's CKEditor HTML). It proves every shape keeps its markers through rendering, strips back to exactly the unmarked page, carries one marker per section, and that apply's data never holds one. Core runs it for HTML and Bard.
+
+## The locator (`resources/js/preview/locator.js`)
+
+A dependency-free ES module. Each addon **copies it as it is** into its own assets (as the Finish this page guide shell is shared) and keeps a checksum test against core's copy. It runs in the CP page and reaches into the preview frame's document, which must be same-origin (`canRead(frame)` says whether it is, and whether anything loaded).
+
+```js
+import { locate, measure, watch, canRead } from './locator.js';
+
+if (!canRead(frame)) { /* cross-origin or refused: no mapping; comments go on Blocks cards */ }
+
+const doc = frame.contentDocument;
+const result = locate(doc, map);   // map: PreviewData::$map->toArray(), as JSON. Strips every marker from the DOM.
+// result.regions   [{key, kind, label, parent, method, elements, fields}] in map order
+// result.byKey     {b1: region, …}
+// result.missing   keys not on the page (§8.3 "Not shown on the page")
+// result.partial   fewer than half the top-level blocks located: "Comment on them in Blocks"
+// result.content   main / article / [role=main] / body: the field-level outline target
+// result.marks     what was found, to pass back as locate(doc, map, {marks}) after a re-measure
+
+const box = measure(result.byKey.b2, doc.defaultView);   // {left, top, width, height} in document coordinates
+const stop = watch(doc, () => { /* scripts added marked text: locate again */ }).stop;
+```
+
+**Regions** (`method` says which step found each):
+
+1. `marker`: its own markers and its children's. The block's root is the outermost ancestor of them holding no other sibling's, within its parent's region (the page body at the top). When its markers sit straight in a container shared with other blocks (an unwrapped rich-text block printing `<h2><p><p>` into `<main>`), its region is the **run** of that container's children from the first holding its markers to the last before another block's. A run, or a root that is itself a bare element (`p`, `h2`, `ul`, `figure`…), then takes the bare, unmarked elements after it, up to the next block or the page's furniture (`header`, `footer`, `nav`, `aside`, `form`, or their roles), so a rich text's later paragraphs belong to it and the footer never does.
+2. `asset`: `img` `src`/`srcset`/`data-src`, `picture source`, or a `background-image` whose URL has a path segment naming one of the block's `assets` (compared without the extension, so a transform to `.webp` still matches; Glide's `/img/asset/…/garden.jpg` and `/img/containers/assets/garden.jpg/abc.webp` both do).
+3. `anchor`: the deepest element whose words hold one of the block's `anchors`, when exactly one does.
+4. `gap`: a block found by none of them, between two located siblings in one container, takes the elements between them (one each, when several blocks are missing and the counts agree).
+
+Children (`parent` set: Neo children, nested builders, rich-text sections) are located the same way inside their parent's region. `fields` lists, per field index, the elements its markers were in.
+
+**Run the tests:** `node --test tests/js/*.test.js` (Node 22, nothing to install; `tests/js/dom.js` is a small DOM). `tests/Fixtures/preview/page.json` is a page marked by `PreviewMarkers` and printed by a plain template; `LocatorFixtureTest` keeps it current (`GHOSTWRITER_UPDATE_FIXTURES=1 vendor/bin/phpunit tests/Preview/LocatorFixtureTest.php` rewrites it), so the PHP that writes markers and the JavaScript that reads them are tested against each other.
+
+**Not here yet** (later phases): the overlay (outlines, labels, pins, the closed shadow root), re-measuring on resize, image and font loads, cancelling link clicks, and gap highlights from `patterns.json`.
