@@ -7,6 +7,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Arrange\Extras\Extras;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Piece;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Plan;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Plans;
+use NineteenNinetyFour\Ghostwriter\Core\Arrange\PlanValidator;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Unit;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\UnitKind;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Units;
@@ -140,7 +141,8 @@ final class LayoutBrief
                     $nested[] = $setField;
                     $fields[] = "{$setField->handle} (blocks: ".implode(', ', array_keys($setField->sets)).')';
                 } elseif ($setField->isWritable() || $setField->files) {
-                    $fields[] = "{$setField->handle} (".self::kind($setField).($setField->required ? ', required' : '').')';
+                    // Only what the planner must place words in is "required": an image, a link or a setting it never fills.
+                    $fields[] = "{$setField->handle} (".self::kind($setField).(PlanValidator::requiredWords($setField) ? ', required' : '').')';
                 }
             }
 

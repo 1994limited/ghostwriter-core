@@ -60,6 +60,49 @@ final class Northfold
         ];
     }
 
+    /**
+     * The Pages section on the Craft test site: a hero whose image, button
+     * link, related entries, style and width are all required, none of
+     * which the writer fills.
+     */
+    public static function pages(): Schema
+    {
+        return new Schema([
+            new Field('title', Kind::Text, 'Title', required: true),
+            new Field('page_builder', Kind::Blocks, 'Page builder', sets: [
+                'hero' => new Set('Hero', '', [
+                    new Field('heading', Kind::Text, 'Heading', required: true),
+                    new Field('subheading', Kind::Text, 'Subheading'),
+                    new Field('image', Kind::Reference, 'Image', required: true, type: 'craft\\fields\\Assets', files: true, meta: ['images' => true]),
+                    new Field('button', Kind::Reference, 'Button', required: true, type: 'craft\\fields\\Link'),
+                    new Field('related', Kind::Reference, 'Related', required: true, type: 'craft\\fields\\Entries'),
+                    new Field('style', Kind::Choice, 'Style', required: true, options: ['light' => 'Light', 'dark' => 'Dark']),
+                    new Field('wide', Kind::Toggle, 'Wide', required: true),
+                ]),
+                'text' => new Set('Text', '', [new Field('body', Kind::RichText, 'Body', required: true)]),
+                'cta' => new Set('Call to action', '', [new Field('heading', Kind::Text, 'Heading', required: true), new Field('button', Kind::Text, 'Button')]),
+            ]),
+        ]);
+    }
+
+    /**
+     * The writer's draft for pages(): words only, so the hero's image,
+     * link, entries and settings are empty.
+     *
+     * @return array<string, mixed>
+     */
+    public static function pagesDraft(): array
+    {
+        return [
+            'title' => 'Winter garden care',
+            'page_builder' => [
+                ['type' => 'hero', 'heading' => 'Winter garden care', 'subheading' => 'Set the garden up for spring.'],
+                ['type' => 'text', 'body' => "Winter is when a garden is set up for the year.\n\n## The visits\n\n**November: Cut back.** Prune the shrubs that need it.\n\n**January: Feed.** Mulch the beds.\n\n## Who it suits\n\nGardens with mixed borders. [Talk to us](#gw-link:contact-page)"],
+                ['type' => 'cta', 'heading' => 'Book a winter visit', 'button' => 'Book now'],
+            ],
+        ];
+    }
+
     public static function richText(): Schema
     {
         return new Schema([
