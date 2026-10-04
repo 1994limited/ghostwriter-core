@@ -132,7 +132,9 @@ final class EditReviews
             $review->usage = ['input' => $result->usage->input, 'output' => $result->usage->output];
 
             if ($reply->unreadable()) {
-                $error = 'unreadable';
+                $error = EditReview::UNREADABLE;
+                // Studio logged each reply (whole with logReplies on); this is the review's outcome.
+                $this->logger->warning('Ghostwriter: a review failed: the reply couldn\'t be read ('.implode('; ', array_unique($reply->problems)).').', ['review' => $reviewId, 'agent' => 'reviewer', 'calls' => $reply->calls, 'entry' => $input->context->entry?->key()]);
             }
         } catch (ProviderException|UnreadableReply $exception) {
             $error = $exception->getMessage();
@@ -152,7 +154,7 @@ final class EditReviews
                 $truncated += $verdicts->value->truncated;
 
                 if ($verdicts->value->unreadable()) {
-                    $verifyError = 'unreadable';
+                    $verifyError = EditReview::UNREADABLE;
                     $this->logger->warning('Ghostwriter: the verifier\'s reply couldn\'t be read; the review keeps the checked suggestions.', ['review' => $reviewId]);
                 } else {
                     $validated = $this->validator->verify($validated, $verdicts->value, $input);
@@ -163,7 +165,7 @@ final class EditReviews
             }
         }
 
-        return $this->lock->run($this->key($review->entry), function () use ($reviewId, $validated, $input, $now, $error, $review, $calls, $truncated, $verifyError) {
+        return $this->lock->run($this->key($review->entry), function () use ($reviewId, $validated, $input, $now, $error, $review, $calls, $truncated, $verifyError, $reply) {
             $fresh = $this->load($reviewId);
             $fresh->usage = $review->usage;
             $fresh->status = $error === null ? ReviewStatus::Ready : ReviewStatus::Failed;
@@ -179,6 +181,11 @@ final class EditReviews
             $fresh->finishedAt = $now->format(DATE_ATOM);
             $fresh->expiresAt = $now->modify('+'.EditReview::EXPIRES_DAYS.' days')->format(DATE_ATOM);
             $this->carryOver($fresh);
+
+            // A review with nothing to show is never silent: what was read, and where it went.
+            if ($error === null && $fresh->suggestions === []) {
+                $this->logger->info('Ghostwriter: a review found nothing to change.', ['review' => $reviewId, 'calls' => $calls, 'read' => count($reply->items), 'candidates' => count($input->findings), 'checked' => count($validated->checked), 'dropped' => $validated->dropped, 'output_tokens' => $review->usage['output']]);
+            }
 
             if ($validated->dropped !== []) {
                 $this->logger->info('Ghostwriter: review suggestions dropped: '.json_encode($validated->dropped), ['review' => $reviewId]);

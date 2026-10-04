@@ -74,6 +74,7 @@ return [
     'review.cut-off' => 'I ran out of room; these are the first :count.',
     'review.nothing' => 'Nothing to suggest. The page reads well against your guide.',
     'review.failed' => 'I couldn\'t finish reading the page: :reason',
+    'review.error.unreadable' => 'the answer came back in a shape I couldn\'t read. Try again.',
     'review.stale' => 'This text has changed since the review.',
     'review.another-none' => 'I couldn\'t find another way to say it that keeps to the facts.',
     'review.write-another' => 'Write another (uses Ghostwriter)',

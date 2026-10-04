@@ -687,6 +687,9 @@ final class Studio
             if ($read['problem'] !== null) {
                 $problems[] = $read['problem'];
                 $this->unreadable("the review reply couldn't be read ({$read['problem']})", 'reviewer', $response->text, ['part' => ($batch->index + 1).' of '.$batch->total]);
+            } elseif ($read['items'] === []) {
+                // Read, with nothing in it: say so, so an empty review is never silent.
+                $this->log('info', 'the review reply had nothing to suggest', 'reviewer', $response->text, ['part' => ($batch->index + 1).' of '.$batch->total, 'candidates' => (string) count($batch->findings), 'output_tokens' => (string) $response->usage->output]);
             }
 
             if ($read['truncated'] || $response->truncated()) {

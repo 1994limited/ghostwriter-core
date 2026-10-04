@@ -5,6 +5,7 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Suggest;
 use DateTimeImmutable;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Conflict;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Viewer;
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\Message;
 
 /**
  * One review of one entry, shared by everyone who can edit it (E7): the
@@ -26,10 +27,15 @@ use NineteenNinetyFour\Ghostwriter\Core\Domain\Viewer;
  *   them quiet (Quiet::CHECKED).
  * - `verified`: the verifier's verdict on each suggestion shown, by id:
  *   'keep' or 'fix'. Empty when it didn't run or failed (`verifyError`).
+ * - `error`: why a Failed review failed: UNREADABLE (a code: show
+ *   errorMessage()'s words), or the provider's own message.
  */
 final class EditReview
 {
     public const EXPIRES_DAYS = 14;
+
+    /** The `error` (or `verifyError`) when no reply could be read. */
+    public const UNREADABLE = 'unreadable';
 
     /**
      * @param  list<array<string, mixed>>  $suggestions  Suggestion::toArray()
@@ -64,6 +70,20 @@ final class EditReview
         public array $verified = [],
         public ?string $verifyError = null,
     ) {}
+
+    /**
+     * A failed review's error in plain words for the editor, as a Message
+     * (`suggest.review.error.*`), for a code core sets. Null when there is
+     * no error, or it is already words (a provider's message): show it as
+     * it is.
+     */
+    public static function errorMessage(?string $error): ?Message
+    {
+        return match ($error) {
+            self::UNREADABLE => new Message('suggest.review.error.unreadable'),
+            default => null,
+        };
+    }
 
     /**
      * @return list<Suggestion> With their current state.
