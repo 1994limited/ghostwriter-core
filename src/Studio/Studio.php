@@ -1321,7 +1321,9 @@ final class Studio
             $this->unreadable("the layout planner's reply had no usable plans ({$reader->problem})", 'layout-planner', $response->text);
         }
 
-        return new Result(array_slice(is_array($plans) ? $plans : [], 0, max(0, $brief->count)), $response->usage);
+        $plans = array_values(array_filter(is_array($plans) ? $plans : [], fn ($plan) => $plan instanceof Plan));
+
+        return new Result(array_slice($plans, 0, max(0, $brief->count)), $response->usage);
     }
 
     /**
