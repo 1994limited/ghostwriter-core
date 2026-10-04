@@ -78,10 +78,16 @@ final class HeadingFixerTest extends TestCase
             "**The visits.** Four a winter.\n\n**Who it suits**\n\nMixed borders.",
         ];
 
-        yield 'an editor with only h1 under a template h1 takes no headings' => [
-            "## A\n\nText.",
+        yield 'a field made for the h1 (a hero heading with only H1) keeps it' => [
+            "## Winches, rigged right\n\nThe rest.",
             new HeadingPolicy(2, [1]),
-            '**A.** Text.',
+            "# Winches, rigged right\n\nThe rest.",
+        ];
+
+        yield 'a heading field in rich text (one heading, nothing else) is the template\'s' => [
+            '# Winches, rigged right',
+            $all,
+            '# Winches, rigged right',
         ];
 
         yield 'a body that owns the h1 keeps it' => [

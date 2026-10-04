@@ -67,6 +67,7 @@ final class RenderProfileTest extends TestCase
         $this->assertSame(2, $sections->top($text, 'hero'));
         $this->assertSame(2, $sections->top($text, 'quote'), 'A block with no heading field of its own starts at the page\'s.');
         $this->assertSame([3, 4, 5, 6], HeadingPolicy::for($text, $sections, 'section')->levels());
+        $this->assertSame(1, HeadingPolicy::for(Field::fromSpec(['handle' => 'body', 'kind' => 'richtext', 'headings_from' => 1]))->top, 'A field that says where its headings start starts there.');
     }
 
     public function test_two_renders_must_agree_before_a_stored_profile_changes(): void

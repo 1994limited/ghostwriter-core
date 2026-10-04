@@ -24,7 +24,7 @@ final class MemoryRenderProfileContractTest extends RenderProfileContractTest
         return $this->store ??= new InMemoryRenderProfiles;
     }
 
-    protected function post(string $key, array $outline): RenderProfile
+    protected function record(string $key, array $outline): RenderProfile
     {
         return (new SeoPass)->observe($this->profiles(), $key, Outline::fromArray($outline), 'Pages')[0];
     }

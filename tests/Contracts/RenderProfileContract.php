@@ -25,7 +25,7 @@ trait RenderProfileContract
      *
      * @param  list<array<string, mixed>>  $outline
      */
-    abstract protected function post(string $key, array $outline): RenderProfile;
+    abstract protected function record(string $key, array $outline): RenderProfile;
 
     /**
      * What a preview of a seeded entry posts: its outline, captured from
@@ -37,7 +37,7 @@ trait RenderProfileContract
 
     public function test_a_seeded_entrys_preview_says_the_title_is_the_h1(): void
     {
-        $profile = $this->post('contract-seeded', $this->seededOutline());
+        $profile = $this->record('contract-seeded', $this->seededOutline());
 
         $this->assertSame(H1Source::Title, $profile->h1);
         $this->assertSame(2, $profile->top(new Field('body', Kind::RichText)));
@@ -49,10 +49,10 @@ trait RenderProfileContract
         $title = [['level' => 1, 'text' => 'Winter care', 'field' => 'title', 'unit' => null, 'inContent' => false]];
         $none = [['level' => 2, 'text' => 'Visits', 'field' => 'body', 'unit' => null, 'inContent' => true]];
 
-        $this->post('contract-flip', $title);
-        $this->post('contract-flip', $title);
-        $this->assertSame(H1Source::Title, $this->post('contract-flip', $none)->h1, 'One odd render doesn\'t flip it.');
-        $this->assertSame(H1Source::None, $this->post('contract-flip', $none)->h1, 'Two agreeing ones do.');
+        $this->record('contract-flip', $title);
+        $this->record('contract-flip', $title);
+        $this->assertSame(H1Source::Title, $this->record('contract-flip', $none)->h1, 'One odd render doesn\'t flip it.');
+        $this->assertSame(H1Source::None, $this->record('contract-flip', $none)->h1, 'Two agreeing ones do.');
         $this->assertSame('no-h1', $this->profiles()->get('contract-flip')?->problem());
         $this->assertContains('contract-flip', array_map(fn (RenderProfile $profile) => $profile->key, $this->profiles()->all()));
     }

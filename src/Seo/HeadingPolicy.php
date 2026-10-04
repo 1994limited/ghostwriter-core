@@ -22,21 +22,34 @@ final class HeadingPolicy
         public readonly array $allowed = HeadingLevels::ALL,
     ) {}
 
-    /** For a field, where its template prints it: inside a block of $blockType, or at the top level. */
+    /**
+     * For a field, where its template prints it: inside a block of
+     * $blockType, or at the top level. A field whose spec says where its
+     * headings start (`headings_from`, Filament's
+     * `->ghostwriterHeadings(from: 1)`) starts there, whatever the profile.
+     */
     public static function for(Field $field, ?RenderProfile $profile = null, ?string $blockType = null): self
     {
-        return new self(($profile ?? RenderProfile::default())->top($field, $blockType), HeadingLevels::allowed($field));
+        $from = $field->meta[HeadingLevels::FROM] ?? null;
+        $top = is_int($from) && $from >= 1 && $from <= 6 ? $from : ($profile ?? RenderProfile::default())->top($field, $blockType);
+
+        return new self($top, HeadingLevels::allowed($field));
     }
 
     /**
      * The levels a heading may take, shallowest first: the allowed ones
-     * from `top` down. Empty: no headings at all.
+     * from `top` down; or, when the editor offers none that deep, the
+     * ones it offers. Empty: no headings at all.
      *
      * @return list<int>
      */
     public function levels(): array
     {
-        return array_values(array_filter($this->allowed, fn (int $level) => $level >= $this->top));
+        $levels = array_values(array_filter($this->allowed, fn (int $level) => $level >= $this->top));
+
+        // A field whose editor offers only levels above the top (a hero
+        // heading with only H1) is made for them: its own levels stand.
+        return $levels === [] ? array_values($this->allowed) : $levels;
     }
 
     public function allowsHeadings(): bool

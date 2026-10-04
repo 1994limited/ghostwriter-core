@@ -21,6 +21,9 @@ final class HeadingLevels
     /** The key in a field spec (and so in Field::$meta). */
     public const META = 'headings';
 
+    /** Where a field's headings start, when its spec says (Filament's `->ghostwriterHeadings(from: 1)`): it overrides the render profile. */
+    public const FROM = 'headings_from';
+
     /**
      * @return list<int>
      */

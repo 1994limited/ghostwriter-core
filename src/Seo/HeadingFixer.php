@@ -28,6 +28,10 @@ use NineteenNinetyFour\Ghostwriter\Core\Gaps\Markers;
  * 6. **No headings allowed:** every heading becomes a lead-in, and rule 1
  *    is off.
  *
+ * A value that is one heading and nothing else is a heading field (a
+ * hero's heading in rich text): its level is the template's, so it is left
+ * as it is.
+ *
  * Words never change: only heading marks, the bold around a lead-in, and
  * a lead-in's closing full stop (a bold line's colon becomes one, so rule
  * 1 leaves it alone the next time). Fixing twice is fixing once. Code
@@ -50,7 +54,9 @@ final class HeadingFixer
         $lines = preg_split('/\r\n|\r|\n/', $markdown) ?: [];
         $found = MarkdownSections::blocks($lines);
 
-        if ($found === []) {
+        // Nothing, or a heading field written in rich text (a hero's heading,
+        // one heading and nothing else): its level is the template's.
+        if ($found === [] || (count($found) === 1 && $found[0]['kind'] === Piece::HEADING && ! self::isEmpty(self::headingText($lines[$found[0]['start']])))) {
             return new FixedHeadings($markdown);
         }
 
