@@ -11,10 +11,10 @@
       "maxItems": 40,
       "items": {
         "type": "object",
-        "required": ["category"],
+        "description": "A kept suggestion (with category), or a dropped candidate: only finding and drop. SuggestionReader also reads the older decline key as drop.",
         "properties": {
           "finding": {"type": "string", "pattern": "^f[0-9]+$"},
-          "decline": {"type": "string", "maxLength": 200},
+          "drop": {"type": "string", "maxLength": 200},
           "category": {"enum": ["out-of-date", "voice", "clarity", "fact-to-check", "link", "accessibility", "seo", "duplicate"]},
           "unit": {"type": "string", "pattern": "^[ui][0-9]+$"},
           "quote": {"type": "string", "maxLength": 300},

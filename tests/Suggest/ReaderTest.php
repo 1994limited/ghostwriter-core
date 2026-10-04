@@ -41,6 +41,17 @@ final class ReaderTest extends TestCase
         $this->assertNull($read['problem']);
     }
 
+    public function test_a_dropped_candidate_and_the_older_decline_key(): void
+    {
+        $read = (new SuggestionReader)->read('<suggestions>{"suggestions": [{"finding": "f1", "drop": "History."}, {"finding": "f2", "decline": "Fine."}]}</suggestions>');
+
+        $this->assertSame([['finding' => 'f1', 'drop' => 'History.'], ['finding' => 'f2', 'drop' => 'Fine.']], $read['items']);
+        $this->assertSame([['finding' => 'f1', 'drop' => 'History.']], (new SuggestionReader)->read('<suggestions>{"finding": "f1", "drop": "History."}</suggestions>')['items'], 'A single drop.');
+
+        $schema = json_decode((string) file_get_contents(dirname(__DIR__, 2).'/resources/schemas/suggestions.schema.json'), true);
+        $this->assertSame([], self::errors(['suggestions' => [['finding' => 'f1', 'drop' => 'History.']]], $schema));
+    }
+
     public function test_an_unreadable_reply_says_why(): void
     {
         $this->assertSame('the JSON did not parse', (new SuggestionReader)->read('<suggestions>Here are my thoughts.</suggestions>')['problem']);

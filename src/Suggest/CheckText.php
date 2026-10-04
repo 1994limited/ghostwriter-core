@@ -24,6 +24,9 @@ final class CheckText
     /** @var list<array{0: int, 1: int}> */
     public readonly array $blocks;
 
+    /** @var list<string|null> Each block's heading text, when the block is a heading line. */
+    private array $headings = [];
+
     private readonly NormalisedText $normalised;
 
     public function __construct(
@@ -125,6 +128,77 @@ final class CheckText
         );
     }
 
+    /**
+     * The sentence or sentences covering a range, inside its block, as
+     * [offset, length] in the plain text: at most TextQuote::MAX_EXACT,
+     * cut at words around the range when the sentence is longer. A range
+     * in no block comes back as it is.
+     *
+     * @return array{0: int, 1: int}
+     */
+    public function sentenceRange(int $offset, int $length): array
+    {
+        $block = $this->blockAt($offset);
+
+        if ($block === null) {
+            return [$offset, $length];
+        }
+
+        [$start] = $this->blocks[$block];
+        [$at, $size] = Sentences::covering($this->block($block), $offset - $start, $length);
+        $from = $start + $at;
+        $end = $from + $size;
+        $rangeEnd = $offset + $length;
+
+        if ($size <= TextQuote::MAX_EXACT) {
+            return [$from, $size];
+        }
+
+        // Too long: start at a word late enough for the range to fit, then cut the end at a word.
+        if ($rangeEnd - $from > TextQuote::MAX_EXACT) {
+            $space = mb_strpos($this->plain, ' ', $rangeEnd - TextQuote::MAX_EXACT);
+            $from = $space !== false && $space < $offset ? $space + 1 : $offset;
+        }
+
+        $cutAt = min($end, $from + TextQuote::MAX_EXACT);
+
+        if ($cutAt < $end) {
+            $space = mb_strrpos(mb_substr($this->plain, $from, $cutAt - $from), ' ');
+            $cutAt = $space !== false && $from + $space >= $rangeEnd ? $from + $space : max($rangeEnd, $cutAt);
+        }
+
+        return [$from, min(TextQuote::MAX_EXACT, $cutAt - $from)];
+    }
+
+    /**
+     * An anchor on the sentence or sentences a range is in (sentenceRange()):
+     * Out of date findings are anchored this way, so a fix rewrites the
+     * whole sentence. A heading line is a sentence of its own.
+     */
+    public function sentenceAnchor(int $offset, int $length, string $label = ''): Anchor
+    {
+        [$from, $size] = $this->sentenceRange($offset, $length);
+
+        return $this->anchor($from, $size, $label);
+    }
+
+    /**
+     * The heading a character sits under: the nearest heading line before
+     * its block, as plain text; null when there is none.
+     */
+    public function headingBefore(int $offset): ?string
+    {
+        $block = $this->blockAt($offset);
+
+        for ($i = ($block ?? count($this->blocks)) - 1; $i >= 0; $i--) {
+            if (($this->headings[$i] ?? null) !== null) {
+                return $this->headings[$i];
+            }
+        }
+
+        return null;
+    }
+
     /** An anchor on the whole value. */
     public function fieldAnchor(): Anchor
     {
@@ -185,6 +259,7 @@ final class CheckText
             }
 
             $blocks[] = [$at, mb_strlen($text)];
+            $this->headings[] = preg_match('/^\s{0,3}#{1,6}\s/u', $line) === 1 ? $text : null;
             $cursor = $at + mb_strlen($text);
         }
 

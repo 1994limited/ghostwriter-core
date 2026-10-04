@@ -24,7 +24,7 @@ final class PromptLibrary
      * Every prompt core ships. The name is also the agent name a request is
      * sent under, apart from `image`, `writer-extras` (a section of the
      * writer's instructions) and `scoped-edit` (the rules every scoped edit
-     * shares, a section of the reviewer's and the reworder's).
+     * shares, a section of the reviewer's, the verifier's and the reworder's).
      */
     public const NAMES = [
         'brief-filler',
@@ -43,6 +43,7 @@ final class PromptLibrary
         'reworder',
         'scoped-edit',
         'type-analyst',
+        'verifier',
         'voice-analyst',
         'voice-editor',
         'writer',

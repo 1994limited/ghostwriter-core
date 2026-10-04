@@ -139,7 +139,16 @@ final class FreeChecksTest extends TestCase
         $this->assertCount(1, $findings, "One {$kind} in “{$text}”.");
         $finding = $findings[0];
         $this->assertNotNull($finding->anchor->quote);
-        $this->assertStringStartsWith($quote, $finding->anchor->quote->exact);
+
+        if (in_array($kind, ['past-year', 'relative-time'], true)) {
+            // Out of date: anchored on the sentence, with the dated words as written, and where they are in it.
+            $this->assertSame($quote, $finding->meta['phrase']);
+            $this->assertSame($quote, mb_substr($finding->anchor->quote->exact, $finding->meta['phraseOffset'], mb_strlen($quote)));
+            $this->assertSame(trim($text), $finding->anchor->quote->exact, 'The whole sentence.');
+            $this->assertSame($quote, $finding->message->params['quote'], 'The message quotes the phrase.');
+        } else {
+            $this->assertStringStartsWith($quote, $finding->anchor->quote->exact);
+        }
 
         // The quote is found again in the field as stored, as the front end finds it.
         $match = (new QuoteFinder)->find($finding->anchor->quote, $text, $finding->anchor->occurrence, markdown: true);

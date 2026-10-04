@@ -3,13 +3,17 @@
 namespace NineteenNinetyFour\Ghostwriter\Core\Suggest;
 
 use NineteenNinetyFour\Ghostwriter\Core\Anchor\NormalisedText;
+use NineteenNinetyFour\Ghostwriter\Core\Anchor\QuoteFinder;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Unit;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\UnitKind;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\SeoField;
 
 /**
  * The review call's prompt for one batch: the page's units, its images,
- * the findings to fix, the site digest and what was dismissed. No model,
+ * the candidates (every free finding, for the model to keep or drop in
+ * context, each with the heading it sits under and, when it is out of
+ * date, the dated words), the site digest and what was dismissed or
+ * already checked. No model,
  * no CMS: the same input always renders the same prompt (pinned by the
  * golden test).
  *
@@ -62,7 +66,7 @@ final class ReviewPrompt
         $out = implode("\n", $lines);
 
         if ($batch->findings !== []) {
-            $out .= "\n\n<findings>\n".implode("\n", array_map(fn (string $number, Finding $finding) => self::finding($number, $finding, $input, $batch, $attached), array_keys($batch->findings), $batch->findings))."\n</findings>";
+            $out .= "\n\n<candidates>\n".implode("\n", array_map(fn (string $number, Finding $finding) => self::finding($number, $finding, $input, $batch, $attached), array_keys($batch->findings), $batch->findings))."\n</candidates>";
         }
 
         if (! $input->digest->isEmpty()) {
@@ -175,30 +179,59 @@ final class ReviewPrompt
     }
 
     /**
+     * One candidate's line: its number, category, unit, the heading it
+     * sits under, its quote, what the check found and what to do with it
+     * if it's kept.
+     *
      * @param  array<int, string>  $attached
      */
     private static function finding(string $number, Finding $finding, ReviewInput $input, ReviewBatch $batch, array $attached): string
     {
         $where = self::unitOf($finding, $input, $batch);
+        $heading = self::headingOf($finding, $input);
+        $under = $heading !== null ? ' under "'.str_replace('"', "'", $heading).'"' : '';
         $quote = $finding->anchor->quote !== null && $finding->anchor->scope === AnchorScope::Range ? ' "'.str_replace('"', "'", $finding->anchor->quote->exact).'"' : '';
         $message = trim($finding->message->english());
-        $line = "{$number} {$finding->category->value} {$where}{$quote}: ".$message.(preg_match('/[.!?]$/u', $message) === 1 ? '' : '.');
+        $line = "{$number} {$finding->category->value} {$where}{$under}{$quote}: ".$message.(preg_match('/[.!?]$/u', $message) === 1 ? '' : '.');
+
+        if ($finding->category === Category::OutOfDate && is_string($finding->meta['phrase'] ?? null)) {
+            return $line.' Dated words: "'.str_replace('"', "'", $finding->meta['phrase']).'". If kept: rewrite the whole sentence.';
+        }
 
         if ($finding->kind === 'link-broken') {
             $candidates = array_values(array_filter(array_map(fn ($c) => is_array($c) ? $input->digest->idOf($c['value'] ?? null) : null, is_array($finding->meta['candidates'] ?? null) ? $finding->meta['candidates'] : [])));
+            $line .= $candidates !== [] ? ' Candidate: '.implode(', ', $candidates).'.' : '';
 
-            return $line.($candidates !== [] ? ' Candidate: '.implode(', ', $candidates).'.' : '').' write (only if the words name the old page)';
+            return $line.($finding->needs === Needs::Nothing ? ' If kept: the link alone, no words.' : ' If kept: write only if the words name the old page.');
         }
 
         if ($finding->kind === 'long-sentence') {
-            return $line.' write (only if it reads badly)';
+            return $line.' Keep only if it reads badly here; then write.';
         }
 
         if ($finding->anchor->scope === AnchorScope::Asset) {
-            return $line.(in_array($finding->id, $attached, true) ? ' The picture is attached. write' : ' The picture is not attached: skip it.');
+            return $line.(in_array($finding->id, $attached, true) ? ' The picture is attached. If kept: write.' : ' The picture is not attached. If kept: no replacement.');
         }
 
-        return $line.' '.($finding->needs === Needs::Editor ? 'ask' : 'write');
+        if ($finding->needs === Needs::Nothing) {
+            return $line.' If kept: no words.';
+        }
+
+        return $line.($finding->needs === Needs::Editor ? ' If kept: ask.' : ' If kept: write.');
+    }
+
+    /** The heading a finding's words sit under in its field, if any. */
+    private static function headingOf(Finding $finding, ReviewInput $input): ?string
+    {
+        $text = $input->context->textAt($finding->anchor->path->toString());
+
+        if ($text === null || $finding->anchor->scope !== AnchorScope::Range || $finding->anchor->quote === null) {
+            return null;
+        }
+
+        $match = (new QuoteFinder)->find($finding->anchor->quote, $text->plain, $finding->anchor->occurrence);
+
+        return $match === null ? null : $text->headingBefore($match->offset);
     }
 
     /** The unit (or image) a finding is in, as the prompt numbers them. */
@@ -230,8 +263,8 @@ final class ReviewPrompt
     }
 
     /**
-     * What was dismissed or confirmed on this entry, in the batch's units:
-     * "voice u2 "bespoke"".
+     * What was dismissed, confirmed or checked fine on this entry, in the
+     * batch's units: "voice u2 "bespoke"", "out-of-date u3 "…" (checked fine)".
      *
      * @return list<string>
      */
@@ -252,7 +285,7 @@ final class ReviewPrompt
 
             foreach ($batch->units as $unit) {
                 if ($unit->path->toString() === $parts[1] || str_starts_with($parts[1], $unit->path->toString().'/')) {
-                    $lines[] = $parts[0].' '.$unit->id.($parts[2] !== '' ? ' "'.$parts[2].'"' : '');
+                    $lines[] = $parts[0].' '.$unit->id.($parts[2] !== '' ? ' "'.$parts[2].'"' : '').($quiet->state === Quiet::CHECKED ? ' (checked fine)' : '');
 
                     break;
                 }

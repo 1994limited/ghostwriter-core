@@ -6,14 +6,19 @@ use DateTimeImmutable;
 
 /**
  * A decision that keeps a finding or suggestion quiet: "It's still right"
- * (confirmed) or Dismiss. It lasts Quieted::MONTHS (12) months, or until
- * the passage it was about is edited, whichever comes first.
+ * (confirmed), Dismiss, or the review call's own judgement that a free
+ * finding is fine in context (checked: the model dropped it). It lasts
+ * Quieted::MONTHS (12) months, or until the passage it was about is
+ * edited, whichever comes first.
  */
 final class Quiet
 {
     public const DISMISSED = 'dismissed';
 
     public const CONFIRMED = 'confirmed';
+
+    /** Checked in context by a review and found fine: not a candidate again. */
+    public const CHECKED = 'checked';
 
     public function __construct(
         public readonly string $key,

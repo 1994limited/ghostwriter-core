@@ -22,7 +22,7 @@ use Psr\Log\NullLogger;
  *
  *     $reviews->preview($context, $ref);                 // the free half, at once: no model
  *     $review = $reviews->start($ref, $viewer, $now);     // claim; queue run()
- *     $reviews->run($review->id, $input, $now);           // the queued job: the call(s), validation, store
+ *     $reviews->run($review->id, $input, $now);           // the queued job: reviewer, validation, verifier, store
  *     $reviews->decide($id, $suggestionId, SuggestionState::Dismissed, $viewer, $now);
  *     $reviews->undo($id, $suggestionId, $viewer, $now);
  *     $reviews->another($id, $suggestionId, $input, $now); // "Write another": one reworder call
@@ -57,9 +57,10 @@ final class EditReviews
     }
 
     /**
-     * The free half, at once and at no cost: the findings as suggestions
-     * (Finding::toSuggestion()), and the latest stored review, re-checked
-     * against the form's current text.
+     * The free half, at once and at no cost: the findings as they were
+     * found (Finding::toSuggestion(): where, and why, never new words),
+     * and the latest stored review, re-checked against the form's current
+     * text.
      *
      * @return array{findings: list<array<string, mixed>>, review: array<string, mixed>|null}
      */
@@ -103,10 +104,17 @@ final class EditReviews
     }
 
     /**
-     * The queued job's work: the call (or calls, for a long page), the
-     * validation, and the review stored Ready. Decisions on the same
-     * suggestions in earlier reviews carry over, by id. When the call fails
-     * or can't be read, the review is Failed and keeps the free findings.
+     * The queued job's work: the review call (or calls, for a long page),
+     * the validation, the verifier's second pass over what was kept, and
+     * the review stored Ready. Decisions on the same suggestions in earlier
+     * reviews carry over, by id. Every free finding goes to the call as a
+     * candidate; only those the model kept and that pass every check are
+     * shown. Those it dropped are stored as `checked`.
+     *
+     * When the review call fails or can't be read, the review is Failed
+     * with no suggestions: nothing is shown that the model didn't judge.
+     * When only the verifier fails, the validated suggestions stand and a
+     * warning is logged (`verifyError`).
      */
     public function run(string $reviewId, ReviewInput $input, DateTimeImmutable $now): EditReview
     {
@@ -132,23 +140,53 @@ final class EditReviews
         }
 
         $validated = $this->validator->validate($reply, $input);
+        $calls = $reply->calls;
+        $truncated = $reply->truncated;
+        $verifyError = null;
 
-        return $this->lock->run($this->key($review->entry), function () use ($reviewId, $validated, $reply, $input, $now, $error, $review) {
+        if ($error === null && $validated->suggestions !== []) {
+            try {
+                $verdicts = $this->studio->verifyEdits($input, $validated->suggestions);
+                $review->usage = ['input' => $review->usage['input'] + $verdicts->usage->input, 'output' => $review->usage['output'] + $verdicts->usage->output];
+                $calls += $verdicts->value->calls;
+                $truncated += $verdicts->value->truncated;
+
+                if ($verdicts->value->unreadable()) {
+                    $verifyError = 'unreadable';
+                    $this->logger->warning('Ghostwriter: the verifier\'s reply couldn\'t be read; the review keeps the checked suggestions.', ['review' => $reviewId]);
+                } else {
+                    $validated = $this->validator->verify($validated, $verdicts->value, $input);
+                }
+            } catch (ProviderException|UnreadableReply $exception) {
+                $verifyError = $exception->getMessage();
+                $this->logger->warning("Ghostwriter: the verifier failed ({$verifyError}); the review keeps the checked suggestions.", ['review' => $reviewId]);
+            }
+        }
+
+        return $this->lock->run($this->key($review->entry), function () use ($reviewId, $validated, $input, $now, $error, $review, $calls, $truncated, $verifyError) {
             $fresh = $this->load($reviewId);
             $fresh->usage = $review->usage;
             $fresh->status = $error === null ? ReviewStatus::Ready : ReviewStatus::Failed;
             $fresh->error = $error;
-            $fresh->calls = $reply->calls;
-            $fresh->truncated = $reply->truncated;
+            $fresh->calls = $calls;
+            $fresh->truncated = $truncated;
             $fresh->dropped = $validated->dropped;
             $fresh->findings = array_values(array_map(fn (Finding $finding) => $finding->toArray(), $input->findings));
-            $fresh->suggestions = array_map(fn (Suggestion $suggestion) => $suggestion->toArray(), $validated->suggestions);
+            $fresh->suggestions = $error === null ? array_map(fn (Suggestion $suggestion) => $suggestion->toArray(), $validated->suggestions) : [];
+            $fresh->checked = $error === null ? $validated->checked : [];
+            $fresh->verified = $error === null ? $validated->verified : [];
+            $fresh->verifyError = $verifyError;
             $fresh->finishedAt = $now->format(DATE_ATOM);
             $fresh->expiresAt = $now->modify('+'.EditReview::EXPIRES_DAYS.' days')->format(DATE_ATOM);
             $this->carryOver($fresh);
 
             if ($validated->dropped !== []) {
                 $this->logger->info('Ghostwriter: review suggestions dropped: '.json_encode($validated->dropped), ['review' => $reviewId]);
+            }
+
+            // The reason only: no page text.
+            foreach ($fresh->checked as $checked) {
+                $this->logger->debug('Ghostwriter: a candidate was checked in context and dropped: '.$checked['reason'], ['review' => $reviewId, 'by' => $checked['by']]);
             }
 
             return $this->store->save($fresh);
@@ -233,14 +271,25 @@ final class EditReviews
 
     /**
      * The decisions that keep findings quiet on an entry: each suggestion's
-     * last Dismissed or It's still right, across the entry's history, for
-     * 12 months or until its passage changes. Pass it to CheckContext.
+     * last Dismissed or It's still right, and each candidate a review
+     * checked in context and dropped (Quiet::CHECKED, from when the review
+     * finished), across the entry's history, for 12 months or until its
+     * passage changes. Pass it to CheckContext.
      */
     public function quieted(EntryRef $entry, DateTimeImmutable $now): Quieted
     {
         $quiets = [];
 
         foreach (array_reverse($this->store->history($entry)) as $review) {
+            $finished = $review->finishedAt ?? $review->createdAt;
+            $at = $finished !== null ? new DateTimeImmutable($finished) : null;
+
+            if ($at !== null) {
+                foreach ($review->checked as $checked) {
+                    $quiets[$checked['id']] = new Quiet($checked['id'], $checked['passage'], Quieted::until($at)->format(DATE_ATOM), Quiet::CHECKED, null, $at->format(DATE_ATOM));
+                }
+            }
+
             foreach ($review->all() as $suggestion) {
                 $decision = $review->lastDecision($suggestion->id);
 

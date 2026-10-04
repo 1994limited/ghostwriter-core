@@ -2,8 +2,10 @@
 
 namespace NineteenNinetyFour\Ghostwriter\Core\Tests\Suggest;
 
+use Closure;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Image;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Testing\FakeProvider;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Prompts\PromptLibrary;
 use NineteenNinetyFour\Ghostwriter\Core\Prompts\Vocabulary;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\ContentKind;
@@ -45,11 +47,27 @@ final class ReviewCase
         return new Studio($fake, new PromptLibrary(Vocabulary::statamic()));
     }
 
+    /**
+     * A verifier that keeps every suggestion it is shown (or gives the
+     * verdict a closure picks, by number).
+     *
+     * @param  (Closure(string): array<string, mixed>)|null  $verdict
+     */
+    public static function verifier(?Closure $verdict = null): Closure
+    {
+        return function (TextRequest $request) use ($verdict): string {
+            preg_match_all('/<suggestion id="(s\d+)"/', $request->prompt, $m);
+            $verdicts = array_map(fn (string $id) => ['id' => $id] + ($verdict !== null ? $verdict($id) : ['verdict' => 'keep', 'reason' => 'Fine.']), $m[1]);
+
+            return '<verdicts>'.json_encode(['verdicts' => $verdicts], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES).'</verdicts>';
+        };
+    }
+
     /** The reply a good model gives for the Services page: the mockup's seven suggestions. */
     public static function reply(): string
     {
         return "<suggestions>\n".json_encode(['suggestions' => [
-            ['finding' => 'f1', 'category' => 'out-of-date', 'unit' => 'u2', 'quote' => 'New for 2024', 'reason' => 'It says 2024 as if it were this year.', 'source' => ['kind' => 'finding'], 'replacement' => 'Every winter', 'alternatives' => ['From November to February', 'Each winter']],
+            ['finding' => 'f1', 'category' => 'out-of-date', 'unit' => 'u2', 'quote' => 'New for 2024: winter care visits', 'reason' => 'It says 2024 as if it were this year.', 'source' => ['kind' => 'finding'], 'replacement' => 'Winter care visits', 'alternatives' => ['Our winter care visits', 'Winter care visits, every year']],
             ['finding' => 'f2', 'category' => 'fact-to-check', 'unit' => 'u4', 'quote' => 'team of 6', 'reason' => 'The team may have changed since March 2024.', 'source' => ['kind' => 'finding'], 'fact' => ['ask' => 'Number of designers', 'template' => 'team of {answer}', 'without' => 'team', 'answer' => 'number']],
             ['finding' => 'f3', 'category' => 'clarity', 'unit' => 'u4', 'quote' => 'In terms of the actual process involved, what typically happens is that we will first of all come out and visit the garden in person, after which we will then go away and produce a concept.', 'reason' => 'Thirty-six words to say we visit, then draw.', 'source' => ['kind' => 'general'], 'replacement' => 'First we visit the garden, then we draw a concept.', 'alternatives' => ['We start with a visit, then produce a concept.']],
             ['finding' => 'f4', 'category' => 'link', 'unit' => 'u4', 'quote' => 'our 2023 show garden', 'reason' => 'The show garden page was deleted; the Corbridge garden is its follow-up.', 'source' => ['kind' => 'site-entry', 'entry' => 'e1'], 'replacement' => 'a walled garden we designed in Corbridge', 'link' => ['entry' => 'e1']],

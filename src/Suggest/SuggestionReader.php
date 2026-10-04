@@ -9,18 +9,26 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Suggest;
  *
  * - code fences are stripped, and a trailing comma before `}` or `]`;
  * - a single object is a list of one, and a bare list is the list;
- * - a reply cut off part-way keeps every suggestion object that closed.
+ * - a reply cut off part-way keeps every suggestion object that closed;
+ * - the older `decline` key reads as `drop` (a candidate dropped in
+ *   context).
  *
  * Anything else is unreadable: read() gives no items and says why.
+ *
+ * The verifier's reply is read the same way, as `<verdicts>` with a
+ * `verdicts` list (`new SuggestionReader('verdicts')`).
  */
 final class SuggestionReader
 {
+    public function __construct(private readonly string $list = 'suggestions') {}
+
     /**
      * @return array{items: list<array<string, mixed>>, truncated: bool, problem: ?string}
      */
     public function read(string $reply): array
     {
-        $body = preg_match('/<suggestions>(.*?)(?:<\/suggestions>|$)/s', $reply, $m) === 1 ? $m[1] : $reply;
+        $tag = preg_quote($this->list, '/');
+        $body = preg_match('/<'.$tag.'>(.*?)(?:<\/'.$tag.'>|$)/s', $reply, $m) === 1 ? $m[1] : $reply;
         $body = trim((string) preg_replace('/^\s*```(?:json)?\s*|\s*```\s*$/u', '', trim($body)));
 
         if ($body === '') {
@@ -34,17 +42,17 @@ final class SuggestionReader
         }
 
         if (is_array($data)) {
-            $list = array_is_list($data) ? $data : (is_array($data['suggestions'] ?? null) ? $data['suggestions'] : (isset($data['category']) ? [$data] : null));
+            $list = array_is_list($data) ? $data : (is_array($data[$this->list] ?? null) ? $data[$this->list] : (isset($data['category']) || isset($data['finding']) || isset($data['verdict']) ? [$data] : null));
 
             if (! is_array($list)) {
-                return ['items' => [], 'truncated' => false, 'problem' => 'there was no "suggestions" list'];
+                return ['items' => [], 'truncated' => false, 'problem' => 'there was no "'.$this->list.'" list'];
             }
 
             return ['items' => self::objects($list), 'truncated' => false, 'problem' => null];
         }
 
         // Cut off part-way: keep every object in the list that closed.
-        $start = preg_match('/"suggestions"\s*:\s*\[/', $body, $found, PREG_OFFSET_CAPTURE) === 1 ? $found[0][1] + strlen($found[0][0]) : (str_starts_with($body, '[') ? 1 : null);
+        $start = preg_match('/"'.$tag.'"\s*:\s*\[/', $body, $found, PREG_OFFSET_CAPTURE) === 1 ? $found[0][1] + strlen($found[0][0]) : (str_starts_with($body, '[') ? 1 : null);
 
         if ($start === null) {
             return ['items' => [], 'truncated' => false, 'problem' => 'the JSON did not parse'];
@@ -73,7 +81,14 @@ final class SuggestionReader
 
         foreach ($list as $item) {
             if (is_array($item) && ! array_is_list($item)) {
-                $objects[] = array_combine(array_map('strval', array_keys($item)), array_values($item));
+                $object = array_combine(array_map('strval', array_keys($item)), array_values($item));
+
+                if (! isset($object['drop']) && is_string($object['decline'] ?? null)) {
+                    $object['drop'] = $object['decline'];
+                }
+
+                unset($object['decline']);
+                $objects[] = $object;
             }
         }
 

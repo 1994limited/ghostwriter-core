@@ -34,7 +34,7 @@ final class FindingsTest extends TestCase
         $findings = Findings::standard()->find(Northfold::context());
 
         $this->assertSame([
-            'out-of-date|page_builder/#h1/eyebrow|new for 2024|0',
+            'out-of-date|page_builder/#h1/eyebrow|new for 2024 winter care visits|0',
             'fact-to-check|page_builder/#t1/text|team of 6|0',
             'clarity|page_builder/#t1/text|in terms of the actual process involved what typically happens is that we will first of all come out and visit the garden in person after which we will then go away and produce a concept|0',
             'link|page_builder/#t1/text|our 2023 show garden|0',
@@ -73,7 +73,7 @@ final class FindingsTest extends TestCase
 
     public function test_a_repeated_quote_keeps_its_occurrence(): void
     {
-        $context = FreeChecksTest::context('New for 2024: visits. New for 2024: plans.');
+        $context = FreeChecksTest::context('New for 2024: visits. Book now. New for 2024: visits.');
         $findings = array_values(array_filter(Findings::standard()->find($context), fn (Finding $f) => $f->kind === 'past-year'));
 
         $this->assertSame([0, 1], array_map(fn (Finding $f) => $f->anchor->occurrence, $findings));

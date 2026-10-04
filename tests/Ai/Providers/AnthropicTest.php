@@ -62,6 +62,18 @@ class AnthropicTest extends ProviderTestCase
         $this->assertSame(['agent' => 'writer', 'input_tokens' => 200, 'stop_reason' => 'end'], array_intersect_key($this->logged('info')[0]['context'], ['agent' => 1, 'input_tokens' => 1, 'stop_reason' => 1]));
     }
 
+    public function test_the_reviews_instructions_are_marked_for_the_prompt_cache(): void
+    {
+        $this->http->queueJson(['content' => [['type' => 'text', 'text' => 'OK']]]);
+        $this->http->queueJson(['content' => [['type' => 'text', 'text' => 'OK']]]);
+
+        $this->claude()->text($this->request(agent: 'reviewer'));
+        $this->claude()->text($this->request(agent: 'writer'));
+
+        $this->assertSame([['type' => 'text', 'text' => 'Be brief.', 'cache_control' => ['type' => 'ephemeral']]], $this->http->body(0)['system']);
+        $this->assertSame('Be brief.', $this->http->body(1)['system'], 'Other agents as before.');
+    }
+
     public function test_the_agent_sets_the_defaults_and_the_request_can_override_them(): void
     {
         $this->http->queueJson(['content' => [['type' => 'text', 'text' => 'OK']]]);

@@ -6,7 +6,6 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\Testing\FakeProvider;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\RewordRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\Suggestion;
-use NineteenNinetyFour\Ghostwriter\Core\Suggest\SuggestionReply;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\SuggestionValidator;
 use PHPUnit\Framework\TestCase;
 
@@ -43,7 +42,7 @@ final class RewordTest extends TestCase
         $fake->assertSent('reworder', fn (TextRequest $r) => str_contains($r->prompt, '<quote>We leverage our expertise to deliver bespoke garden solutions</quote>')
             && str_contains($r->prompt, '- Gardens designed, planted and looked after')
             && str_contains($r->instructions, 'What this voice never does')
-            && $r->resolvedMaxTokens() === 1500 && $r->resolvedEffort()?->value === 'low');
+            && $r->resolvedMaxTokens() === 4000 && $r->resolvedEffort()?->value === 'medium');
     }
 
     public function test_a_new_version_passes_the_same_checks_as_the_first(): void
@@ -59,7 +58,10 @@ final class RewordTest extends TestCase
 
     public function test_only_wording_can_be_written_again(): void
     {
-        $fact = (new SuggestionValidator)->validate(new SuggestionReply, ReviewCase::input())->suggestions[1];
+        $fake = new FakeProvider;
+        $fake->respond('reviewer', ReviewCase::reply());
+        $input = ReviewCase::input();
+        $fact = array_values(array_filter((new SuggestionValidator)->validate(ReviewCase::studio($fake)->suggestEdits($input)->value, $input)->suggestions, fn ($s) => $s->category->value === 'fact-to-check'))[0];
 
         $this->expectException(\InvalidArgumentException::class);
         RewordRequest::for($fact, Northfold::context());

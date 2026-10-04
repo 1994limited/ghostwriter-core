@@ -14,10 +14,13 @@ use NineteenNinetyFour\Ghostwriter\Core\Gaps\Message;
  * - `kind`: 'past-year', 'relative-time', 'closing-date', 'stated-count',
  *   'long-sentence', 'empty-link-text', 'overlap', 'external-link', or a
  *   GapKind value ('link-broken', 'missing-alt', 'seo-length', 'expected').
- * - `alone`: whether it's shown on its own. A long sentence is only a hint
- *   for the review call; with no fix from it, it isn't shown.
+ * - `alone`: whether it's shown on its own in the free half. A long
+ *   sentence is only a hint for the review call.
  * - `meta`: what the guide and the call need: the year, the date, the
  *   other entry, link candidates, the asset, the template for an answer.
+ *   An Out of date finding is anchored on its sentence and has `phrase`
+ *   (the dated words as written) and `phraseOffset` (where they start in
+ *   the quote's `exact`, in characters).
  */
 final class Finding
 {
@@ -57,9 +60,11 @@ final class Finding
     }
 
     /**
-     * The free suggestion it is on its own, when the review call wrote no
-     * fix for it (or there was no call): a link candidate, an answer box,
-     * or "Rewrite it yourself". Null for a hint that isn't shown alone.
+     * The finding as a suggestion with no model, for the free half
+     * (EditReviews::preview(), "Found without AI"): where it is and why, a
+     * link candidate or an answer box, and never new words: a free check
+     * only finds and explains. A review never falls back to it; the model
+     * judges every finding. Null for a hint that isn't shown alone.
      */
     public function toSuggestion(): ?Suggestion
     {

@@ -19,6 +19,11 @@ use NineteenNinetyFour\Ghostwriter\Core\Suggest\Watches;
  *
  * In a dated group (AgePolicy), a year the entry was written in or after
  * is history too: a 2023 post may say "new for 2023".
+ *
+ * The finding is anchored on the sentence the phrase is in (a heading is
+ * a sentence of its own), one a sentence, so the review call rewrites the
+ * sentence as a whole. `meta['phrase']` is the dated words as written and
+ * `meta['phraseOffset']` where they start in the quote.
  */
 final class PastYears implements Check, Watches
 {
@@ -47,11 +52,13 @@ final class PastYears implements Check, Watches
 
         foreach ($context->texts() as $text) {
             $taken = [];
+            $sentences = [];
 
             foreach ($text->matches($pattern) as $match) {
+                $length = mb_strlen($match['text']);
                 $year = preg_match('/(?<!\d)'.self::YEAR.'(?!\d)/', $match['text'], $y) === 1 ? (int) $y[0] : 0;
 
-                if ($year === 0 || $year >= $thisYear || self::overlaps($taken, $match['offset'], mb_strlen($match['text']))) {
+                if ($year === 0 || $year >= $thisYear || self::overlaps($taken, $match['offset'], $length)) {
                     continue;
                 }
 
@@ -59,18 +66,26 @@ final class PastYears implements Check, Watches
                     continue;
                 }
 
-                if (self::isHistory($text->plain, $match['offset'], mb_strlen($match['text']), $phrases->history, ['{year}' => (string) $year])) {
+                if (self::isHistory($text->plain, $match['offset'], $length, $phrases->history, ['{year}' => (string) $year])) {
                     continue;
                 }
 
-                $taken[] = [$match['offset'], mb_strlen($match['text'])];
-                $anchor = $text->anchor($match['offset'], mb_strlen($match['text']));
+                $taken[] = [$match['offset'], $length];
+                [$from] = $text->sentenceRange($match['offset'], $length);
+
+                // One finding a sentence: the model rewrites the whole sentence.
+                if (isset($sentences[$from])) {
+                    continue;
+                }
+
+                $sentences[$from] = true;
+                $anchor = $text->sentenceAnchor($match['offset'], $length);
 
                 yield Finding::make(Category::OutOfDate, self::KIND, $anchor, Needs::Words, new Message('suggest.finding.past-year', [
-                    'quote' => $anchor->quote?->exact,
+                    'quote' => $match['text'],
                     'year' => $year,
                     'now' => $thisYear,
-                ]), ['year' => $year]);
+                ]), ['year' => $year, 'phrase' => $match['text'], 'phraseOffset' => $match['offset'] - $from]);
             }
         }
     }

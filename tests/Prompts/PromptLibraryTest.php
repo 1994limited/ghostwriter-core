@@ -47,7 +47,7 @@ class PromptLibraryTest extends TestCase
     {
         $this->assertCount(11, glob(dirname(__DIR__).'/Fixtures/prompts/craft/*.md') ?: []);
         $this->assertCount(12, glob(dirname(__DIR__).'/Fixtures/prompts/statamic/*.md') ?: []);
-        $this->assertCount(20, PromptLibrary::NAMES);
+        $this->assertCount(21, PromptLibrary::NAMES);
         $this->assertCount(11, glob(dirname(__DIR__).'/Fixtures/prompts/filament/*.md') ?: []);
 
         foreach (PromptLibrary::NAMES as $name) {

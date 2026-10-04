@@ -20,6 +20,12 @@ use NineteenNinetyFour\Ghostwriter\Core\Domain\Viewer;
  *   a run holds the entry (Domain\Busy, with whose run it is).
  * - `version` is for optimistic concurrency: the store refuses a save of
  *   an older version (Domain\Conflict).
+ * - `checked`: the candidates the review call (or the verifier) looked at
+ *   in context and dropped, as `{id, passage, reason, by}`
+ *   (ValidatedReview::$checked). Not shown; EditReviews::quieted() keeps
+ *   them quiet (Quiet::CHECKED).
+ * - `verified`: the verifier's verdict on each suggestion shown, by id:
+ *   'keep' or 'fix'. Empty when it didn't run or failed (`verifyError`).
  */
 final class EditReview
 {
@@ -32,6 +38,8 @@ final class EditReview
      * @param  array<string, int>  $dropped
      * @param  array{input: int, output: int}  $usage
      * @param  array<string, list<string>>  $versions  "Write another" versions, by suggestion id
+     * @param  list<array{id: string, passage: ?string, reason: string, by: string}>  $checked
+     * @param  array<string, string>  $verified
      */
     public function __construct(
         public readonly string $id,
@@ -52,6 +60,9 @@ final class EditReview
         public ?string $createdAt = null,
         public ?string $finishedAt = null,
         public ?string $expiresAt = null,
+        public array $checked = [],
+        public array $verified = [],
+        public ?string $verifyError = null,
     ) {}
 
     /**
@@ -123,9 +134,10 @@ final class EditReview
     /**
      * A person's decision: Accepted, Dismissed or Confirmed.
      *
-     * @throws Conflict for a suggestion that isn't in the review, an
-     *                  answer to anything but a Fact to check, or a suggestion
-     *                  that's done, stale or expired.
+     * @throws Conflict for a suggestion that isn't in the review, "It's
+     *                  still right" on anything but a Fact to check or an Out
+     *                  of date suggestion, or a suggestion that's done, stale
+     *                  or expired.
      */
     public function decide(string $suggestionId, SuggestionState $state, Viewer $by, DateTimeImmutable $now, ?string $answer = null, ?string $text = null): Decision
     {
@@ -139,8 +151,8 @@ final class EditReview
             throw new Conflict('This suggestion can\'t be changed any more.');
         }
 
-        if ($state === SuggestionState::Confirmed && $suggestion->category !== Category::FactToCheck) {
-            throw new Conflict('Only a fact to check can be confirmed.');
+        if ($state === SuggestionState::Confirmed && ! in_array($suggestion->category, [Category::FactToCheck, Category::OutOfDate], true)) {
+            throw new Conflict('Only a fact to check or a dated claim can be confirmed.');
         }
 
         if ($suggestion->state === $state) {
@@ -240,6 +252,9 @@ final class EditReview
             'createdAt' => $this->createdAt,
             'finishedAt' => $this->finishedAt,
             'expiresAt' => $this->expiresAt,
+            'checked' => $this->checked,
+            'verified' => $this->verified,
+            'verifyError' => $this->verifyError,
         ];
     }
 
@@ -269,6 +284,27 @@ final class EditReview
             }
         }
 
+        $checked = [];
+
+        foreach ($lists('checked') as $item) {
+            if (is_string($item['id'] ?? null)) {
+                $checked[] = [
+                    'id' => $item['id'],
+                    'passage' => is_string($item['passage'] ?? null) ? $item['passage'] : null,
+                    'reason' => is_string($item['reason'] ?? null) ? $item['reason'] : '',
+                    'by' => is_string($item['by'] ?? null) ? $item['by'] : 'reviewer',
+                ];
+            }
+        }
+
+        $verified = [];
+
+        foreach (is_array($a['verified'] ?? null) ? $a['verified'] : [] as $id => $verdict) {
+            if (is_string($id) && is_string($verdict)) {
+                $verified[$id] = $verdict;
+            }
+        }
+
         return new self(
             $string('id') ?? '',
             EntryRef::fromArray(is_array($a['entry'] ?? null) ? $a['entry'] : []),
@@ -288,6 +324,9 @@ final class EditReview
             $string('createdAt'),
             $string('finishedAt'),
             $string('expiresAt'),
+            $checked,
+            $verified,
+            $string('verifyError'),
         );
     }
 }

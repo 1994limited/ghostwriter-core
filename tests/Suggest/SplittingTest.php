@@ -63,7 +63,7 @@ final class SplittingTest extends TestCase
         $fake->respond('reviewer',
             '<suggestions>{"suggestions": [{"category": "clarity", "unit": "u3", "quote": "Paragraph 1 talks about the garden in plain words.", "occurrence": 0, "reason": "Repeats.", "source": {"kind": "general"}, "replacement": "Paragraph 1 is about the garden."}]}</suggestions>',
             '<suggestions>{"suggestions": []}</suggestions>',
-            '<suggestions>{"suggestions": [{"finding": "f1", "category": "out-of-date", "reason": "Old.", "source": {"kind": "finding"}, "replacement": "Every winter"}]}</suggestions>',
+            '<suggestions>{"suggestions": [{"finding": "f1", "category": "out-of-date", "reason": "Old.", "source": {"kind": "finding"}, "replacement": "Winter visits."}]}</suggestions>',
         );
 
         $result = ReviewCase::studio($fake)->suggestEdits($input);
@@ -74,6 +74,6 @@ final class SplittingTest extends TestCase
         $fake->assertSent('reviewer', fn (TextRequest $r) => str_contains($r->prompt, 'part="2 of 3"') && ! str_contains($r->prompt, 'id="u3"'));
         $this->assertSame(1, count(array_unique(array_map(fn (TextRequest $r) => $r->instructions, $fake->requests()))), 'The same instructions every call.');
         $this->assertStringContainsString('reviewed in parts', $fake->requests()[0]->instructions);
-        $this->assertSame(['Paragraph 1 is about the garden.', 'Every winter'], array_map(fn (Suggestion $s) => $s->replacement, $review->suggestions));
+        $this->assertSame(['Paragraph 1 is about the garden.', 'Winter visits.'], array_map(fn (Suggestion $s) => $s->replacement, $review->suggestions));
     }
 }

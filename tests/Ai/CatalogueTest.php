@@ -98,8 +98,12 @@ class CatalogueTest extends TestCase
         $this->assertSame(Effort::Low, Agents::effort('photo-picker'));
         $this->assertSame([2000, Effort::Low], [Agents::maxTokens('photo-query'), Agents::effort('photo-query')]);
         $this->assertNull(Agents::effort('writer'));
-        $this->assertSame([8000, Effort::Medium], [Agents::maxTokens('reviewer'), Agents::effort('reviewer')]);
-        $this->assertSame([1500, Effort::Low], [Agents::maxTokens('reworder'), Agents::effort('reworder')]);
+        $this->assertSame([16000, Effort::High], [Agents::maxTokens('reviewer'), Agents::effort('reviewer')]);
+        $this->assertSame([12000, Effort::High], [Agents::maxTokens('verifier'), Agents::effort('verifier')]);
+        $this->assertSame([4000, Effort::Medium], [Agents::maxTokens('reworder'), Agents::effort('reworder')]);
+        $this->assertSame([Agents::WRITING, Agents::WRITING, Agents::WRITING], [Agents::tier('reviewer'), Agents::tier('verifier'), Agents::tier('reworder')], 'Suggest edits writes on the top tier.');
+        $this->assertTrue(Agents::cachesInstructions('reviewer'));
+        $this->assertFalse(Agents::cachesInstructions('writer'));
 
         foreach (PromptLibrary::NAMES as $name) {
             if (! in_array($name, ['image', 'writer-extras', 'scoped-edit'], true)) {
