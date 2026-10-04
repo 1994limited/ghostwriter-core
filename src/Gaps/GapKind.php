@@ -37,6 +37,11 @@ enum GapKind: string
     /** A stock photo previewed but not licensed. */
     case StockPreview = 'stock-preview';
 
+    /**
+     * A required field left empty. No detector core ships finds these any
+     * more (the CMS's own validation does, on save); kept for the gaps an
+     * older session or job carries.
+     */
     case Required = 'required';
 
     case Expected = 'expected';
@@ -58,7 +63,8 @@ enum GapKind: string
     {
         return match ($this) {
             self::Ask, self::AskValue, self::Check, self::LinkToChoose, self::LinkBroken, self::ImagePlaceholder, self::StockPreview, self::LeftoverToken => Severity::Blocks,
-            self::LinkEmpty, self::ImageEmpty, self::Required => Severity::Required,
+            self::ImageEmpty => Severity::Prompt,
+            self::LinkEmpty, self::Required => Severity::Required,
             default => Severity::Suggestion,
         };
     }

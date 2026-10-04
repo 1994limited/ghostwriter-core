@@ -6,7 +6,8 @@ use Countable;
 
 /**
  * What GapFinder found in an entry, in form order: what the pill counts
- * (gaps that block or that the CMS requires) and the suggestions after it.
+ * (gaps that block, prompt, or that the CMS requires) and the suggestions
+ * after it.
  */
 final class GapReport implements Countable
 {
@@ -32,7 +33,18 @@ final class GapReport implements Countable
     }
 
     /**
-     * Gaps that block or that the CMS requires: what the pill counts.
+     * Gaps that bring the guide out on their own: those that block, and
+     * images the page looks like it needs (Severity::Prompt).
+     *
+     * @return list<Gap>
+     */
+    public function prompting(): array
+    {
+        return array_values(array_filter($this->gaps, fn (Gap $gap) => $gap->prompts()));
+    }
+
+    /**
+     * Gaps that block, prompt or that the CMS requires: what the pill counts.
      *
      * @return list<Gap>
      */
@@ -41,7 +53,7 @@ final class GapReport implements Countable
         return array_values(array_filter($this->gaps, fn (Gap $gap) => $gap->counts()));
     }
 
-    /** Blocks + Required: what the pill shows. */
+    /** Blocks + Prompt + Required: what the pill shows. */
     public function count(): int
     {
         return count($this->counted());
@@ -79,13 +91,16 @@ final class GapReport implements Countable
     /**
      * For the front end, as JSON.
      *
-     * @return array{count: int, blocking: int, suggestions: int, gaps: list<array<string, mixed>>}
+     * - `prompting`: how many bring the guide out on their own (prompting()).
+     *
+     * @return array{count: int, blocking: int, prompting: int, suggestions: int, gaps: list<array<string, mixed>>}
      */
     public function toArray(): array
     {
         return [
             'count' => $this->count(),
             'blocking' => count($this->blocking()),
+            'prompting' => count($this->prompting()),
             'suggestions' => $this->suggestions(),
             'gaps' => array_map(fn (Gap $gap) => $gap->toArray(), $this->gaps),
         ];

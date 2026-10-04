@@ -42,14 +42,14 @@ trait Deterministic
     }
 
     /**
-     * Whether an empty field should have been filled: the CMS requires it,
-     * most entries like this fill it (the pattern's fill rate), or the
-     * draft left it for a person.
+     * Whether an empty field should have been filled: most entries like
+     * this fill it (the pattern's fill rate), or the draft left it for a
+     * person. That the CMS requires it isn't a reason: its own validation
+     * says so on save.
      */
     private static function expected(GapContext $context, Visit $visit): bool
     {
-        return $visit->field->required
-            || $context->fillRate($visit->rateKey) >= Placeholders::EXPECTED
+        return $context->fillRate($visit->rateKey) >= Placeholders::EXPECTED
             || $context->session->expects($visit->path, $visit->label);
     }
 
