@@ -4,6 +4,20 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
+### Changed (structured output for the layout planner)
+
+- **The layout planner uses structured output.** `Arrange\PlanSchema::for($schema, $count)` describes the plans for one site's fields. The shape is generic, so it stays small however many blocks the site has:
+  - each plan is `{notes, name, description, follows, fields: [{field, blocks, constructs, refs}]}`, with a short `notes` first;
+  - a block is `{type, place: [{field, refs}], rows: [{field, cells: [{column, ref}]}], transform, level, transforms: [{ref, transform}], children}`;
+  - every property is required, with `""`, `0` and `[]` for nothing, so there are no optional properties or unions for Claude's limits (24 and 16);
+  - blocks nest three deep, because a schema can't recurse;
+  - block types, construct types, transforms and field handles are enums of the site's own.
+- **How the reply is read.** `PlanSchema::toRaw()` turns each structured plan back into the mapping `PlanReader` reads from YAML (`PlanReader::readList()`), so `PlanValidator`, the arranger and extras are unchanged.
+  - A structured reply that was cut off keeps the plans that closed.
+  - A model without structured output is asked for `<plans>` YAML, as before (prompt markers `{{# tagged }}` and `{{# structured }}`).
+- **Asking again.** A planner reply that can't be read (no plans block, YAML or JSON that doesn't parse) is asked for once more; one that was read but holds no usable plan is not, as before. `PlanReader::UNREADABLE` lists the problems that count as unreadable.
+- `FakeProvider` decodes a queued `TextResponse` onto `structured` for a request with a schema, as a provider would.
+
 ### Changed (structured output for more Studio calls)
 
 - **The kind finder, the planner, the brief writer and filler, the reworder and the gap filler use structured output.** Each call carries its reply's schema; where the model is held to it (docs/providers.md#structured-output) the reply is read from `TextResponse::$structured`, and elsewhere from the tags and YAML as before. See docs/studio.md#structured-output.

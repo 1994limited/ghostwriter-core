@@ -20,6 +20,8 @@ use NineteenNinetyFour\Ghostwriter\Core\Studio\Conversation;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\Layout;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\WriterContext;
 use NineteenNinetyFour\Ghostwriter\Core\Tests\Arrange\Northfold;
+use NineteenNinetyFour\Ghostwriter\Core\Tests\Arrange\PlanSchemaTest;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -47,11 +49,35 @@ final class DerivedCountTest extends StudioTestCase
         </plans>
         YAML;
 
-    public function test_the_model_proposes_five_areas_and_core_counts_three_for_the_editor_to_check(): void
+    /**
+     * @return iterable<string, array{bool}>
+     */
+    public static function formats(): iterable
     {
+        yield 'tagged YAML' => [false];
+        yield 'structured output' => [true];
+    }
+
+    #[DataProvider('formats')]
+    public function test_the_model_proposes_five_areas_and_core_counts_three_for_the_editor_to_check(bool $structured): void
+    {
+        $this->fake->withoutStructuredOutput(! $structured);
         $extras = "<extras>\n- kind: stats\n  items:\n    - text: \"5 areas\"\n      value: \"5\"\n      label: areas\n      source: { from: brief, quote: \"Northumberland, Durham and the Tyne Valley\" }\n</extras>";
         $this->fake->respond('writer', self::reply("<reply>Here is a first draft.</reply>\n<draft>\n".Yaml::dump(Northfold::blocksDraft(), 6, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK)."</draft>\n".$extras));
-        $this->fake->respond('layout-planner', self::reply(self::PLANS));
+        $b = PlanSchemaTest::block(...);
+        $structured
+            ? $this->fake->respondStructured('layout-planner', ['plans' => [['notes' => 'The areas up front.', 'name' => 'With the numbers', 'description' => 'The areas up front', 'follows' => '', 'fields' => [[
+                'field' => 'page_builder',
+                'blocks' => [
+                    $b('hero', [['heading', ['u3']], ['subheading', ['u4']], ['image', ['u5']]]),
+                    $b('stats', [['items', ['x1.1']]]),
+                    $b('text', [['body', ['u6', 'u7', 'u8']]]),
+                    $b('cta', [['heading', ['u9']], ['button', ['u10']]]),
+                ],
+                'constructs' => [],
+                'refs' => [],
+            ]]]]])
+            : $this->fake->respond('layout-planner', self::reply(self::PLANS));
 
         $session = Session::start(Format::Statamic, 'service', ['brief' => self::BRIEF]);
         $session->messages = [['role' => 'user', 'content' => self::BRIEF]];

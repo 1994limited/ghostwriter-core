@@ -15,6 +15,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Studio\Conversation;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\Layout;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\WriterContext;
 use NineteenNinetyFour\Ghostwriter\Core\Tests\Arrange\Northfold;
+use NineteenNinetyFour\Ghostwriter\Core\Tests\Arrange\PlanSchemaTest;
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -127,6 +128,76 @@ final class LayoutPlannerTest extends StudioTestCase
         $this->assertSame([['value' => '4', 'label' => 'visits a winter']], $data['page_builder'][1]['items']);
         $this->assertSame([], $built->notes);
         $this->assertSame(Northfold::blocksDraft(), $layouts->draftData($session, $this->site()), 'the writer\'s layout is the draft');
+    }
+
+    /** self::PLANS, as structured output sends it. */
+    public static function structuredPlans(): array
+    {
+        $b = PlanSchemaTest::block(...);
+
+        return ['plans' => [
+            ['notes' => 'Follow p-1: hero, stats, cards.', 'name' => 'Scannable', 'description' => 'The visits as cards, then who it suits', 'follows' => 'p-1', 'fields' => [[
+                'field' => 'page_builder',
+                'blocks' => [
+                    $b('hero', [['heading', ['u3']], ['subheading', ['u4']], ['image', ['u5']]]),
+                    $b('stats', [['items', ['x1.1']]]),
+                    $b('text', [['body', ['u6']]]),
+                    $b('section', [['heading', ['u7#1']]], [
+                        $b('card', [['heading', ['u7#2:lead']], ['body', ['u7#2:rest']]]),
+                        $b('card', [['heading', ['u7#3:lead']], ['body', ['u7#3:rest']]]),
+                    ]),
+                    $b('text', [['body', ['u8']]]),
+                    $b('cta', [['heading', ['u9']], ['button', ['u10']]]),
+                ],
+                'constructs' => [],
+                'refs' => [],
+            ]]],
+            ['notes' => '', 'name' => 'Invented', 'description' => 'A carousel this site doesn\'t have', 'follows' => '', 'fields' => [[
+                'field' => 'page_builder',
+                'blocks' => [$b('carousel', [['slides', ['u3', 'u4', 'u6', 'u7', 'u8', 'u9', 'u10']]])],
+                'constructs' => [],
+                'refs' => [],
+            ]]],
+        ]];
+    }
+
+    public function test_a_structured_reply_gives_the_same_layouts_as_the_tagged_one(): void
+    {
+        $this->fake->withoutStructuredOutput()->respond('writer', self::reply($this->draftReply()));
+        $this->fake->respond('layout-planner', self::reply(self::PLANS));
+        [$tagged, $taggedLayouts] = $this->firstDraft();
+
+        $this->fake->reset()->withoutStructuredOutput(false)->respond('writer', self::reply($this->draftReply()));
+        $this->fake->respondStructured('layout-planner', self::structuredPlans());
+        [$session, $layouts] = $this->firstDraft();
+
+        $planner = $this->sent('layout-planner');
+        $this->assertSame('plans', $planner->schema?->name);
+        $this->assertStringContainsString('Your reply is JSON in the shape you are given', $planner->instructions);
+        $this->assertStringNotContainsString('<plans>', $planner->instructions);
+        $this->assertCount(1, $this->fake->prompted('layout-planner'));
+
+        $this->assertSame(['w', 'p1'], array_map(fn (Plan $plan) => $plan->id, $layouts->plans($session)->all()), 'the invented carousel is dropped');
+        $this->assertEquals($taggedLayouts->plans($tagged)->get('p1'), $layouts->plans($session)->get('p1'));
+        $this->assertSame('p1', $layouts->plans($session)->suggested()?->id);
+
+        $layouts->choose($session, 'p1');
+        $taggedLayouts->choose($tagged, 'p1');
+        $this->assertSame($taggedLayouts->draftData($tagged, $this->site()), $layouts->draftData($session, $this->site()));
+        $this->assertSame([], $layouts->build($session, $this->site())->notes);
+    }
+
+    public function test_a_structured_reply_cut_off_keeps_the_plans_that_closed(): void
+    {
+        $json = (string) json_encode(self::structuredPlans());
+        $cut = substr($json, 0, (int) strpos($json, '"name":"Invented"'));
+        $this->fake->respond('writer', self::reply($this->draftReply()));
+        $this->fake->respond('layout-planner', self::cutOff($cut));
+
+        [$session, $layouts] = $this->firstDraft();
+
+        $this->assertSame(['w', 'p1'], array_map(fn (Plan $plan) => $plan->id, $layouts->plans($session)->all()));
+        $this->assertSame('Scannable', $layouts->plans($session)->get('p1')?->name);
     }
 
     public function test_a_later_turn_calls_only_the_writer_and_layouts_follow_the_text(): void
