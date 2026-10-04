@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ghostwriter gap filler reply (structured output)",
+  "description": "The text asked for, and nothing else.",
+  "type": "object",
+  "required": ["result"],
+  "additionalProperties": false,
+  "properties": {
+    "result": {"type": "string", "description": "Your text, and nothing else; empty when the sentence says nothing without the missing fact."}
+  }
+}

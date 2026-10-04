@@ -11,21 +11,21 @@ You help set up a writing assistant for one section of a website. You are shown 
 
 ## How you reply
 
-Up to {{ count }} kinds, commonest first, as one YAML list inside a `<kinds>` block and nothing else. Each item has:
+Up to {{ count }} kinds, commonest first, {{# tagged }}as one YAML list inside a `<kinds>` block and nothing else{{/ tagged }}{{# structured }}as the `kinds` list of the JSON you are given the shape of (empty when there is nothing to add), each item's `why` first{{/ structured }}. Each item has:
 
 - `title`: what the editors would call it, two or three words, such as "Press release".
 - `description`: one sentence on what an entry of this kind is and what it is for.
 - `why`: one sentence on the evidence: how many entries are this kind, and what they share.
 - `examples`: the IDs of up to six entries that show the kind most clearly, as [[kind_ids]].
 
-Quote any value containing a colon followed by a space, and always with double quotes: text has apostrophes in it, which break single quotes.
+{{# tagged }}Quote any value containing a colon followed by a space, and always with double quotes: text has apostrophes in it, which break single quotes.
 
 <kinds>
 - title: ...
   description: ...
   why: ...
   examples: [[kind_ids_example]]
-</kinds>
+</kinds>{{/ tagged }}
 
 ## Already taught
 

@@ -207,3 +207,21 @@ GHOSTWRITER_UPDATE_FIXTURES=1 vendor/bin/phpunit --filter StudioParityTest
 ```
 
 Before 0.3.0 was tagged, the Statamic and Filament Studios were run side by side with core's in their own test suites (writer instructions, `write`, `brief`, the type analysis and its re-ask, kinds, ideas, the brief writer and both voice jobs) and sent identical requests. Craft's was compared by reading the code.
+
+## Structured output
+
+Every call whose reply is data carries the reply's `OutputSchema`, so a provider that can holds the model to it ([providers.md](providers.md#structured-output)). Where it is held, the reply is read from `TextResponse::$structured`; where it isn't, from the tags and YAML the prompt asks for, as before. A reply that can't be read, and wasn't cut off, is asked for once more with the problem quoted after the same prompt; the second reply stands.
+
+| Call | Schema | Notes |
+|---|---|---|
+| `reviewer`, `verifier` | `resources/schemas/reviewer-reply.json`, `verifier-reply.json` | `notes` first in each item; see suggest-edits.md |
+| `kind-finder` | `Studio::kindsSchema($survey, $numericIds)` | `why` first; `examples` an enum of the samples' IDs |
+| `planner` | `$studio->ideasSchema($context)` | `why` first; the vocabulary's group key, an enum of the groups |
+| `brief-writer`, `brief-filler` | `Studio::briefSchema($kind, $withTitle)` | every answer required, `""` for nothing; keys from `Studio::briefKeys()`, mapped back to handles |
+| `reworder` | `resources/schemas/reworder-reply.json` | two versions |
+| `gap-filler` | `resources/schemas/gap-filler-reply.json` | `result` |
+
+The prompts mark their reply format with `{{# tagged }}…{{/ tagged }}` and `{{# structured }}…{{/ structured }}`; `Studio::prompt($name, $structured)` keeps the right part, and `Studio::takesSchema($agent, $schema)` says which. The tagged rendering is what the addons always sent. Prompts stay the same for every call of a job, so cached instructions still hit.
+
+Not moved, on purpose: the `writer` (a long markdown draft in YAML: in JSON it costs escaping and tokens, and a cut-off reply would lose the whole draft where the tags keep what came), the voice analyst and editor and the imagery analyst (prose documents), `photo-query` (a few words), and `type-analyst`, whose kinds nest (a schema can't recurse).
+

@@ -2,6 +2,7 @@
 
 namespace NineteenNinetyFour\Ghostwriter\Core\Studio;
 
+use Closure;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\ProviderException;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\Truncated;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Image;
@@ -127,9 +128,27 @@ final class Studio
      * A prompt with the vocabulary filled in, as the library has it
      * (overrides included).
      */
-    public function prompt(string $name): string
+    public function prompt(string $name, bool $structured = false): string
     {
-        return $this->prompts->get($name);
+        return self::replyFormat($this->prompts->get($name), $structured);
+    }
+
+    /**
+     * A prompt with its reply format chosen: the `{{# structured }}…{{/
+     * structured }}` parts kept for a model held to a schema, the `{{#
+     * tagged }}…{{/ tagged }}` parts (tags, YAML) for one only asked. A
+     * prompt without them (an override written before them) is as it was.
+     */
+    public static function replyFormat(string $text, bool $structured): string
+    {
+        if (! str_contains($text, '{{# ')) {
+            return $text;
+        }
+
+        [$keep, $drop] = $structured ? ['structured', 'tagged'] : ['tagged', 'structured'];
+        $text = (string) preg_replace('/\{\{# '.$drop.' \}\}.*?\{\{\/ '.$drop.' \}\}/s', '', $text);
+
+        return self::tidy(str_replace(['{{# '.$keep.' }}', '{{/ '.$keep.' }}'], '', $text));
     }
 
     /**
@@ -256,35 +275,46 @@ final class Studio
             );
         }, array_values($survey->samples));
 
-        $instructions = strtr($this->prompt('kind-finder'), [
+        $schema = self::kindsSchema($survey, $numeric);
+        $held = $this->takesSchema('kind-finder', $schema);
+        $instructions = strtr($this->prompt('kind-finder', $held), [
+            // The vocabulary's own words for nothing to add, as JSON.
+            'reply with an empty `<kinds></kinds>` block and nothing else' => $held ? 'reply with an empty `kinds` list' : 'reply with an empty `<kinds></kinds>` block and nothing else',
             '{{ count }}' => (string) self::KIND_COUNT,
             '{{ taught }}' => $survey->taught !== [] ? implode("\n", array_map(fn (ContentKind $kind) => "- {$kind->title}: {$kind->description}", $survey->taught)) : 'Nothing yet.',
             '{{ dismissed }}' => $survey->dismissed !== [] ? '- '.implode("\n- ", $survey->dismissed) : 'Nothing yet.',
         ]);
 
-        $response = $this->ask('kind-finder', "Section: {$survey->groupTitle}\n\nEntries, newest first:\n".implode("\n", $lines), instructions: $instructions);
-        $block = TaggedResponse::parse($response->text, 'kinds')->document;
-
-        if ($block === null) {
-            // An empty <kinds></kinds> is the model saying there is nothing
-            // to add. No block at all is too, where the addon says so.
-            if (preg_match('/<kinds>\s*(<\/kinds>|\z)/', $response->text) === 1 || $this->options->missingKindsIsEmpty) {
-                $this->log('info', "no kinds suggested for {$survey->groupHandle}", 'kind-finder', $response->text, ['group' => $survey->groupHandle]);
-
-                return new Result([], $response->usage);
+        [$response, $found, $problem] = $this->askStructured('kind-finder', "Section: {$survey->groupTitle}\n\nEntries, newest first:\n".implode("\n", $lines), $schema, function (TextResponse $response): array {
+            if ($response->structured !== null) {
+                return is_array($response->structured['kinds'] ?? null) ? [$response->structured['kinds'], null] : [null, 'there was no "kinds" list'];
             }
 
-            $this->unreadable("the kinds for {$survey->groupHandle} could not be read (there was no <kinds> block)", 'kind-finder', $response->text, ['group' => $survey->groupHandle]);
+            $block = TaggedResponse::parse($response->text, 'kinds')->document;
 
-            throw new UnreadableReply('Ghostwriter did not come back with any kinds. Try again.', 'kind-finder', 'there was no <kinds> block');
+            if ($block === null) {
+                // An empty <kinds></kinds> is the model saying there is nothing
+                // to add. No block at all is too, where the addon says so.
+                return preg_match('/<kinds>\s*(<\/kinds>|\z)/', $response->text) === 1 || $this->options->missingKindsIsEmpty
+                    ? [[], null]
+                    : [null, 'there was no <kinds> block'];
+            }
+
+            try {
+                return [(array) LenientYaml::parse($block), null];
+            } catch (Throwable $exception) {
+                return [null, self::yamlProblem($exception), self::yamlProblem($exception, forLog: true)];
+            }
+        }, "the kinds for {$survey->groupHandle} could not be read", ['group' => $survey->groupHandle], instructions: $instructions);
+
+        if ($problem !== null) {
+            throw new UnreadableReply(str_starts_with($problem, 'there was no') ? 'Ghostwriter did not come back with any kinds. Try again.' : 'Ghostwriter did not come back with kinds it could read. Try again.', 'kind-finder', $problem);
         }
 
-        try {
-            $found = (array) LenientYaml::parse($block);
-        } catch (Throwable $exception) {
-            $this->unreadable("the kinds for {$survey->groupHandle} could not be read (".self::yamlProblem($exception, forLog: true).')', 'kind-finder', $response->text, ['group' => $survey->groupHandle]);
+        if ($found === []) {
+            $this->log('info', "no kinds suggested for {$survey->groupHandle}", 'kind-finder', $response->text, ['group' => $survey->groupHandle]);
 
-            throw new UnreadableReply('Ghostwriter did not come back with kinds it could read. Try again.', 'kind-finder', self::yamlProblem($exception));
+            return new Result([], $response->usage);
         }
 
         /** @var array<string, KindSample> $byId */
@@ -346,21 +376,28 @@ final class Studio
      */
     public function suggestIdeas(PlanContext $context): Result
     {
-        $response = $this->ask('planner', trim($context->steer) !== '' ? "What I am looking for this time: {$context->steer}" : 'Suggest what is missing.', instructions: $this->plannerInstructions($context));
-        $block = TaggedResponse::parse($response->text, 'ideas')->document;
+        [$response, $ideas, $problem] = $this->askStructured('planner', trim($context->steer) !== '' ? "What I am looking for this time: {$context->steer}" : 'Suggest what is missing.', $this->ideasSchema($context), function (TextResponse $response): array {
+            if ($response->structured !== null) {
+                return is_array($response->structured['ideas'] ?? null) ? [$response->structured['ideas'], null] : [null, 'there was no "ideas" list'];
+            }
 
-        if ($block === null) {
-            $this->unreadable("the planner's ideas could not be read (there was no <ideas> block)", 'planner', $response->text);
+            $block = TaggedResponse::parse($response->text, 'ideas')->document;
 
-            throw new UnreadableReply('Ghostwriter did not come back with any ideas. Try again.', 'planner', 'there was no <ideas> block');
-        }
+            if ($block === null) {
+                return [null, 'there was no <ideas> block'];
+            }
 
-        try {
-            $ideas = (array) LenientYaml::parse($block);
-        } catch (Throwable $exception) {
-            $this->unreadable("the planner's ideas could not be read (".self::yamlProblem($exception, forLog: true).')', 'planner', $response->text);
+            try {
+                return [(array) LenientYaml::parse($block), null];
+            } catch (Throwable $exception) {
+                return [null, self::yamlProblem($exception), self::yamlProblem($exception, forLog: true)];
+            }
+        }, "the planner's ideas could not be read", instructions: $this->plannerInstructions($context));
 
-            throw new UnreadableReply('Ghostwriter did not come back with ideas it could read. Try again.', 'planner', self::yamlProblem($exception));
+        if ($problem !== null || ! is_array($ideas)) {
+            $problem ??= 'there were no ideas';
+
+            throw new UnreadableReply(str_starts_with($problem, 'there w') ? 'Ghostwriter did not come back with any ideas. Try again.' : 'Ghostwriter did not come back with ideas it could read. Try again.', 'planner', $problem);
         }
 
         $groups = [];
@@ -424,7 +461,7 @@ final class Studio
 
         $plan = implode("\n", array_map(fn (PlannedIdea $idea) => "- {$idea->title} ({$idea->group}, {$idea->status})", $context->plan));
 
-        return strtr($this->prompt('planner'), [
+        return strtr($this->prompt('planner', $this->takesSchema('planner', $this->ideasSchema($context))), [
             '{{ count }}' => (string) $context->count,
             '{{ voice }}' => trim($context->voice) !== '' ? trim($context->voice) : "No guide has been written yet. Judge the reader from the {$vocabulary->items}.",
             '{{ '.$vocabulary->groups.' }}' => $groups,
@@ -470,24 +507,13 @@ final class Studio
      */
     public function draftBrief(ContentKind $kind, string $title, string $notes = '', array $titles = []): Result
     {
-        $instructions = $this->briefInstructions('brief-writer', $kind, $titles);
+        $instructions = $this->briefInstructions('brief-writer', $kind, $titles, self::briefSchema($kind, false));
 
-        $response = $this->ask('brief-writer', "Working title: {$title}\n\nNotes:\n".(trim($notes) !== '' ? trim($notes) : '(none)'), instructions: $instructions);
-        $failed = 'Ghostwriter could not put a brief together from that. Try again, or fill it in by hand.';
-        $block = TaggedResponse::parse($response->text, 'brief')->document;
+        $schema = self::briefSchema($kind, false);
+        [$response, $answers, $problem] = $this->askStructured('brief-writer', "Working title: {$title}\n\nNotes:\n".(trim($notes) !== '' ? trim($notes) : '(none)'), $schema, $this->briefReader($kind), 'the brief could not be read', instructions: $instructions);
 
-        if ($block === null) {
-            $this->unreadable('the brief could not be read (there was no <brief> block)', 'brief-writer', $response->text);
-
-            throw new UnreadableReply($failed, 'brief-writer', 'there was no <brief> block');
-        }
-
-        try {
-            $answers = (array) LenientYaml::parse($block);
-        } catch (Throwable $exception) {
-            $this->unreadable('the brief could not be read ('.self::yamlProblem($exception, forLog: true).')', 'brief-writer', $response->text);
-
-            throw new UnreadableReply($failed, 'brief-writer', self::yamlProblem($exception));
+        if ($problem !== null || ! is_array($answers)) {
+            throw new UnreadableReply('Ghostwriter could not put a brief together from that. Try again, or fill it in by hand.', 'brief-writer', $problem ?? 'there was no brief');
         }
 
         // Only the questions that were asked, as plain text.
@@ -520,22 +546,11 @@ final class Studio
     public function fillBrief(BriefRequest $request): Result
     {
         $kind = $request->kind;
-        $response = $this->ask('brief-filler', $this->briefFillerPrompt($request), instructions: $this->briefInstructions('brief-filler', $kind, $request->titles));
-        $failed = 'Ghostwriter could not fill in the brief from that. Try again, or say a little more about it.';
-        $block = TaggedResponse::parse($response->text, 'brief')->document;
+        $schema = self::briefSchema($kind, true);
+        [$response, $parsed, $problem] = $this->askStructured('brief-filler', $this->briefFillerPrompt($request), $schema, $this->briefReader($kind), 'the brief could not be read', instructions: $this->briefInstructions('brief-filler', $kind, $request->titles, $schema));
 
-        if ($block === null) {
-            $this->unreadable('the brief could not be read (there was no <brief> block)', 'brief-filler', $response->text);
-
-            throw new UnreadableReply($failed, 'brief-filler', 'there was no <brief> block');
-        }
-
-        try {
-            $parsed = (array) LenientYaml::parse((string) preg_replace('/\A```(?:yaml|yml)?\s*\n(.*?)\n?```\s*\z/su', '$1', trim($block)));
-        } catch (Throwable $exception) {
-            $this->unreadable('the brief could not be read ('.self::yamlProblem($exception, forLog: true).')', 'brief-filler', $response->text);
-
-            throw new UnreadableReply($failed, 'brief-filler', self::yamlProblem($exception));
+        if ($problem !== null || ! is_array($parsed)) {
+            throw new UnreadableReply('Ghostwriter could not fill in the brief from that. Try again, or say a little more about it.', 'brief-filler', $problem ?? 'there was no brief');
         }
 
         $answers = [];
@@ -547,7 +562,9 @@ final class Studio
                 : trim(is_scalar($answer) ? (string) $answer : '');
         }
 
-        $title = preg_match('/<title>(.*?)<\/title>/s', $response->text, $match) === 1 ? trim((string) preg_replace('/\s+/u', ' ', $match[1])) : '';
+        $title = $response->structured !== null
+            ? (is_string($response->structured['title'] ?? null) ? trim((string) preg_replace('/\s+/u', ' ', $response->structured['title'])) : '')
+            : (preg_match('/<title>(.*?)<\/title>/s', $response->text, $match) === 1 ? trim((string) preg_replace('/\s+/u', ' ', $match[1])) : '');
 
         // Titles the model was given or gave may be quoted, figures and all.
         [$answers, $problems] = BriefCheck::check($kind, $answers, $request->source(), $request->previous !== null ? $request->kept : [], [...$request->titles, $request->title, $title]);
@@ -592,15 +609,17 @@ final class Studio
      *
      * @param  array<int, string>  $titles
      */
-    private function briefInstructions(string $agent, ContentKind $kind, array $titles): string
+    private function briefInstructions(string $agent, ContentKind $kind, array $titles, ?OutputSchema $schema = null): string
     {
+        $held = $schema !== null && $this->takesSchema($agent, $schema);
+        $keys = self::briefKeys($kind);
         $questions = implode("\n", array_map(
-            fn (Question $question) => "- `{$question->handle}`".($question->required ? ' (required)' : ' (optional)').': '.$question->label.($question->instructions === '' ? '' : ' '.$question->instructions)
+            fn (Question $question) => '- `'.($held ? $keys[$question->handle] : $question->handle).'`'.($question->required ? ' (required)' : ' (optional)').': '.$question->label.($question->instructions === '' ? '' : ' '.$question->instructions)
                 .($question->options === [] ? '' : ' One of: '.implode(', ', array_keys($question->options)).'.'),
             $kind->questions,
         ));
 
-        return strtr($this->prompt($agent), [
+        return strtr($this->prompt($agent, $held), [
             '{{ type_title }}' => $kind->title,
             '{{ type_description }}' => $kind->description,
             '{{ type_guidance }}' => $kind->guidance,
@@ -805,6 +824,205 @@ final class Studio
         ]));
     }
 
+    /**
+     * One call held to a schema where the model can be, its reply read by
+     * $read: from TextResponse::$structured when the provider decoded it,
+     * else from the text as the tagged prompt asked for it. A reply that
+     * can't be read, and wasn't cut off, is asked for once more with the
+     * problem quoted after the same prompt; the second reply stands. Both
+     * calls' usage is counted.
+     *
+     * @param  Closure(TextResponse): array{0: mixed, 1: ?string, 2?: ?string}  $read  The value, and what was wrong (for the model), and optionally what was wrong in words safe for the log.
+     * @param  array<string, string>  $context  For the log.
+     * @param  array<int, Image>  $images
+     * @param  array<int, Message|array<string, mixed>>  $history
+     * @return array{0: TextResponse, 1: mixed, 2: ?string} The response, the value, and the problem if it still couldn't be read.
+     *
+     * @throws Truncated
+     * @throws ProviderException
+     */
+    private function askStructured(string $agent, string $prompt, OutputSchema $schema, Closure $read, string $what, array $context = [], array $images = [], ?string $instructions = null, array $history = []): array
+    {
+        $response = $this->ask($agent, $prompt, $history, $images, $instructions, schema: $schema);
+        [$value, $problem, $logged] = $read($response) + [null, null, null];
+
+        if ($problem === null) {
+            return [$response, $value, null];
+        }
+
+        if ($response->truncated()) {
+            $this->unreadable("{$what} (".($logged ?? $problem).')', $agent, $response->text, $context);
+
+            return [$response, $value, $problem];
+        }
+
+        $this->unreadable("{$what} (".($logged ?? $problem).'); asking again once', $agent, $response->text, $context);
+
+        $again = $this->ask($agent, $prompt."\n\nYour last answer to this couldn't be read: {$problem}. Answer again, in full, exactly in the format asked.", $history, $images, $instructions, schema: $schema);
+        [$value, $problem, $logged] = $read($again) + [null, null, null];
+
+        if ($problem !== null) {
+            $this->unreadable("{$what} again (".($logged ?? $problem).')', $agent, $again->text, $context);
+        }
+
+        return [$again->withUsage($response->usage->plus($again->usage)), $value, $problem];
+    }
+
+    /** A schema core ships, from resources/schemas. */
+    private static function schema(string $name, string $file): OutputSchema
+    {
+        static $schemas = [];
+
+        return $schemas[$file] ??= OutputSchema::fromFile($name, dirname(__DIR__, 2).'/resources/schemas/'.$file);
+    }
+
+    /**
+     * The kind finder's reply: up to KIND_COUNT kinds, each with its
+     * evidence first and examples only from the samples shown.
+     */
+    public static function kindsSchema(KindSurvey $survey, bool $numeric): OutputSchema
+    {
+        $ids = array_values(array_unique(array_map(fn (KindSample $sample) => $numeric && is_numeric($sample->id) ? (int) $sample->id : (string) $sample->id, $survey->samples)));
+
+        return new OutputSchema('kinds', [
+            'type' => 'object',
+            'required' => ['kinds'],
+            'properties' => ['kinds' => [
+                'type' => 'array',
+                'description' => 'Up to '.self::KIND_COUNT.' kinds, commonest first; empty when there is nothing to add.',
+                'items' => [
+                    'type' => 'object',
+                    'required' => ['why', 'title', 'description', 'examples'],
+                    'properties' => [
+                        'why' => ['type' => 'string', 'description' => 'The evidence: how many entries are this kind, and what they share.'],
+                        'title' => ['type' => 'string', 'description' => 'What the editors would call it, two or three words.'],
+                        'description' => ['type' => 'string', 'description' => 'One sentence on what an entry of this kind is and what it is for.'],
+                        'examples' => ['type' => 'array', 'items' => ['enum' => $ids], 'description' => 'The IDs of up to '.self::KIND_EXAMPLES.' entries that show the kind most clearly.'],
+                    ],
+                ],
+            ]],
+        ]);
+    }
+
+    /**
+     * The planner's reply: ideas, each with its gap first, for the groups
+     * planned for, by the vocabulary's key (collection, section…).
+     */
+    public function ideasSchema(PlanContext $context): OutputSchema
+    {
+        $key = $this->prompts->vocabulary()->groupKey;
+        $handles = array_values(array_map(fn (PlanGroup $group) => $group->handle, $context->groups));
+
+        return new OutputSchema('ideas', [
+            'type' => 'object',
+            'required' => ['ideas'],
+            'properties' => ['ideas' => [
+                'type' => 'array',
+                'items' => [
+                    'type' => 'object',
+                    'required' => ['why', 'title', $key, 'type', 'notes'],
+                    'properties' => [
+                        'why' => ['type' => 'string', 'description' => 'The gap it fills, in one sentence.'],
+                        'title' => ['type' => 'string'],
+                        $key => $handles !== [] ? ['type' => 'string', 'enum' => $handles] : ['type' => 'string'],
+                        'type' => ['type' => 'string', 'description' => 'The kind\'s handle, or an empty string if none fits.'],
+                        'notes' => ['type' => 'string', 'description' => 'Two to four sentences a writer could start from.'],
+                    ],
+                ],
+            ]],
+        ]);
+    }
+
+    /**
+     * The brief writer's or filler's reply: an answer for every question,
+     * all required (an empty string for nothing), so a long brief stays
+     * within the optional-field limits; the filler's working title first.
+     */
+    public static function briefSchema(ContentKind $kind, bool $title): OutputSchema
+    {
+        $keys = self::briefKeys($kind);
+        $answers = [];
+
+        foreach ($kind->questions as $question) {
+            $answer = ['type' => 'string', 'description' => trim($question->label.($question->instructions !== '' ? ' '.$question->instructions : ''))];
+
+            if ($question->options !== []) {
+                $answer['enum'] = [...array_map('strval', array_keys($question->options)), ''];
+            }
+
+            $answers[$keys[$question->handle]] = $answer;
+        }
+
+        $properties = $title ? ['title' => ['type' => 'string', 'description' => 'The working title.']] : [];
+        $properties['answers'] = ['type' => 'object', 'required' => array_values($keys), 'properties' => $answers === [] ? (object) [] : $answers];
+
+        return new OutputSchema('brief', ['type' => 'object', 'required' => array_keys($properties), 'properties' => $properties]);
+    }
+
+    /**
+     * Each question's handle as a property name a schema takes (letters,
+     * digits and _), kept unique.
+     *
+     * @return array<string, string> Handle => key.
+     */
+    public static function briefKeys(ContentKind $kind): array
+    {
+        $keys = [];
+
+        foreach ($kind->questions as $question) {
+            $base = trim((string) preg_replace('/[^A-Za-z0-9_]+/', '_', $question->handle), '_');
+            $base = mb_substr($base !== '' ? $base : 'question', 0, 60);
+            $key = $base;
+
+            for ($n = 2; in_array($key, $keys, true); $n++) {
+                $key = "{$base}_{$n}";
+            }
+
+            $keys[$question->handle] = $key;
+        }
+
+        return $keys;
+    }
+
+    /**
+     * Reads a brief, structured (answers by key, mapped back to handles)
+     * or tagged (YAML in `<brief>`, by handle).
+     *
+     * @return Closure(TextResponse): array{0: mixed, 1: ?string, 2?: ?string}
+     */
+    private function briefReader(ContentKind $kind): Closure
+    {
+        return function (TextResponse $response) use ($kind): array {
+            if ($response->structured !== null) {
+                $given = is_array($response->structured['answers'] ?? null) ? $response->structured['answers'] : null;
+
+                if ($given === null) {
+                    return [null, 'there were no "answers"'];
+                }
+
+                $answers = [];
+
+                foreach (self::briefKeys($kind) as $handle => $key) {
+                    $answers[$handle] = $given[$key] ?? null;
+                }
+
+                return [$answers, null];
+            }
+
+            $block = TaggedResponse::parse($response->text, 'brief')->document;
+
+            if ($block === null) {
+                return [null, 'there was no <brief> block'];
+            }
+
+            try {
+                return [(array) LenientYaml::parse((string) preg_replace('/\A```(?:yaml|yml)?\s*\n(.*?)\n?```\s*\z/su', '$1', trim($block))), null];
+            } catch (Throwable $exception) {
+                return [null, self::yamlProblem($exception), self::yamlProblem($exception, forLog: true)];
+            }
+        };
+    }
+
     /** The review reply's shape, for structured output (resources/schemas/reviewer-reply.json). */
     public static function reviewerSchema(): OutputSchema
     {
@@ -903,16 +1121,25 @@ final class Studio
      */
     public function reword(RewordRequest $request): Result
     {
-        $instructions = strtr($this->prompt('reworder'), [
+        $schema = self::schema('versions', 'reworder-reply.json');
+        $instructions = strtr($this->prompt('reworder', $this->takesSchema('reworder', $schema)), [
             '{{ scoped_edit_rules }}' => $this->prompt('scoped-edit'),
             '{{ voice }}' => trim($request->voice) !== '' ? trim($request->voice) : 'No voice guide has been written yet. Write plainly.',
         ]);
-        $response = $this->ask('reworder', $request->prompt(), instructions: $instructions);
-        preg_match_all('/<version>(.*?)(?:<\/version>|$)/s', $response->text, $matches);
+        [$response, $found] = $this->askStructured('reworder', $request->prompt(), $schema, function (TextResponse $response): array {
+            if ($response->structured !== null) {
+                $list = is_array($response->structured['versions'] ?? null) ? array_values(array_filter($response->structured['versions'], 'is_string')) : [];
+            } else {
+                preg_match_all('/<version>(.*?)(?:<\/version>|$)/s', $response->text, $matches);
+                $list = $matches[1];
+            }
+
+            return $list !== [] ? [$list, null] : [[], $response->structured !== null ? 'there was no "versions" list' : 'there was no <version>'];
+        }, 'the reworder\'s versions could not be read', instructions: $instructions);
         $shown = array_map(fn (string $version) => mb_strtolower(trim($version)), $request->shown);
         $versions = [];
 
-        foreach ($matches[1] as $version) {
+        foreach ((array) $found as $version) {
             $version = trim($version, " \t\n\r\0\x0B\"'“”");
 
             if ($version !== '' && ! in_array(mb_strtolower($version), $shown, true) && ! in_array($version, $versions, true)) {
@@ -966,8 +1193,12 @@ final class Studio
             $images[] = $request->image;
         }
 
-        $response = $this->ask('gap-filler', $request->prompt(), images: $images);
-        $text = preg_match('/<result>(.*?)(?:<\/result>|$)/s', $response->text, $match) === 1 ? $match[1] : $response->text;
+        $schema = self::schema('result', 'gap-filler-reply.json');
+        [$response, $text] = $this->askStructured('gap-filler', $request->prompt(), $schema, fn (TextResponse $response): array => $response->structured !== null
+            ? (is_string($response->structured['result'] ?? null) ? [$response->structured['result'], null] : ['', 'there was no "result"'])
+            : [preg_match('/<result>(.*?)(?:<\/result>|$)/s', $response->text, $match) === 1 ? $match[1] : $response->text, null],
+            'the answer could not be read', ['task' => $request->task], $images, $this->prompt('gap-filler', $this->takesSchema('gap-filler', $schema)));
+        $text = is_string($text) ? $text : '';
         $text = trim($text, " \t\n\r\0\x0B\"'“”‘’");
 
         if (in_array($request->task, [GapRequest::SUMMARY, GapRequest::ALT, GapRequest::WRITE_AROUND], true)) {

@@ -29,11 +29,16 @@ class UnreadableLoggingTest extends StudioTestCase
         $this->assertSame([
             ['warning', 'Ghostwriter: the type analysis for articles could not be read (there was no <type> block); asking again.'],
             ['warning', 'Ghostwriter: the type analysis for articles could not be read again (the YAML did not parse at line 1).'],
-            ['warning', 'Ghostwriter: the kinds for articles could not be read (there was no <kinds> block).'],
-            ['warning', 'Ghostwriter: the kinds for articles could not be read (the YAML did not parse at line 1).'],
-            ['warning', "Ghostwriter: the planner's ideas could not be read (there was no <ideas> block)."],
-            ['warning', "Ghostwriter: the planner's ideas could not be read (the YAML did not parse at line 1)."],
-            ['warning', 'Ghostwriter: the brief could not be read (there was no <brief> block).'],
+            ['warning', 'Ghostwriter: the kinds for articles could not be read (there was no <kinds> block); asking again once.'],
+            ['warning', 'Ghostwriter: the kinds for articles could not be read again (the YAML did not parse at line 1).'],
+            ['warning', 'Ghostwriter: the kinds for articles could not be read (the YAML did not parse at line 1); asking again once.'],
+            ['warning', 'Ghostwriter: the kinds for articles could not be read again (the YAML did not parse at line 1).'],
+            ['warning', "Ghostwriter: the planner's ideas could not be read (there was no <ideas> block); asking again once."],
+            ['warning', "Ghostwriter: the planner's ideas could not be read again (the YAML did not parse at line 1)."],
+            ['warning', "Ghostwriter: the planner's ideas could not be read (the YAML did not parse at line 1); asking again once."],
+            ['warning', "Ghostwriter: the planner's ideas could not be read again (the YAML did not parse at line 1)."],
+            ['warning', 'Ghostwriter: the brief could not be read (there was no <brief> block); asking again once.'],
+            ['warning', 'Ghostwriter: the brief could not be read again (there was no <brief> block).'],
         ], array_map(fn (array $log) => [$log['level'], $log['message']], $this->logs));
 
         $this->assertSame(['agent' => 'type-analyst', 'group' => 'articles'], $this->logs[0]['context']);
@@ -45,7 +50,7 @@ class UnreadableLoggingTest extends StudioTestCase
     {
         $this->runEveryUnreadableJob($this->studio(options: StudioOptions::craft(logReplies: true)));
 
-        $this->assertCount(7, $this->logs);
+        $this->assertCount(12, $this->logs, 'Each unreadable reply is asked for once more.');
 
         foreach ($this->logs as $log) {
             $this->assertStringContainsString('PRIVATE-CLIENT-NAME', $log['context']['reply']);

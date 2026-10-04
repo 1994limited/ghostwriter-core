@@ -15,7 +15,7 @@ You help an editor reword a few words on their website. They have seen some vers
 
 ## How you answer
 
-<versions>
+{{# tagged }}<versions>
 <version>First new version</version>
 <version>Second new version</version>
-</versions>
+</versions>{{/ tagged }}{{# structured }}The two new versions, as the `versions` list of the JSON you are given the shape of.{{/ structured }}

@@ -38,7 +38,9 @@ class StudioParityTest extends TestCase
     {
         [$vocabulary, $options] = ParityCases::addons()[$addon];
         $case = ParityCases::cases($addon)[$name];
-        $fake = new FakeProvider;
+        // The addons' recorded requests are the tagged reply format: a model
+        // without structured output gets exactly what they sent.
+        $fake = (new FakeProvider)->withoutStructuredOutput();
 
         foreach ($case['replies'] as $agent => $replies) {
             $fake->respond($agent, ...$replies);

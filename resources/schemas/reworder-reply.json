@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ghostwriter reworder reply (structured output)",
+  "description": "Two new versions of the quoted words.",
+  "type": "object",
+  "required": ["versions"],
+  "additionalProperties": false,
+  "properties": {
+    "versions": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "string"}, "description": "Two new versions, each genuinely different from every version shown."}
+  }
+}

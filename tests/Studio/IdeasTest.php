@@ -8,6 +8,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Studio\PlanContext;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\PlanGroup;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\PlanItem;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\PlannedIdea;
+use NineteenNinetyFour\Ghostwriter\Core\Studio\Studio;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\StudioOptions;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\SuggestedIdea;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\UnreadableReply;
@@ -19,13 +20,15 @@ class IdeasTest extends StudioTestCase
 {
     public function test_the_planner_is_shown_every_group_the_plan_and_the_voice(): void
     {
+        $this->fake->withoutStructuredOutput(); // The tagged prompt, as the addons sent it.
+
         $this->fake->respond('planner', '<ideas>[]</ideas>');
 
         $this->studio()->suggestIdeas($this->context());
 
         $request = $this->sent('planner');
         $this->assertSame('What I am looking for this time:  pricing ', $request->prompt);
-        $this->assertSame(strtr($this->library()->get('planner'), [
+        $this->assertSame(strtr(Studio::replyFormat($this->library()->get('planner'), false), [
             '{{ count }}' => '6',
             '{{ voice }}' => 'Warm and plain.',
             '{{ sections }}' => "### Articles (`articles`)\n\nKinds of content written here:\n- `project`: Project. One project.\n\nEntries:\n- How we work: We start with a call.\n- Pricing (draft)\n\n"

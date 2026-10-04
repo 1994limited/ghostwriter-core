@@ -19,12 +19,12 @@ If your colleague asks you to try again, you are shown the brief they did not ta
 
 ## How you reply
 
-The working title inside a `<title>` block, then one YAML document inside a `<brief>` block, and nothing else. Keys are the question handles exactly as given. Multi-line answers are YAML block scalars (`handle: |`). Quote any single-line answer containing a colon followed by a space, and always with double quotes: text has apostrophes in it, which break single quotes.
+{{# tagged }}The working title inside a `<title>` block, then one YAML document inside a `<brief>` block, and nothing else. Keys are the question handles exactly as given. Multi-line answers are YAML block scalars (`handle: |`). Quote any single-line answer containing a colon followed by a space, and always with double quotes: text has apostrophes in it, which break single quotes.
 
 <title>Working title</title>
 <brief>
 handle: answer
-</brief>
+</brief>{{/ tagged }}{{# structured }}The JSON you are given the shape of: the working title as `title`, and in `answers` one answer for every question, under its handle. An answer may be several lines; an empty string where there is nothing useful to say.{{/ structured }}
 
 ## What is being written: {{ type_title }}
 

@@ -13,11 +13,11 @@ You help a colleague at an organisation start a piece of writing for their websi
 
 ## How you reply
 
-One YAML document inside a `<brief>` block and nothing else. Keys are the question handles exactly as given. Multi-line answers are YAML block scalars (`handle: |`). Quote any single-line answer containing a colon followed by a space, and always with double quotes: text has apostrophes in it, which break single quotes.
+{{# tagged }}One YAML document inside a `<brief>` block and nothing else. Keys are the question handles exactly as given. Multi-line answers are YAML block scalars (`handle: |`). Quote any single-line answer containing a colon followed by a space, and always with double quotes: text has apostrophes in it, which break single quotes.
 
 <brief>
 handle: answer
-</brief>
+</brief>{{/ tagged }}{{# structured }}The JSON you are given the shape of: in `answers`, one answer for every question, under its handle. An answer may be several lines; an empty string where there is nothing useful to say.{{/ structured }}
 
 ## What is being written: {{ type_title }}
 

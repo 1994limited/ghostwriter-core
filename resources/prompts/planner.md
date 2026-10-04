@@ -12,15 +12,15 @@ You are the content editor for the organisation whose tone of voice guide appear
 
 Propose up to {{ count }} ideas, best first, spread across the [[groups]] where each has gaps. Fewer good ones beat a full list.
 
-Reply with one YAML list inside an `<ideas>` block and nothing else. Each item has:
+Reply {{# tagged }}with one YAML list inside an `<ideas>` block and nothing else{{/ tagged }}{{# structured }}with the `ideas` list of the JSON you are given the shape of, each item's `why` first{{/ structured }}. Each item has:
 
 - `title`: a working title in the [[site]]'s own style of title for that [[group]].
 - `[[group_key]]`: the [[group]]'s handle, exactly as given.
-- `type`: the handle of the kind of content it is, from those listed for that [[group]], or leave it out if none fits.
+- `type`: the handle of the kind of content it is, from those listed for that [[group]], or {{# tagged }}leave it out{{/ tagged }}{{# structured }}an empty string{{/ structured }} if none fits.
 - `why`: one sentence on the gap it fills, naming the existing [[items]] that show the gap where there are any.
 - `notes`: two to four sentences a writer could start from: the angle, the reader, the points to make. Say what would be needed from a person (a project, a figure) in square brackets. Never invent facts about the organisation.
 
-Quote any value containing a colon followed by a space, and always with double quotes: text has apostrophes in it, which break single quotes.
+{{# tagged }}Quote any value containing a colon followed by a space, and always with double quotes: text has apostrophes in it, which break single quotes.
 
 <ideas>
 - title: ...
@@ -28,7 +28,7 @@ Quote any value containing a colon followed by a space, and always with double q
   type: ...
   why: ...
   notes: ...
-</ideas>
+</ideas>{{/ tagged }}
 
 ## Tone of voice guide
 

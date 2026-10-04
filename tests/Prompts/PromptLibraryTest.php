@@ -5,6 +5,7 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Tests\Prompts;
 use InvalidArgumentException;
 use NineteenNinetyFour\Ghostwriter\Core\Prompts\PromptLibrary;
 use NineteenNinetyFour\Ghostwriter\Core\Prompts\Vocabulary;
+use NineteenNinetyFour\Ghostwriter\Core\Studio\Studio;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -40,7 +41,7 @@ class PromptLibraryTest extends TestCase
     #[DataProvider('goldenPrompts')]
     public function test_each_addon_gets_its_prompt_exactly(string $name, Vocabulary $vocabulary, string $expected): void
     {
-        $this->assertSame(trim($expected), (new PromptLibrary($vocabulary))->get($name));
+        $this->assertSame(trim($expected), Studio::replyFormat((new PromptLibrary($vocabulary))->get($name), false), 'The tagged reply format is the addon\'s prompt exactly.');
     }
 
     public function test_every_addon_prompt_is_covered(): void

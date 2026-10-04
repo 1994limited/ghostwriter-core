@@ -6,6 +6,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Prompts\Vocabulary;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\ContentKind;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\KindSample;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\KindSurvey;
+use NineteenNinetyFour\Ghostwriter\Core\Studio\Studio;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\StudioOptions;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\SuggestedKind;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\UnreadableReply;
@@ -17,6 +18,8 @@ class KindsTest extends StudioTestCase
 {
     public function test_each_entry_is_one_line_with_quoted_ids_for_string_ids(): void
     {
+        $this->fake->withoutStructuredOutput(); // The tagged prompt, as the addons sent it.
+
         $this->fake->respond('kind-finder', '<kinds></kinds>');
 
         $this->studio(Vocabulary::statamic(), StudioOptions::statamic())->suggestKinds($this->survey());
@@ -29,7 +32,7 @@ class KindsTest extends StudioTestCase
             .'- id "c3" · "Three" · opens: "'.str_repeat('x', 220).'"',
             $request->prompt,
         );
-        $this->assertSame(strtr($this->library()->get('kind-finder'), [
+        $this->assertSame(strtr(Studio::replyFormat($this->library()->get('kind-finder'), false), [
             '{{ count }}' => '5',
             '{{ taught }}' => '- Article: A general article.',
             '{{ dismissed }}' => "- Press release\n- Event",
@@ -39,6 +42,8 @@ class KindsTest extends StudioTestCase
 
     public function test_numeric_ids_are_not_quoted_and_craft_says_entry_type(): void
     {
+        $this->fake->withoutStructuredOutput(); // The tagged prompt, as the addons sent it.
+
         $this->fake->respond('kind-finder', '<kinds></kinds>');
 
         $this->studio(Vocabulary::craft(), StudioOptions::craft())->suggestKinds(new KindSurvey('News', 'news', [
