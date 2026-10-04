@@ -11,6 +11,13 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
   - `Review` (threads, the next pin number, a version; `reanchor()`, and `send()`, `answer()`, `sendBack()` for a run), `Thread`, `Note`, `NoteKind`, `Change`, `Scope`, `ScopeKind`, `ThreadStatus` (Not sent, Revising, Changed, Replied, Resolved, Detached) and `ReviewRules`. Limits: 100 threads per piece, 30 notes per thread, 2000 characters per note, 12 threads per Apply.
 - **`Session::$review`**: the piece's comments (`Review::toArray()`), stored like `units`, under `review` (Filament: a JSON column the addon adds).
 - `SessionGuard::annotate()`: a change anyone who can see the piece may make whatever Ghostwriter is doing, under the session's lock.
+- **Comments on blocks: Apply (the scoped revision).** "Apply N comments" sends every comment not sent yet (up to 12) in **one** model call; each may change only the units it is anchored to. See docs/comments.md.
+  - `SessionReview::apply()` (claims the piece for a run, as Send does, and puts the comments into it with each unit's hash), `revise()` (in the job: the call, the checks and the changes applied under the session's lock), `putBack()`, `changes()` (each change's before, after and word diff) and `beforeData()` (the draft with a change undone, for "Show before").
+  - `Studio::revise(RevisionRequest): Result<RevisionReply>` and `Studio::reviserInstructions()`: the new agent `reviser` (prompt `resources/prompts/reviser.md`, after the writer's instructions; `Agents`: 8000 tokens, effort `medium`; in `StudioOptions::WHOLE`, with its own cut-off message). A comment may change its units' text, fill an `[[ask: …]]` with a fact the editor gave (recorded in the `Change`'s `filled`, decision 4), lay its block out anew when it asks to, change an extra item in its scope, or only reply.
+  - `RevisionValidator` (no model): a comment is refused, and goes back to Not sent with a plain line, for a change outside its scope, outside its quoted sentences, losing or making up a marker, adding a link or an unsourced fact, losing a unit, or not fitting its field; `size` and `layout` are warnings. `Verdict`.
+  - `RevisionApplier`: skips and reports a unit someone changed during the run (by its hash), writes what passes into the draft and units, re-arranges every layout with `SessionLayouts::afterEdit()` (no call), and records each thread's before and after. `ApplyOutcome`, `RevisionRequest`, `RevisionReply`, `RevisionItem`, `WordDiff`.
+  - `Text\DraftEditor`: one unit's new text written into a draft's data (a rich-text section, a text, a list, a row), and the data dumped as the addons dump it.
+  - `SessionGuard::begin()`: claims the piece for a run that isn't a chat message, and prepares it under the same lock.
 - **Suggest edits, the free checks (`Suggest\*`).** Deterministic checks over an entry's current values, with no model and no request. See docs/suggest-edits.md.
   - `Findings::standard()->report(CheckContext)`: `FindingReport` (`findings` in form order, Finish's `gaps`, `leftovers()`, `emptyFields()`). `find()`, `without()`, `with()`, `checks()`.
   - Checks (`Suggest\Checks\*`): `PastYears` (a past year written as current; history words and a year on its own left alone), `RelativeTime`, `ClosingDates` (in text, and date fields whose handle reads as an end), `StatedCounts` (counts and prices to recheck; a template with `{answer}`), `LongSentences` (a hint only), `EmptyLinkText`, `Overlaps` (5-word shingles against other entries).
@@ -24,6 +31,7 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ### Changed
 
+- `PromptLibrary::NAMES` lists `reviser`; `Agents` has `reviser`; `StudioOptions::WHOLE` and `CUT_OFF_MESSAGES` have `reviser` (an addon's own cut-off messages may now name it). The writer's request is unchanged (`bin/compare-requests`).
 - `SessionLayouts::afterEdit()` (and so `afterWriter()`) re-anchors the session's comments to the units it carried over: a comment whose text is gone becomes Detached, and comes back when the text does.
 
 ## 1.8.2 - 2026-10-04

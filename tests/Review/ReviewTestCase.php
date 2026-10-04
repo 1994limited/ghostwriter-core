@@ -82,7 +82,7 @@ abstract class ReviewTestCase extends StudioTestCase
 
     protected function comments(): SessionReview
     {
-        return new SessionReview($this->guard);
+        return new SessionReview($this->guard, $this->studio(), $this->layouts, new Layouts, $this->logger());
     }
 
     protected function site(): LayoutContext

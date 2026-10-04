@@ -3,16 +3,32 @@
 namespace NineteenNinetyFour\Ghostwriter\Core\Review;
 
 use DateTimeImmutable;
+use LogicException;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\ProviderException;
+use NineteenNinetyFour\Ghostwriter\Core\Anchor\NormalisedText;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Extras\Extras;
+use NineteenNinetyFour\Ghostwriter\Core\Arrange\Extras\ExtraSources;
+use NineteenNinetyFour\Ghostwriter\Core\Arrange\LayoutContext;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Placement;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Plan;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\PlanBlock;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Plans;
+use NineteenNinetyFour\Ghostwriter\Core\Arrange\SessionLayouts;
+use NineteenNinetyFour\Ghostwriter\Core\Arrange\Units;
+use NineteenNinetyFour\Ghostwriter\Core\Domain\Busy;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Conflict;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\NotAllowed;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Sessions\Session;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Sessions\SessionGuard;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Viewer;
+use NineteenNinetyFour\Ghostwriter\Core\Layout\Layouts;
+use NineteenNinetyFour\Ghostwriter\Core\Studio\Conversation;
+use NineteenNinetyFour\Ghostwriter\Core\Studio\Studio;
+use NineteenNinetyFour\Ghostwriter\Core\Studio\WriterContext;
+use NineteenNinetyFour\Ghostwriter\Core\Text\Draft;
+use NineteenNinetyFour\Ghostwriter\Core\Text\DraftEditor;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 /**
  * Comments on a piece: what the addons call. Every change goes through
@@ -37,10 +53,24 @@ final class SessionReview
 {
     private readonly ReviewRules $rules;
 
+    private readonly LoggerInterface $logger;
+
+    private readonly ?SessionLayouts $sessionLayouts;
+
+    /**
+     * @param  Studio|null  $studio  For Apply (revise()). Adding, replying, resolving and the list need neither it nor `$sessionLayouts`.
+     * @param  SessionLayouts|null  $sessionLayouts  The addon's, if it has one; made from the Studio otherwise. Apply and Put it back re-arrange the layouts through it.
+     */
     public function __construct(
         private readonly SessionGuard $guard,
+        private readonly ?Studio $studio = null,
+        ?SessionLayouts $sessionLayouts = null,
+        private readonly Layouts $layouts = new Layouts,
+        ?LoggerInterface $logger = null,
     ) {
         $this->rules = new ReviewRules($guard->access());
+        $this->logger = $logger ?? new NullLogger;
+        $this->sessionLayouts = $sessionLayouts ?? ($studio !== null ? new SessionLayouts($studio, $layouts, $this->logger) : null);
     }
 
     public function rules(): ReviewRules
@@ -142,6 +172,212 @@ final class SessionReview
     public function repin(string $sessionId, Viewer $viewer, string $threadId, Scope $scope, ?int $version = null): Thread
     {
         return $this->change($sessionId, $viewer, $version, fn (Review $review) => $review->repin($threadId, $scope));
+    }
+
+    /**
+     * **Apply N comments**: claims the piece for a run, as Send does (one
+     * run at a time; someone else's gives Busy: "Priya is waiting on
+     * Ghostwriter"), and puts up to 12 Not sent threads into it, recording
+     * each unit's hash. The chat gets the editor's line ("Applied 2
+     * comments: …"). Start the job that calls revise() after.
+     *
+     * @throws Conflict|Busy Conflict when there is nothing to apply (and NotAllowed, NotFound as SessionGuard's).
+     */
+    public function apply(string $sessionId, Viewer $viewer, ?int $version = null): Session
+    {
+        return $this->guard->begin($sessionId, $viewer, function (Session $session, DateTimeImmutable $now) use ($viewer, $version) {
+            if (! $this->rules->mayApply($session, $viewer)) {
+                throw new NotAllowed('This piece is someone else’s.');
+            }
+
+            $review = Review::fromArray($session->review);
+
+            if ($version !== null && $version !== $review->version) {
+                throw new Conflict('The comments have changed since you last saw them. Look again, then try.');
+            }
+
+            $hashes = $session->units['units'] ?? [];
+            $hashes = is_array($hashes) ? array_map(fn ($unit) => is_array($unit) && is_scalar($unit['hash'] ?? null) ? (string) $unit['hash'] : '', $hashes) : [];
+            $sent = $review->send(array_map('strval', $hashes) + RevisionApplier::hashes(Units::of([]), Extras::fromArray($session->extras)));
+
+            if ($sent === []) {
+                throw new Conflict('There are no comments to apply.');
+            }
+
+            $waiting = count($review->open());
+            $lines = array_map(fn (Thread $thread) => "{$thread->number}. ".($thread->scope->label !== null ? "On “{$thread->scope->label}”: " : '').implode(' ', array_map(fn (Note $note) => $note->body, $thread->asks())), $sent);
+            $session->addMessage('user', 'Applied '.count($sent).' '.(count($sent) === 1 ? 'comment' : 'comments').":\n".implode("\n", $lines), $viewer->id, ['review' => ['step' => 'apply', 'threads' => array_map(fn (Thread $thread) => $thread->number, $sent), 'waiting' => $waiting]], $now);
+            $session->review = $review->toArray();
+        }, 'Ghostwriter is working on this piece. Apply the comments when it has finished.');
+    }
+
+    /**
+     * The run, in the job apply() started: one call to the reviser for
+     * every thread in it, the reply checked (RevisionValidator) and applied
+     * (RevisionApplier) under the session's lock, skipping any unit someone
+     * changed meanwhile. Build the conversation and writer context as for a
+     * writer's turn. If the call fails, every thread goes back to Not sent
+     * with a line saying so, and the piece is idle again.
+     *
+     * @param  array<int|string, string>  $names  User id => name, for "By Priya" in the prompt; optional.
+     */
+    public function revise(string $sessionId, Conversation $conversation, WriterContext $writer, LayoutContext $site, array $names = []): ApplyOutcome
+    {
+        if ($this->studio === null || $this->sessionLayouts === null) {
+            throw new LogicException('SessionReview needs the Studio to apply comments.');
+        }
+
+        $session = $this->guard->change($sessionId, fn () => false);
+        $review = $session === null ? null : Review::fromArray($session->review);
+
+        if ($session === null || $review === null || $review->sending() === [] || $session->draft === null) {
+            return new ApplyOutcome;
+        }
+
+        $sources = ExtraSources::fromWriter($conversation, $session->draft, $writer->layout);
+        $draft = Draft::parse($session->draft);
+        $units = Units::fromDraft($draft->data, $site->schema, $this->layouts->richText)->restore($session->units);
+        $request = new RevisionRequest($review->sending(), $units, Extras::fromArray($session->extras), $this->sessionLayouts->chosen($session), $writer, $conversation, $names);
+
+        try {
+            $result = $this->studio->revise($request);
+        } catch (ProviderException $exception) {
+            $this->logger->warning("Ghostwriter: the reviser failed: {$exception->getMessage()}", ['agent' => 'reviser']);
+            $message = $exception->getMessage();
+            $this->guard->change($sessionId, function (Session $session) use ($message) {
+                $review = Review::fromArray($session->review);
+
+                foreach ($review->sending() as $thread) {
+                    $review->sendBack($thread->id, "I couldn’t revise this: {$message} Apply again to try once more.");
+                }
+
+                $session->review = $review->toArray();
+                $session->addMessage('assistant', "I couldn’t apply the comments: {$message} They’re back in the list to send again.", null, ['review' => ['step' => 'failed']]);
+                $session->status = Session::IDLE;
+                $session->error = null;
+            });
+
+            return new ApplyOutcome(failed: $message);
+        }
+
+        $outcome = new ApplyOutcome(failed: 'The piece has gone.');
+        $applier = new RevisionApplier($this->sessionLayouts, $this->layouts, $this->logger);
+        $this->guard->change($sessionId, function (Session $session) use ($applier, $result, $site, $sources, &$outcome) {
+            $outcome = $applier->apply($session, $result->value, $site, $sources, $result->usage);
+        });
+
+        return $outcome;
+    }
+
+    /**
+     * **Put it back**: the thread's last change undone, through the same
+     * hash check: refused (Conflict) when the text has changed since. It
+     * adds a line ("Put back.") and keeps the thread's state. Refused while
+     * Ghostwriter works, as hand edits are. No model.
+     *
+     * @throws Conflict|Busy (and NotAllowed, NotFound as SessionGuard's)
+     */
+    public function putBack(string $sessionId, Viewer $viewer, string $threadId, LayoutContext $site): Thread
+    {
+        if ($this->sessionLayouts === null) {
+            throw new LogicException('SessionReview needs the Studio, or the addon’s SessionLayouts, to put a change back.');
+        }
+
+        $result = null;
+
+        $this->guard->edit($sessionId, $viewer, function (Session $session) use ($viewer, $threadId, $site, &$result) {
+            if (! $this->rules->mayComment($session, $viewer)) {
+                throw new NotAllowed('This piece is someone else’s.');
+            }
+
+            $review = Review::fromArray($session->review);
+            $thread = $review->find($threadId);
+            $answer = $thread->lastAnswer();
+            $changes = $answer === null ? [] : array_values(array_filter($answer->changes, fn (Change $change) => ! $change->layout));
+
+            if ($changes === [] || array_filter($changes, fn (Change $change) => ! $change->canPutBack()) !== []) {
+                throw new Conflict('There is no change here to put back.');
+            }
+
+            $draft = Draft::parse((string) $session->draft);
+            $data = $draft->data;
+            $units = Units::fromDraft($data, $site->schema, $this->layouts->richText)->restore($session->units);
+            $extras = Extras::fromArray($session->extras);
+            $editor = new DraftEditor;
+
+            foreach ($changes as $change) {
+                $unit = $units->get($change->unit);
+                $item = $extras->item($change->unit);
+                $now = $unit->markdown ?? $item->text ?? null;
+
+                if ($now === null || NormalisedText::string($now) !== NormalisedText::string($change->after)) {
+                    throw new Conflict('This text has changed since, so nothing was put back.');
+                }
+
+                if ($unit !== null) {
+                    $data = $editor->set($data, $unit, $change->before);
+                } else {
+                    $extras = $extras->edit($change->unit, $change->before);
+                }
+            }
+
+            $review->remark($threadId, 'Put back.', $viewer->id);
+            $session->draft = $editor->dump($data);
+            $session->units = Units::fromDraft($data, $site->schema, $this->layouts->richText)->restore($units->sidecar())->sidecar();
+            $session->extras = $extras->toArray();
+            $session->review = $review->toArray();
+            $this->sessionLayouts?->afterEdit($session, null, $site);
+            $result = Review::fromArray($session->review)->find($threadId);
+        });
+
+        /** @var Thread $result */
+        return $result;
+    }
+
+    /**
+     * **Before / after** for a thread: each change Ghostwriter made for it,
+     * latest run last, with a word diff (WordDiff: runs of `=`, `-`, `+`).
+     *
+     * @return list<array{unit: string, before: string, after: string, version: int, filled: list<array{ask: string, value: string, by: int|string|null}>, layout: bool, canPutBack: bool, diff: list<array{0: string, 1: string}>}>
+     */
+    public function changes(Session $session, string $threadId): array
+    {
+        return array_map(fn (Change $change) => [
+            'unit' => $change->unit,
+            'before' => $change->before,
+            'after' => $change->after,
+            'version' => $change->version,
+            'filled' => $change->filled,
+            'layout' => $change->layout,
+            'canPutBack' => $change->canPutBack(),
+            'diff' => $change->layout ? [] : WordDiff::diff($change->before, $change->after),
+        ], $this->review($session)->find($threadId)->changes());
+    }
+
+    /**
+     * The draft data with a thread's last change shown as it was before:
+     * what the preview renders, read-only, for "Show before". No model,
+     * nothing saved.
+     *
+     * @return array<string, mixed>
+     */
+    public function beforeData(Session $session, string $threadId, LayoutContext $site): array
+    {
+        $draft = Draft::parse((string) $session->draft);
+        $data = $draft->data;
+        $units = Units::fromDraft($data, $site->schema, $this->layouts->richText)->restore($session->units);
+        $answer = $this->review($session)->find($threadId)->lastAnswer();
+        $editor = new DraftEditor;
+
+        foreach ($answer === null ? [] : $answer->changes as $change) {
+            $unit = $units->get($change->unit);
+
+            if ($unit !== null && ! $change->layout && $change->canPutBack()) {
+                $data = $editor->set($data, $unit, $change->before);
+            }
+        }
+
+        return $data;
     }
 
     /**
