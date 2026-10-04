@@ -133,7 +133,7 @@ Which empty fields "Finish this page" raises and counts:
 | `required` | the CMS requires it | `gaps.image-empty.required`: "Hero image is required. Add one?" |
 | `prominent` | it sits in the block type the template prints the page's `h1` from (`GapContext::$profile`, a profile a render has shown) | `gaps.image-empty.prominent`: "Hero image is the page's main image, and it's empty. Add one?" |
 | `siblings` | at least `EmptyImages::SHARE` (70%) of the group's newest published entries fill it, counted over at least `SIBLINGS_KNOWN` (3) of them | `gaps.image-empty.siblings`: "Hero image is empty, but most Journal entries have one. Add one?" (`GapContext::$group`; without it, `gaps.image-empty`) |
-| `prominent` | too few published entries to go by, and a top-level image named for it ("Hero image", "Banner", "Cover", "Featured image", "Main photo") | as above |
+| `prominent` | the group's published entries were looked at (`GapContext::$pattern` given) and are too few to go by, and a top-level image is named for it ("Hero image", "Banner", "Cover", "Featured image", "Main photo") | as above |
 | `draft` | the draft left it for a person | `gaps.image-empty` |
 
   An optional image that few siblings use is no gap, whatever its name.
