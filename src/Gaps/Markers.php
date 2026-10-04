@@ -142,6 +142,49 @@ final class Markers
      */
     public static function resolveCheck(string $text, string $match, string $value, int $occurrence = 0): string
     {
+        return self::replace($text, $match, $value, $occurrence);
+    }
+
+    /**
+     * Some text with one fact to add resolved: the marker (as written, the
+     * given occurrence of it) replaced by the editor's answer, exactly as
+     * they typed it (only the line ends are taken off). '' takes the marker
+     * out. The text is unchanged when the marker isn't there. No model.
+     */
+    public static function resolveAsk(string $text, string $match, string $answer, int $occurrence = 0): string
+    {
+        return self::replace($text, $match, trim(str_replace("\r", '', $answer), "\n"), $occurrence);
+    }
+
+    /**
+     * Some markdown with one link to choose resolved: the link (as written,
+     * the given occurrence of it, as links() gives `match`) pointed at
+     * $href, its words kept. '' unlinks it, leaving the words. A link
+     * field's whole value (`https://example.com/#gw-link:contact-page`) is
+     * resolved by replacing the value, not here.
+     */
+    public static function resolveLink(string $markdown, string $match, string $href, int $occurrence = 0): string
+    {
+        if (preg_match(self::LINK_PATTERN, $match, $parts) !== 1) {
+            return $markdown;
+        }
+
+        $words = $parts[1];
+        $href = trim(str_replace(['(', ')', ' ', "\n"], ['%28', '%29', '%20', ''], $href));
+
+        return self::replace($markdown, $match, $href === '' ? $words : '['.$words.']('.$href.')', $occurrence, removing: false);
+    }
+
+    /**
+     * $text with the $occurrence-th $match replaced by $value. An empty
+     * $value removes it without leaving a double space behind.
+     */
+    private static function replace(string $text, string $match, string $value, int $occurrence, bool $removing = true): string
+    {
+        if ($match === '') {
+            return $text;
+        }
+
         $at = -1;
 
         for ($i = 0; $i <= $occurrence; $i++) {
@@ -155,7 +198,7 @@ final class Markers
         $before = substr($text, 0, $at);
         $after = substr($text, $at + strlen($match));
 
-        if ($value === '') {
+        if ($value === '' && $removing) {
             // Removing it leaves no double space behind.
             [$before, $after] = [rtrim($before, ' '), ltrim($after, ' ')];
             $join = $before !== '' && $after !== '' && preg_match('/^[\s.,;:!?)]/u', $after) !== 1 ? ' ' : '';
