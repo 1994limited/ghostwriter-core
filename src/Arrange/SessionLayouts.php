@@ -36,6 +36,10 @@ use Throwable;
  *     $layouts->choose($session, 'p1');             // shared; no model
  *     $data = $layouts->draftData($session, $site); // then the existing build path
  *
+ * Only layouts that look noticeably different from the writer's and from
+ * each other are offered (LayoutGate); when none is, the piece simply has
+ * the writer's.
+ *
  * Model calls: the first draft's turn makes one to the layout planner,
  * after the writer's; refresh() makes one. Nothing else here calls a
  * model: switching, editing, deleting an extra and applying cost nothing.
@@ -317,12 +321,22 @@ final class SessionLayouts
         }
 
         $this->planned = (new PlanValidator($this->layouts->builder(), $this->logger))->validate([$writer, ...$proposed], $units, $extras, $draft, $site->schema, $site->pattern);
-        $plans = Plans::of($writer, array_slice($this->planned->kept, 1));
 
         if ($this->planned->dropped !== []) {
             $why = implode('; ', array_map(fn (string $id, array $rules) => "{$id}: ".implode(', ', $rules), array_keys($this->planned->rules()), $this->planned->rules()));
             $this->logger->debug('Ghostwriter: the layout planner proposed '.count($proposed).' layouts and '.count($this->planned->dropped)." were dropped ({$why}).", ['agent' => 'layout-planner', 'dropped' => $this->planned->rules()]);
         }
+
+        // Only layouts that look noticeably different are offered; of two
+        // near-copies, the one most like the site's pages stays.
+        $suggested = (new Candidates)->rank(new Plans($this->planned->kept), $patterns, $profile, $units, $extras, $draft, $site->schema)->suggested();
+        $gate = (new LayoutGate)->filter($this->planned->kept, $units, $extras, $site->schema, $suggested?->id);
+
+        if ($gate['dropped'] !== []) {
+            $this->logger->info('Ghostwriter: '.count($gate['dropped']).' of '.(count($this->planned->kept) - 1).' layouts were not offered, as they look too like another ('.implode('; ', array_map(fn (string $id, string $why) => "{$id}: {$why}", array_keys($gate['dropped']), $gate['dropped'])).').', ['agent' => 'layout-planner', 'notOffered' => $gate['dropped']]);
+        }
+
+        $plans = Plans::of($writer, array_slice($gate['kept'], 1));
         $this->store($session, $plans, $units, $extras, $draft, $site, $patterns, $profile);
 
         if ($session->plan !== null && $this->plans($session)->get($session->plan) === null) {

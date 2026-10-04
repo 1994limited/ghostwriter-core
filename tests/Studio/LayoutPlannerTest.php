@@ -101,7 +101,7 @@ final class LayoutPlannerTest extends StudioTestCase
 
         $planner = $this->sent('layout-planner');
         $this->assertSame([4000, 'low'], [$planner->resolvedMaxTokens(), $planner->resolvedEffort()?->value]);
-        $this->assertStringContainsString('Propose 2 arrangements', $planner->instructions);
+        $this->assertStringContainsString('Propose up to 2 arrangements', $planner->instructions);
         $this->assertStringContainsString('u7 [section, ', $planner->prompt);
         $this->assertStringContainsString('  u7#2 paragraph (lead-in "November: Cut back"): "', $planner->prompt);
         $this->assertStringContainsString('x1.1 [stats] "4 visits a winter" (value: "4", label: "visits a winter")', $planner->prompt);
@@ -240,6 +240,38 @@ final class LayoutPlannerTest extends StudioTestCase
         $layouts->refresh($session, $this->site());
         $this->assertSame(['layout-planner'], array_map(fn ($request) => $request->agent, $this->fake->requests()));
         $this->assertSame(['w'], array_map(fn (Plan $plan) => $plan->id, $layouts->plans($session)->all()));
+    }
+
+    public function test_a_layout_that_looks_like_the_writers_is_not_offered(): void
+    {
+        $this->fake->respond('writer', self::reply($this->draftReply()));
+        $this->fake->respond('layout-planner', self::reply(self::PLANS));
+        [$session, $layouts] = $this->firstDraft();
+
+        // The same blocks, with the text's two headings a level down.
+        $this->fake->reset()->respond('layout-planner', self::reply(<<<'YAML'
+            <plans>
+            - name: Smaller headings
+              description: As written, with h3 sections
+              page_builder:
+                - type: hero
+                  place: { heading: u3, subheading: u4, image: u5 }
+                - type: text
+                  place: { body: [u6, u7, u8] }
+                  transform: heading-level
+                  level: 3
+                - type: spacer
+                - type: cta
+                  place: { heading: u9, button: u10 }
+            </plans>
+            YAML));
+        $layouts->refresh($session, $this->site());
+
+        $this->assertSame([], $layouts->planned()?->dropped, 'it is a valid layout');
+        $this->assertSame(['w'], array_map(fn (Plan $plan) => $plan->id, $layouts->plans($session)->all()));
+        $this->assertNull($session->plan);
+        $this->assertStringContainsString('1 of 1 layouts were not offered, as they look too like another (p1: too like the writer\'s', $this->logged());
+        $this->assertStringNotContainsString('Who it suits', $this->logged(), 'no page text is logged');
     }
 
     public function test_deleting_an_extra_re_arranges_the_layouts_that_used_it(): void

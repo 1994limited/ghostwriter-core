@@ -1,0 +1,314 @@
+{
+ "note": "A Craft Pages entry (hero, text, quote, call to action): \"Sections apart\" splits the text into blocks around the quote, \"Where we work first\" adds a call to action under the hero. Both are noticeably different.",
+ "draft": "title: Winter garden care\npageBuilder:\n  - type: hero\n    heading: Winter garden care\n    subheading: Four visits between November and February set the garden up for spring.\n    image: [8]\n  - type: text\n    text: |-\n      Winter is when a garden is set up for the year. Most of the work that matters in June is done in the cold months.\n\n      ## The visits\n\n      We come in November to cut back, in December to mulch, in January to prune the fruit trees and in February to feed the beds.\n\n      ## Who it suits\n\n      Gardens with mixed borders, fruit trees or young hedges, anywhere we work.\n  - type: quoteBlock\n    quote: They left the garden tidy but not bare, which is exactly what we wanted.\n    attribution: A client in Hexham\n  - type: cta\n    heading: Book a winter visit\n    ctaText: Tell us about your garden and we will suggest a plan.",
+ "extras": [
+  {
+   "id": "x2",
+   "kind": "cta",
+   "items": [
+    {
+     "id": "x2.1",
+     "text": "Gardens across [[check: 3 counties | from: Northumberland, Durham and Cumbria]]",
+     "parts": {
+      "button": "Book a winter visit"
+     },
+     "source": {
+      "kind": "brief",
+      "quote": "Northumberland, Durham and Cumbria"
+     },
+     "count": {
+      "count": 3,
+      "items": [
+       "Northumberland",
+       "Durham",
+       "Cumbria"
+      ],
+      "text": "Northumberland, Durham and Cumbria",
+      "style": "and"
+     }
+    }
+   ]
+  }
+ ],
+ "plans": [
+  {
+   "id": "w",
+   "origin": "writer",
+   "name": "As written",
+   "description": "The writer’s own layout",
+   "fields": {
+    "pageBuilder": [
+     {
+      "type": "hero",
+      "placements": [
+       {
+        "field": "heading",
+        "from": [
+         "u2"
+        ]
+       },
+       {
+        "field": "subheading",
+        "from": [
+         "u3"
+        ]
+       },
+       {
+        "field": "image",
+        "from": [
+         "u4"
+        ]
+       }
+      ],
+      "origin": 0
+     },
+     {
+      "type": "text",
+      "placements": [
+       {
+        "field": "text",
+        "from": [
+         "u5",
+         "u6",
+         "u7"
+        ]
+       }
+      ],
+      "origin": 1
+     },
+     {
+      "type": "quoteBlock",
+      "placements": [
+       {
+        "field": "quote",
+        "from": [
+         "u8"
+        ]
+       },
+       {
+        "field": "attribution",
+        "from": [
+         "u9"
+        ]
+       }
+      ],
+      "origin": 2
+     },
+     {
+      "type": "cta",
+      "placements": [
+       {
+        "field": "heading",
+        "from": [
+         "u10"
+        ]
+       },
+       {
+        "field": "ctaText",
+        "from": [
+         "u11"
+        ]
+       }
+      ],
+      "origin": 3
+     }
+    ]
+   }
+  },
+  {
+   "id": "p1",
+   "origin": "model",
+   "name": "Sections apart",
+   "description": "Each section in its own block, the quote between",
+   "fields": {
+    "pageBuilder": [
+     {
+      "type": "hero",
+      "placements": [
+       {
+        "field": "heading",
+        "from": [
+         "u2"
+        ]
+       },
+       {
+        "field": "subheading",
+        "from": [
+         "u3"
+        ]
+       },
+       {
+        "field": "image",
+        "from": [
+         "u4"
+        ]
+       }
+      ]
+     },
+     {
+      "type": "text",
+      "placements": [
+       {
+        "field": "text",
+        "from": [
+         "u5"
+        ]
+       }
+      ]
+     },
+     {
+      "type": "text",
+      "placements": [
+       {
+        "field": "text",
+        "from": [
+         "u6"
+        ]
+       }
+      ]
+     },
+     {
+      "type": "quoteBlock",
+      "placements": [
+       {
+        "field": "quote",
+        "from": [
+         "u8"
+        ]
+       },
+       {
+        "field": "attribution",
+        "from": [
+         "u9"
+        ]
+       }
+      ]
+     },
+     {
+      "type": "text",
+      "placements": [
+       {
+        "field": "text",
+        "from": [
+         "u7"
+        ]
+       }
+      ]
+     },
+     {
+      "type": "cta",
+      "placements": [
+       {
+        "field": "heading",
+        "from": [
+         "u10"
+        ]
+       },
+       {
+        "field": "ctaText",
+        "from": [
+         "u11"
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "suggested": true
+  },
+  {
+   "id": "p2",
+   "origin": "model",
+   "name": "Where we work first",
+   "description": "The counties up front as a call to action, then the story",
+   "fields": {
+    "pageBuilder": [
+     {
+      "type": "hero",
+      "placements": [
+       {
+        "field": "heading",
+        "from": [
+         "u2"
+        ]
+       },
+       {
+        "field": "subheading",
+        "from": [
+         "u3"
+        ]
+       },
+       {
+        "field": "image",
+        "from": [
+         "u4"
+        ]
+       }
+      ]
+     },
+     {
+      "type": "cta",
+      "placements": [
+       {
+        "field": "heading",
+        "from": [
+         "x2.1"
+        ]
+       }
+      ]
+     },
+     {
+      "type": "text",
+      "placements": [
+       {
+        "field": "text",
+        "from": [
+         "u5",
+         "u6",
+         "u7"
+        ]
+       }
+      ]
+     },
+     {
+      "type": "quoteBlock",
+      "placements": [
+       {
+        "field": "quote",
+        "from": [
+         "u8"
+        ]
+       },
+       {
+        "field": "attribution",
+        "from": [
+         "u9"
+        ]
+       }
+      ]
+     },
+     {
+      "type": "cta",
+      "placements": [
+       {
+        "field": "heading",
+        "from": [
+         "u10"
+        ]
+       },
+       {
+        "field": "ctaText",
+        "from": [
+         "u11"
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "extrasUsed": [
+    "x2.1"
+   ]
+  }
+ ]
+}

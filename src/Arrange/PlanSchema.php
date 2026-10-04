@@ -105,7 +105,7 @@ final class PlanSchema
             'required' => ['plans'],
             'properties' => ['plans' => [
                 'type' => 'array',
-                'description' => "{$count} arrangements, each clearly different.",
+                'description' => "Up to {$count} arrangements, each clearly different in structure at a glance; none when there is little to rearrange.",
                 'items' => [
                     'type' => 'object',
                     'required' => ['notes', 'name', 'description', 'follows', 'fields'],

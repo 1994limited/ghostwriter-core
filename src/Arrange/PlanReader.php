@@ -97,7 +97,8 @@ final class PlanReader
             }
         }
 
-        if ($plans === []) {
+        // An empty list is an answer: nothing worth offering.
+        if ($plans === [] && $data !== []) {
             $this->problem = 'no plan arranged any field';
         }
 

@@ -11,11 +11,15 @@ You lay out pages for a website. A colleague's draft has been written already; y
 
 ## What to propose
 
-Propose {{ count }} arrangements that differ clearly from the writer's and from each other. Prefer the shapes this site already uses, and say which one you followed with `follows`. Give each a short name (two or three words) and a one-line description for the person choosing, about the shape, not the words.
+Propose up to {{ count }} arrangements, each clearly different in structure at a glance from the writer's and from each other: someone flicking between them should see the page change shape near the top, not hunt for one line. Different blocks, sections split apart or brought together, a run of lead-ins becoming headed sections, the order changed. One quote set apart, or one list turned into paragraphs, is not a different layout; arrangements that only do that are dropped before anyone sees them.
+
+Where the fields give little to rearrange (one rich-text field and nothing else, a short page), propose fewer, or none: an empty list is a good answer, and it is better than a near copy of the draft.
+
+Prefer the shapes this site already uses, and say which one you followed with `follows`. Give each a short name (two or three words) and a one-line description for the person choosing, about the shape, not the words.
 
 ## How you answer
 
-{{# tagged }}Answer with one `<plans>` block of YAML and nothing else:
+{{# tagged }}Answer with one `<plans>` block of YAML and nothing else (`<plans>[]</plans>` for none):
 
 <plans>
 - name: Scannable
@@ -46,7 +50,7 @@ Propose {{ count }} arrangements that differ clearly from the writer's and from 
 - A rich-text field is a list of `{ type, from }`, where type is `text` (as written), `p`, `h2` to `h6`, `list`, `quote`, or `set:<handle>` for a quote set it lists.
 - A plain field takes a ref or a list of refs.
 - `transform` is one of `lead-in-to-heading`, `heading-to-lead-in`, `paragraphs-to-list`, `list-to-paragraphs`, `heading-level` (with `level`) and `as-quote`, for the whole block or per ref (`transform: { "u4#2": lead-in-to-heading }`).
-- Quote every ref that has a `#` in it.{{/ tagged }}{{# structured }}Your reply is JSON in the shape you are given: `plans`, each with `notes` first (a few words for yourself on the shape and where the units go; never shown), then `name`, `description`, `follows` (the pattern's id, or "") and `fields`, one entry for every field you arrange:
+- Quote every ref that has a `#` in it.{{/ tagged }}{{# structured }}Your reply is JSON in the shape you are given: `plans` (empty for none), each with `notes` first (a few words for yourself on the shape and where the units go; never shown), then `name`, `description`, `follows` (the pattern's id, or "") and `fields`, one entry for every field you arrange:
 
 - `field`: its handle. Fill `blocks` for a page builder, `constructs` for rich text, or `refs` for a plain field, and leave the other two empty.
 - A block has `type`; `place`, a list of `{ field, refs }` for the set's fields; `rows`, one `{ field, cells: [{ column, ref }] }` per row of a rows field (`field` "" when the set has only one); `transform` and `level` for the whole block ("" and 0 for none); and `children`, the blocks inside it, where the site nests blocks. Leave out any of these the shape doesn't have.
