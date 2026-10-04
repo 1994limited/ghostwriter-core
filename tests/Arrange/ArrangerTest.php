@@ -181,6 +181,39 @@ final class ArrangerTest extends TestCase
         $this->assertContains('set', array_column($bard, 'type'), 'the dialect stores the block quote as the pull quote set');
     }
 
+    public function test_a_heading_construct_of_lead_ins_is_a_heading_per_lead_in(): void
+    {
+        $schema = Northfold::richText();
+        $draft = Northfold::richTextDraft();
+        $units = Units::fromDraft($draft, $schema);
+
+        // The shape a planner sent for real: an h3 construct over lead-in
+        // paragraphs, turned to headings, each keeping its paragraph.
+        $headed = self::plan(<<<'YAML'
+            - name: Headed visits
+              description: A heading per visit
+              body:
+                - { type: text, from: u2 }
+                - { type: h2, from: "u3#1" }
+                - { type: h3, from: ["u3#2", "u3#3"], transform: lead-in-to-heading, level: 3 }
+                - { type: text, from: u4 }
+            YAML, $schema);
+
+        $this->assertSame([], (new PlanValidator(new EntryBuilder(richText: new BardDialect)))->check($headed, $units, [], $draft, $schema));
+        $this->assertSame(
+            "Winter is when a garden is set up for the year.\n\n## The visits\n\n### November: Cut back\n\nPrune the shrubs that need it.\n\n### January: Feed\n\nMulch the beds and [[ask: what else in January]].\n\n## Who it suits\n\nGardens with mixed borders. [Talk to us](#gw-link:contact-page)\n\n- Lawns\n- Gravel\n\n> We used to clear everything in October.",
+            (new Arranger)->arrange($headed, $units, [], $draft, $schema)['body'],
+        );
+
+        $leadIns = Content::transform([
+            new Piece(Piece::PARAGRAPH, '**Water deeply, and less often.** A good soak once a week.'),
+            new Piece(Piece::PARAGRAPH, '**Then go, and stop worrying.**'),
+        ], Transform::LeadInToHeading, ['level' => 2]);
+        $this->assertSame("#### Water deeply, and less often\n\nA good soak once a week.\n\n#### Then go, and stop worrying", Arranger::construct('h4', $leadIns), 'each heading takes the construct\'s level');
+        $this->assertSame('### Why winter matters', Arranger::construct('h3', [new Piece(Piece::PARAGRAPH, 'Why winter matters')]), 'a short paragraph made a heading is still one heading');
+        $this->assertSame('## The visits In detail', Arranger::construct('h2', [new Piece(Piece::HEADING, '## The visits', 2), new Piece(Piece::HEADING, '### In detail', 3)]));
+    }
+
     public function test_plain_fields_take_an_extra_in_an_empty_field_and_list_paragraphs(): void
     {
         $schema = Northfold::plain();
