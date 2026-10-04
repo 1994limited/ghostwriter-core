@@ -23,6 +23,8 @@ Markers::links($markdown);     // list<{hint, words, match, offset, occurrence}>
 Markers::has($text);           // any of the three
 Markers::normalise($text);     // lenient forms (and a model's near misses) written strictly
 Markers::resolveCheck($text, $match, $value, $occurrence = 0);   // the marker replaced by $value ('' removes it)
+Markers::resolveAsk($text, $match, $answer, $occurrence = 0);    // the marker replaced by the answer, exactly as typed ('' removes it)
+Markers::resolveLink($markdown, $match, $href, $occurrence = 0); // [words](#gw-link:…) pointed at $href, its words kept ('' unlinks it)
 Markers::withoutChecks($text); // each count as the plain value it marks
 Markers::withoutAsks($text);   // asks taken out, counts as their values: for slugs and fact checks
 ```
@@ -79,6 +81,24 @@ $report->toArray();    // for the guide
 Lists are compared by their items as words, without a leading article, so "the Tyne Valley" and "Tyne Valley" are the same item, and an inline list and the same items as bullets are the same list.
 
 **The addon's step.** The guide shows the message and the fixes as for any gap. Each fix replaces the marker in the field's text, found by `meta.match` and the gap's `occurrence`: the front end with the `check` pattern from `patterns.json`, or PHP with `Markers::resolveCheck()`. Nothing is saved until the editor saves.
+
+## Resolving a gap from a chip: `MarkerResolver`
+
+The page preview and the Text tab show markers as chips (docs/preview.md). Clicking one lets the editor resolve the gap in the **draft** itself, before Use this draft: the addon opens a small dialog at the chip ("Only you know this: adult ticket price", "Counted from '…'. 3 areas, is that right?", "Link to choose"), and writes the answer into the stored draft. A chip only knows its kind, hint, list and which of its kind and hint it is (`occurrence`), so `MarkerResolver` finds the marker in what the addon stores:
+
+```php
+$texts = MarkerResolver::leaves($draft->data);    // every string in the draft's values, with its path, in order
+$texts[] = ['path' => ['extras', $item->id], 'text' => $item->text];   // and wherever else markers are kept
+$found = MarkerResolver::find($texts, $kind, $hint, $list, $occurrence);   // {path, text, kind, match, occurrence, whole} or null
+$new = MarkerResolver::apply($found['text'], $found, $value);
+```
+
+- `ask`: the answer replaces the marker exactly as the editor typed it (only line ends are trimmed). No model, no rewriting. Leaving it for later changes nothing.
+- `check`: "Looks right" passes the value, "Change it" the editor's, "Remove it" ''.
+- `link`: a markdown link is pointed at the chosen entry's address, its words kept; a value that is only a sentinel (a link field's) is replaced by what the addon passes as a whole (`entry::abc`, an element reference). The suggestions are the addon's `LinkTargets::search($hint)`.
+- Hints compare as gap IDs do; a link's hint with its hyphens as spaces, as the chip shows it. A count's list narrows two of the same value down. With fewer markers than `occurrence + 1`, the last is taken.
+
+A gap resolved this way is gone from the draft, so it never reaches the form and Finish this page never lists it. One left for later still does. The addon saves the change like any draft edit, under the session's lock, and re-arranges the layouts without a model (`SessionLayouts::afterEdit()`).
 
 ## The publish guard: `PublishReadiness`
 
