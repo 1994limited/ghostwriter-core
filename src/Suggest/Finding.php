@@ -57,6 +57,31 @@ final class Finding
     }
 
     /**
+     * The free suggestion it is on its own, when the review call wrote no
+     * fix for it (or there was no call): a link candidate, an answer box,
+     * or "Rewrite it yourself". Null for a hint that isn't shown alone.
+     */
+    public function toSuggestion(): ?Suggestion
+    {
+        if (! $this->alone) {
+            return null;
+        }
+
+        $reason = new Reason('', ReasonSource::Check, $this->kind, message: $this->message);
+        $candidates = is_array($this->meta['candidates'] ?? null) ? $this->meta['candidates'] : [];
+        $first = is_array($candidates[0] ?? null) ? $candidates[0] : null;
+        $link = $first === null ? null : new LinkChange($first['value'] ?? null, is_string($first['title'] ?? null) ? $first['title'] : '', is_string($first['url'] ?? null) ? $first['url'] : null);
+        $fact = null;
+
+        if ($this->needs === Needs::Editor) {
+            $template = is_string($this->meta['template'] ?? null) ? $this->meta['template'] : FactCheck::ANSWER;
+            $fact = new FactCheck('', $template, null, AnswerKind::tryFrom(is_string($this->meta['answer'] ?? null) ? $this->meta['answer'] : '') ?? AnswerKind::Text);
+        }
+
+        return new Suggestion($this->id, $this->category, $this->anchor, $reason, null, [], $fact, $link, $this->id, true);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function toArray(): array

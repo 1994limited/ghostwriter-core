@@ -31,6 +31,8 @@ final class Agents
         'photo-query' => 2000,
         'photo-scout' => 2000,
         'gap-filler' => 1500,
+        'reviewer' => 8000,
+        'reworder' => 1500,
     ];
 
     /** Agents with an effort of their own; the rest leave it to the provider. */
@@ -42,6 +44,8 @@ final class Agents
         'gap-filler' => 'low',
         'layout-planner' => 'low',
         'reviser' => 'medium',
+        'reviewer' => 'medium',
+        'reworder' => 'low',
     ];
 
     /** The tier of the agents that write, read and plan: the default. */
@@ -61,6 +65,7 @@ final class Agents
         'photo-query' => self::QUICK,
         'photo-scout' => self::QUICK,
         'gap-filler' => self::QUICK,
+        'reworder' => self::QUICK,
     ];
 
     public static function tier(string $agent): string

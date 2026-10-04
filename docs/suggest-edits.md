@@ -162,6 +162,96 @@ $check->run($revisitStore, new RevisitOptions(externalLinks: $siteSetting), $now
 
 In-memory versions for tests: `Revisit\Testing\InMemoryRevisitStore`, `Revisit\Testing\MemoryEntrySource`.
 
+## The review call: `Studio::suggestEdits()`
+
+One `reviewer` call per review, or one per part of a long page. It runs only when someone clicks **Suggest edits** (a menu item under **Edit with Ghostwriter**) or **Review** in the revisit list.
+
+```php
+$context  = new CheckContext(/* as above: the form's current values */);
+$findings = Findings::standard()->find($context);
+$input    = new ReviewInput(
+    context: $context,
+    writer: $writerContext,                       // the voice guide and the kind, as the writer gets them
+    findings: $findings,
+    digest: SiteDigest::build($context, $findings),   // link candidates, then EntryIndex::nearest(); at most 30
+    images: [$finding->id => $thumbnail],          // Ai\Image, 512 px, for missing-alt findings; at most 4 a call
+    replyLanguage: $cpLocale,                      // reasons in the person's language; replacements follow the page
+);
+
+$input->calls();                                   // 1, or more for a long page: say it in the confirm first
+$reply  = $studio->suggestEdits($input);           // Result<SuggestionReply>: ->value, ->usage (tokens, every call)
+$review = (new SuggestionValidator)->validate($reply->value, $input);   // ValidatedReview
+$review->suggestions;                              // list<Suggestion>, in form order
+$review->dropped;                                  // ['facts' => 1, 'anchor' => 2]: counts only, no text
+```
+
+- **Agent.** `reviewer`: prompt `resources/prompts/reviewer.md`, with the shared `scoped-edit.md`. It allows 8000 tokens at effort `medium`. It is not in `StudioOptions::WHOLE`: a cut-off reply is asked for again with twice the room, and if it's still cut off, every suggestion that closed is kept (`SuggestionReply::$truncated`).
+- **Long pages are split** (`ReviewInput::WORDS_PER_CALL`, 6,000 words a call). Units are never split, and a field's units stay together where they fit. Each call sees its units, the findings in them and the whole digest. The instructions are the same for every call, so a provider can cache them. The replies are merged into one review. The own-suggestion cap is per call.
+- **The prompt** (`Suggest\ReviewPrompt::render()`, pinned by `tests/Fixtures/suggest/reviewer-services.json`): `<page>` with `<unit id="u1" field="Hero: Eyebrow" type="text">` (`Arrange\Units::fromEntry()`, markdown), `<image id="i1" … attached="1">`, `<findings>` numbered `f1…` (`write` or `ask`), `<site>` (`e1…`) and `<dismissed>`. Links are never shown as stored: a digest entry reads `entry:e12`, any other link on the site reads `link:3`, and core puts the real targets back.
+- **Images** go through `ModelInputGuard` in the Studio. A refused image (Getty, iStock) isn't attached, and its finding stays "Describe it yourself".
+- **The reply** is JSON in `<suggestions>`, matching `resources/schemas/suggestions.schema.json`. `SuggestionReader` reads it leniently: code fences, a trailing comma, a single object, or a cut-off list (keeping the objects that closed). An unreadable reply gives no suggestions and logs a warning with no reply text, unless `logReplies` is on.
+
+### Never inventing facts: `SuggestionValidator`
+
+Each suggestion the model writes is checked alone. A failing one is **dropped, never repaired**, and counted by reason (`SuggestionValidator::DROPS`):
+
+| Reason | Rule |
+|---|---|
+| `anchor` | The unit isn't in the call, the quote isn't in it (`QuoteFinder`: exact, then by context, then one fuzzy match ≥ 0.9, which is re-quoted to the real text), the quote is ambiguous, or the range crosses a paragraph. A whole value may be replaced only in a short field (≤ 120 characters) or an SEO field. |
+| `finding` / `declined` | A suggestion naming a finding takes the finding's anchor and category. A finding named twice keeps the first. Only Duplicate and Clarity findings may be declined. |
+| `facts` | `SourceCheck` through `ScopedEditCheck`: a figure, quotation or name that isn't on the page or in the cited site entry. A Fact to check never keeps a replacement. Its template must be the quote with exactly one span replaced by `{answer}`, and its `without` must add nothing. |
+| `scope`, `size`, `markers`, `link` | `ScopedEditCheck`: it stays in its sentences, keeps `[[ask: …]]`, `[[check: …]]` and `#gw-link:`, adds no outside link, and keeps a sensible size (Clarity may shrink to 20%, Duplicate to nothing). An SEO value must fit its limit. A link may point only at a digest entry. |
+| `claims` | A claim the model flagged on its own, with the site's claim checks off. |
+| `voice` | A Voice suggestion when no voice guide has been written. |
+| `dismissed` | What a decision keeps quiet (`Quieted`). |
+| `overlap` | A finding's fix beats the model's own suggestion, then the lower `Category::rank()` wins, then the shorter range. |
+| `cap`, `page-share` | At most `cap` of the model's own suggestions a call (12 by default), 3 in a field, and at most 30% of the page's words changed by them. Lowest-ranked go first. |
+
+Alternatives are checked one by one, and a failing one is dropped on its own. A source the model claims that can't be shown (a voice guide heading that isn't one, an entry it wasn't shown) becomes `general`, and the reason is kept. Alt text is clipped to 125 characters and loses "Image of". Findings the model didn't fix stay as their free form (`Finding::toSuggestion()`): a link candidate, an answer box, or "Rewrite it yourself".
+
+### Suggestions
+
+```php
+final class Suggestion {
+    public readonly string $id;               // Anchor::key(): stable across reviews
+    public readonly Category $category;
+    public readonly Anchor $anchor;
+    public readonly Reason $reason;           // text (or a finding's message), source (ReasonSource), detail, entry; sourceLabel()
+    public readonly ?string $replacement;     // inline markdown; null for a Fact to check or "Rewrite it yourself"
+    public readonly array $alternatives;      // up to 2: "Another version", free
+    public readonly ?FactCheck $fact;         // ask, template with {answer}, without, answer (AnswerKind); fill($answer)
+    public readonly ?LinkChange $link;        // target as stored, title, url, free
+    public readonly ?string $finding;         // the finding it fixes
+    public readonly bool $free;               // found and fixed with no model
+    public SuggestionState $state;            // Open, Accepted, Dismissed, Confirmed, Done, Stale, Expired
+    public function toArray(): array;         // for the guide
+}
+```
+
+`FactCheck::fill('8')` gives "team of 8". It throws `InvalidArgumentException` with the message key `suggest.fact.number-only` for "8 or 9?".
+
+### "Write another": `Studio::reword()`
+
+Up to two alternatives come with the first call, so "Another version" is free. After that, the button reads **Write another (uses Ghostwriter)**:
+
+```php
+$request  = RewordRequest::for($suggestion, $context, $voiceGuide, $versionsShownSoFar);
+$versions = $studio->reword($request);                       // Result<list<string>>, at most 2, none already shown
+$kept     = array_filter($versions->value, fn ($v) => $validator->acceptsVersion($suggestion, $v, $input));
+```
+
+`reworder` allows 1500 tokens at effort `low`, in the quick tier. It sees the sentence and one sentence either side, the reason, every version shown so far and the voice guide, and never the rest of the page. Each new version passes the same checks as the first. When none passes, say `suggest.review.another-none`.
+
+### Cost
+
+Shown in tokens only, never money. Every `Result` carries `usage` (input and output), counting every call, including re-asks and every part of a split page. Nothing model-backed runs on load, typing, saving, polling, the free checks, the revisit index or the external link check.
+
+| Action | Model calls |
+|---|---|
+| Suggest edits (or Review in the list) | `calls()` × `reviewer`, usually 1 |
+| Another version (stored alternatives), Accept, Edit, Dismiss, Undo, It's still right | 0 |
+| Write another | 1 small `reworder` |
+
 ## Ports the free checks read
 
 | Port | What | Contract |

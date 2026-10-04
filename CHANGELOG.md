@@ -35,6 +35,14 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
   - `Suggest\Watches` (`PastYears`, `ClosingDates`): when time alone changes a check's answer. `CheckContext::at()`.
   - `resources/lang/en/revisit.php`.
 
+- **Suggest edits: the review call (`Studio::suggestEdits()`).** See docs/suggest-edits.md.
+  - `ReviewInput` (the CheckContext, the writer's voice guide and kind, the findings numbered `f1…`, the `SiteDigest`, images for missing alt text), with `calls()`: **a long page is split into several calls** (`WORDS_PER_CALL`, never splitting a unit), and the replies are merged. `ReviewBatch`, `ReviewPrompt` (link targets shown as `entry:e12` and `link:3`, never as stored).
+  - New agents `reviewer` (8000 tokens, effort medium; a cut-off reply keeps the suggestions that closed) and `reworder` (1500, low, quick tier); new prompts `reviewer`, `reworder` and `scoped-edit` (the rules every scoped edit shares). `PromptLibrary::NAMES` lists them.
+  - `SuggestionReader` (JSON in `<suggestions>`, lenient) and `resources/schemas/suggestions.schema.json`; `SuggestionReply`.
+  - `SuggestionValidator`: never invents facts. Each suggestion is anchored with `QuoteFinder` or dropped; checked with `ScopedEditCheck` and `SourceCheck`; Fact to check templates checked against the quote; claims dropped with the claim switch off; dismissed, overlapping and over-cap suggestions dropped; free findings the model didn't fix kept in their free form. `ValidatedReview` (`suggestions`, `dropped` counts).
+  - `Suggestion` (a replacement plus up to two alternatives), `Reason`, `ReasonSource`, `FactCheck` (`fill()`), `AnswerKind`, `LinkChange`, `SuggestionState`, `Finding::toSuggestion()`.
+  - "Write another": `Studio::reword(RewordRequest)`, and `SuggestionValidator::acceptsVersion()`.
+
 ### Changed
 
 - `PromptLibrary::NAMES` lists `reviser`; `Agents` has `reviser`; `StudioOptions::WHOLE` and `CUT_OFF_MESSAGES` have `reviser` (an addon's own cut-off messages may now name it). The writer's request is unchanged (`bin/compare-requests`).

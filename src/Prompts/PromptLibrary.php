@@ -22,8 +22,9 @@ final class PromptLibrary
 {
     /**
      * Every prompt core ships. The name is also the agent name a request is
-     * sent under, apart from `image` and `writer-extras` (a section of the
-     * writer's instructions).
+     * sent under, apart from `image`, `writer-extras` (a section of the
+     * writer's instructions) and `scoped-edit` (the rules every scoped edit
+     * shares, a section of the reviewer's and the reworder's).
      */
     public const NAMES = [
         'brief-filler',
@@ -38,6 +39,9 @@ final class PromptLibrary
         'photo-researcher',
         'planner',
         'reviser',
+        'reviewer',
+        'reworder',
+        'scoped-edit',
         'type-analyst',
         'voice-analyst',
         'voice-editor',
