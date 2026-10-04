@@ -38,6 +38,10 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 - **Prompt caching** for `reviewer`, `verifier` and `reworder` (`Agents::CACHED`, `Agents::cachesInstructions()`): Anthropic gets their instructions as a system block with `cache_control` (ephemeral), and so does Claude through OpenRouter.
 - A kept candidate with nothing to write stays as a suggestion with no replacement only for a link field, a broken link (the link is the fix) and an image whose picture wasn't attached ("Describe the image yourself").
 
+
+### Fixed
+- Suggest edits' `Reconciler` no longer marks a suggestion Done when its new words were in the old ones already ("Winter care visits" in "New for 2024: winter care visits", or a fact's version without, "team", in "team of 6"): such words count only once the old words have gone, unless they hold them.
+
 ## 1.9.0 - 2026-10-04
 
 ### Added
