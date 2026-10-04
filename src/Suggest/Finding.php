@@ -1,0 +1,95 @@
+<?php
+
+namespace NineteenNinetyFour\Ghostwriter\Core\Suggest;
+
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\Message;
+
+/**
+ * Something a free check found, with no model: where it is, what it's
+ * about, what it needs (Needs) and what to tell the editor.
+ *
+ * - `id` is stable: the id a suggestion of its category at its anchor has
+ *   (Anchor::key()), so the model's fix for it, and a decision on it, carry
+ *   over from one review to the next.
+ * - `kind`: 'past-year', 'relative-time', 'closing-date', 'stated-count',
+ *   'long-sentence', 'empty-link-text', 'overlap', 'external-link', or a
+ *   GapKind value ('link-broken', 'missing-alt', 'seo-length', 'expected').
+ * - `alone`: whether it's shown on its own. A long sentence is only a hint
+ *   for the review call; with no fix from it, it isn't shown.
+ * - `meta`: what the guide and the call need: the year, the date, the
+ *   other entry, link candidates, the asset, the template for an answer.
+ */
+final class Finding
+{
+    /**
+     * @param  array<string, mixed>  $meta
+     */
+    public function __construct(
+        public readonly string $id,
+        public readonly Category $category,
+        public readonly string $kind,
+        public readonly Anchor $anchor,
+        public readonly Needs $needs,
+        public readonly Message $message,
+        public readonly array $meta = [],
+        public readonly bool $alone = true,
+    ) {}
+
+    /**
+     * @param  array<string, mixed>  $meta
+     */
+    public static function make(Category $category, string $kind, Anchor $anchor, Needs $needs, Message $message, array $meta = [], bool $alone = true): self
+    {
+        return new self($anchor->key($category), $category, $kind, $anchor, $needs, $message, $meta, $alone);
+    }
+
+    /**
+     * @param  array<string, mixed>  $meta
+     */
+    public function withMeta(array $meta): self
+    {
+        return new self($this->id, $this->category, $this->kind, $this->anchor, $this->needs, $this->message, $meta + $this->meta, $this->alone);
+    }
+
+    public function withNeeds(Needs $needs): self
+    {
+        return new self($this->id, $this->category, $this->kind, $this->anchor, $needs, $this->message, $this->meta, $this->alone);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'category' => $this->category->value,
+            'kind' => $this->kind,
+            'anchor' => $this->anchor->toArray(),
+            'needs' => $this->needs->value,
+            'message' => $this->message->toArray(),
+            'meta' => $this->meta,
+            'alone' => $this->alone,
+        ];
+    }
+
+    /**
+     * @param  array<mixed>  $array  From toArray().
+     */
+    public static function fromArray(array $array): self
+    {
+        $message = is_array($array['message'] ?? null) ? $array['message'] : [];
+        $params = is_array($message['params'] ?? null) ? array_filter($message['params'], fn ($value) => is_scalar($value) || $value === null) : [];
+
+        return new self(
+            is_string($array['id'] ?? null) ? $array['id'] : '',
+            Category::tryFrom(is_string($array['category'] ?? null) ? $array['category'] : '') ?? Category::Clarity,
+            is_string($array['kind'] ?? null) ? $array['kind'] : '',
+            Anchor::fromArray(is_array($array['anchor'] ?? null) ? $array['anchor'] : []),
+            Needs::tryFrom(is_string($array['needs'] ?? null) ? $array['needs'] : '') ?? Needs::Nothing,
+            new Message(is_string($message['key'] ?? null) ? $message['key'] : '', array_combine(array_map('strval', array_keys($params)), array_values($params))),
+            is_array($array['meta'] ?? null) ? array_combine(array_map('strval', array_keys($array['meta'])), array_values($array['meta'])) : [],
+            ($array['alone'] ?? true) !== false,
+        );
+    }
+}

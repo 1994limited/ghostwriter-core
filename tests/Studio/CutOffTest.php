@@ -3,6 +3,7 @@
 namespace NineteenNinetyFour\Ghostwriter\Core\Tests\Studio;
 
 use InvalidArgumentException;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Agents;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\Truncated;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\ContentKind;
@@ -10,6 +11,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Studio\Conversation;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\KindSample;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\KindSurvey;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\Layout;
+use NineteenNinetyFour\Ghostwriter\Core\Studio\Studio;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\StudioOptions;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\WriterContext;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -68,7 +70,8 @@ class CutOffTest extends StudioTestCase
             $this->assertSame('fake', $exception->provider());
         }
 
-        $this->assertSame([16000, 32000], $this->limits($agent));
+        $limit = Agents::maxTokens($agent);
+        $this->assertSame([$limit, min(Studio::MAX_TOKENS_CEILING, $limit * 2)], $this->limits($agent));
     }
 
     public function test_a_list_cut_off_twice_is_kept_with_a_warning(): void

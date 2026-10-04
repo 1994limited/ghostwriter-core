@@ -11,6 +11,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Prompts\PromptLibrary;
 use NineteenNinetyFour\Ghostwriter\Core\Prompts\Vocabulary;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\Studio;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\StudioOptions;
+use NineteenNinetyFour\Ghostwriter\Core\Studio\Testing\RequestLog;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 
@@ -25,6 +26,21 @@ abstract class StudioTestCase extends TestCase
     {
         $this->fake = new FakeProvider;
         $this->logs = [];
+    }
+
+    /**
+     * With GHOSTWRITER_RECORD_REQUESTS set to a file, every request the test
+     * sent is added to it (Studio\Testing\RequestLog), for bin/compare-requests.
+     */
+    protected function tearDown(): void
+    {
+        $path = getenv('GHOSTWRITER_RECORD_REQUESTS');
+
+        if (is_string($path) && $path !== '') {
+            RequestLog::append($path, static::class.'::'.$this->name(), $this->fake->requests());
+        }
+
+        parent::tearDown();
     }
 
     protected function studio(?Vocabulary $vocabulary = null, ?StudioOptions $options = null): Studio

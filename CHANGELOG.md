@@ -6,6 +6,38 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ### Added
 
+- **Comments on blocks: the comments model on the session (`Review\*`).** An editor comments on a block, a card, some words, a field or the whole page; the comments are shared by everyone on the piece (E7) and follow their words from layout to layout and from turn to turn. No model is called. See docs/comments.md.
+  - `SessionReview`, what the addons call: `add()`, `edit()`, `delete()`, `reply()`, `resolve()`, `reopen()`, `repin()`, each under the session's lock and allowed while Ghostwriter works, each taking the review's `version` (a change from an older copy is refused with `Conflict`); `threads()` (every thread with its state, the blocks holding it in a layout and whether it is in that layout), `where()` and `review()`.
+  - `Review` (threads, the next pin number, a version; `reanchor()`, and `send()`, `answer()`, `sendBack()` for a run), `Thread`, `Note`, `NoteKind`, `Change`, `Scope`, `ScopeKind`, `ThreadStatus` (Not sent, Revising, Changed, Replied, Resolved, Detached) and `ReviewRules`. Limits: 100 threads per piece, 30 notes per thread, 2000 characters per note, 12 threads per Apply.
+- **`Session::$review`**: the piece's comments (`Review::toArray()`), stored like `units`, under `review` (Filament: a JSON column the addon adds).
+- `SessionGuard::annotate()`: a change anyone who can see the piece may make whatever Ghostwriter is doing, under the session's lock.
+- **Comments on blocks: Apply (the scoped revision).** "Apply N comments" sends every comment not sent yet (up to 12) in **one** model call; each may change only the units it is anchored to. See docs/comments.md.
+  - `SessionReview::apply()` (claims the piece for a run, as Send does, and puts the comments into it with each unit's hash), `revise()` (in the job: the call, the checks and the changes applied under the session's lock), `putBack()`, `changes()` (each change's before, after and word diff) and `beforeData()` (the draft with a change undone, for "Show before").
+  - `Studio::revise(RevisionRequest): Result<RevisionReply>` and `Studio::reviserInstructions()`: the new agent `reviser` (prompt `resources/prompts/reviser.md`, after the writer's instructions; `Agents`: 8000 tokens, effort `medium`; in `StudioOptions::WHOLE`, with its own cut-off message). A comment may change its units' text, fill an `[[ask: …]]` with a fact the editor gave (recorded in the `Change`'s `filled`, decision 4), lay its block out anew when it asks to, change an extra item in its scope, or only reply.
+  - `RevisionValidator` (no model): a comment is refused, and goes back to Not sent with a plain line, for a change outside its scope, outside its quoted sentences, losing or making up a marker, adding a link or an unsourced fact, losing a unit, or not fitting its field; `size` and `layout` are warnings. `Verdict`.
+  - `RevisionApplier`: skips and reports a unit someone changed during the run (by its hash), writes what passes into the draft and units, re-arranges every layout with `SessionLayouts::afterEdit()` (no call), and records each thread's before and after. `ApplyOutcome`, `RevisionRequest`, `RevisionReply`, `RevisionItem`, `WordDiff`.
+  - `Text\DraftEditor`: one unit's new text written into a draft's data (a rich-text section, a text, a list, a row), and the data dumped as the addons dump it.
+  - `SessionGuard::begin()`: claims the piece for a run that isn't a chat message, and prepares it under the same lock.
+- **Suggest edits, the free checks (`Suggest\*`).** Deterministic checks over an entry's current values, with no model and no request. See docs/suggest-edits.md.
+  - `Findings::standard()->report(CheckContext)`: `FindingReport` (`findings` in form order, Finish's `gaps`, `leftovers()`, `emptyFields()`). `find()`, `without()`, `with()`, `checks()`.
+  - Checks (`Suggest\Checks\*`): `PastYears` (a past year written as current; history words and a year on its own left alone), `RelativeTime`, `ClosingDates` (in text, and date fields whose handle reads as an end), `StatedCounts` (counts and prices to recheck; a template with `{answer}`), `LongSentences` (a hint only), `EmptyLinkText`, `Overlaps` (5-word shingles against other entries).
+  - Phrase lists in English, German, French, Dutch and Spanish (`resources/suggest/phrases/*.php`, `Phrases::for()`), with dates read in each (`Dates`).
+  - `Finding`, `Category` (`isWording()`, `rank()`, `label()`, `speech()`), `Needs`, `Anchor` (a `FieldPath` and an `Anchor\TextQuote`, an asset, or a whole value; `key()`, `hash()`), `AnchorScope`, `CheckContext`, `CheckText`, `Check`, `EntryRef`, `Shingles`, `IndexedParagraph`, `DigestEntry`.
+  - Decisions that stick: `Quiet` and `Quieted`. "It's still right" and Dismiss last 12 months, or until the passage is edited.
+  - `SuggestOptions` (`claims`: the per-site claim-check switch) and `Revisit\AgePolicy` (a quarter weight in groups with a date field, with a switch per group).
+  - Ports: `Suggest\EntryIndex`, with `Testing\MemoryEntryIndex` and `Tests\Contracts\EntryIndexContract`.
+- **Finish this page: `MissingAlt` and `SeoLength` detectors**, in `GapFinder::standard()` as suggestions (never counted, never blocking). Ports `Gaps\AssetAlt` and `Gaps\SeoFields`, with `SeoField`, `PlainSeoFields`, `Testing\MemoryAssetAlt`, `Tests\Contracts\AssetAltContract` and `SeoFieldsContract`. `GapContext` gains `alt` and `seo` (named, optional): without them, neither detector finds anything, so Finish is unchanged until an addon passes them.
+- `resources/lang/en/suggest.php`. `Gaps\Message::english()` and `strings()` read any namespace with a file in `resources/lang/en/`; keys without one are `gaps` keys, as before.
+
+### Changed
+
+- `PromptLibrary::NAMES` lists `reviser`; `Agents` has `reviser`; `StudioOptions::WHOLE` and `CUT_OFF_MESSAGES` have `reviser` (an addon's own cut-off messages may now name it). The writer's request is unchanged (`bin/compare-requests`).
+- `SessionLayouts::afterEdit()` (and so `afterWriter()`) re-anchors the session's comments to the units it carried over: a comment whose text is gone becomes Detached, and comes back when the text does.
+
+## 1.8.3 - 2026-10-04
+
+### Added
+
 - **Resolve a gap from its chip (`Gaps\MarkerResolver`, `Markers::resolveAsk()`, `Markers::resolveLink()`).** A chip in the page preview or the Text tab says only its kind, hint, list and order; `MarkerResolver::find()` finds that marker in a draft's values (`leaves()`) and anything else the addon passes, and `apply()` replaces it: an answer exactly as typed, a count confirmed, changed or removed, a link pointed at an entry (or a link field's whole value replaced). No model. A link field the draft doesn't hold (the house style's sentinel) is chosen by hint and kept in the draft under `gw_links` (`chooseLink()`, `chosenLinks()`), and `withChosenLinks()` puts it into the built values. See docs/gaps.md, "Resolving a gap from a chip".
 - **`markers.js`: chips know their marker.** Each chip carries `data-gw-gap-match` (the marker as written), and `markGaps()` gives each chip's `match` and `occurrence` (which of the chips with that kind and hint it is). Chips with `onActivate` have `aria-haspopup="dialog"`. `toHtml()`'s chips carry the same data attributes. New `unmarkGaps(root)` puts the markers back as written, for text about to be edited, so chip markup is never saved.
 
