@@ -100,6 +100,10 @@ What page preview's comments and Suggest edits share: quotes of a range of text 
 
 Comments on the page (`…\Core\Review`): threads anchored to units, shared on the session and following their words from layout to layout. See [docs/comments.md](docs/comments.md).
 
+### Suggest edits and Content to revisit: `…\Core\Suggest` and `…\Core\Revisit`
+
+Ghostwriter reviews an existing entry and suggests small, anchored edits, and ranks the site's pages that need a look. The free checks find past years written as current, passed closing dates, counts to recheck, long sentences, empty link text, overlaps, broken links, missing alt text and SEO length. They cost nothing, in English, German, French, Dutch and Spanish (`Suggest\Findings`). The Content to revisit index is built from them alone (`Revisit\RevisitIndex`), with an opt-in weekly check of links to other sites. The review call (`Studio::suggestEdits()`, split into several calls for a long page) writes the fixes and adds judgement. Every suggestion is anchored with `Anchor\TextQuote`, and any that adds a fact is dropped. Reviews are shared, and their decisions are kept as the page's history (`Suggest\EditReviews`). See [docs/suggest-edits.md](docs/suggest-edits.md).
+
 ### Images: `NineteenNinetyFour\Ghostwriter\Core\Images`
 
 Photo search for an image field: free photo libraries searched, the results judged by a model against the page, and the chosen file downloaded safely. Each addon supplies the words around the field, the images already in that place (if any) and storage for the photo that's chosen. See [docs/images.md](docs/images.md) for the wiring.

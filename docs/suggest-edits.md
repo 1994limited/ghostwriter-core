@@ -4,6 +4,24 @@ Ghostwriter reviews an existing entry and suggests small, anchored changes, whic
 
 Everything here is framework-free. Only the review call (`Studio::suggestEdits()`) and "Write another" (`Studio::reword()`) use a model, and only when someone clicks a button that says so.
 
+## How an addon wires it
+
+1. **Edit with Ghostwriter → Suggest edits** (a menu item; hint: "Reads the page against your voice guide. Uses Ghostwriter once."). On open, call `EditReviews::preview()` and show the free findings at once, marked "Found without AI".
+2. Build a `ReviewInput`. Its `calls()` goes in the confirm: "Uses Ghostwriter once", or, for a long page, `suggest.review.split` with the number of calls. Call `start()`, then queue `run()`.
+3. The guide steps through the suggestions (`EditReview::open()`). Accept, Edit, Another version, Dismiss, Undo, It's still right, Use it and Link to it each call `decide()` or `undo()`. Write another calls `another()`. Changes go into the form; nothing is saved except alt text, after its confirm.
+4. On save, call `EditReviews::saved()` and `RevisitIndex::refreshOne()`. On delete, call `RevisitIndex::deleted()`.
+5. **Daily:** `RevisitIndex::refresh()` and `EditReviews::expire()`. **Weekly:** `RevisitIndex::refresh(full: true)`, and `ExternalLinkCheck::run()` when the site has turned it on.
+
+### The only settings
+
+| Setting | Where | Default |
+|---|---|---|
+| Check links to other sites once a week | `Revisit\RevisitOptions::$externalLinks`, per site, managers only | off |
+| A quarter weight for age in a group with a date field | `Revisit\AgePolicy::fromGroups($withDateField, $switchedOff)`, per group | on for groups with a date field |
+| Claim checks | `Suggest\SuggestOptions::$claims`, per site | on |
+
+There is no overnight review: a review runs only when someone clicks.
+
 ## The free checks: `Suggest\Findings`
 
 The free half costs nothing. It never calls a model and never makes a request.
@@ -26,7 +44,7 @@ $report = Findings::standard()->report(new CheckContext(
     entry: new EntryRef('pages', $id, $site),
     age: AgePolicy::fromGroups($groupsWithADateField, $groupsSwitchedOff),
     options: new SuggestOptions(claims: $claimChecksOn),
-    quieted: $editReviews->quieted($entryRef),   // decisions that keep findings quiet
+    quieted: $editReviews->quieted($entryRef, $now),   // decisions that keep findings quiet
 ));
 
 $report->findings;       // list<Finding>, in form order
@@ -100,7 +118,7 @@ $quieted = (new Quieted)->with($quiet);
 $quieted->covers($id, $passageHash, $now);
 ```
 
-`EditReviews::quieted($entry)` builds it from an entry's review history (below). Pass it to `CheckContext` so the guide, the revisit list and the review call leave those findings out.
+`EditReviews::quieted($entry, $now)` builds it from an entry's review history (below). Pass it to `CheckContext` so the guide, the revisit list and the review call leave those findings out.
 
 ### The settings these checks read
 
@@ -252,7 +270,52 @@ Shown in tokens only, never money. Every `Result` carries `usage` (input and out
 | Another version (stored alternatives), Accept, Edit, Dismiss, Undo, It's still right | 0 |
 | Write another | 1 small `reworder` |
 
+## The record: `EditReview` and `EditReviews`
+
+A review is a record of its own, per entry and site. It is not the writing `Session`. It is shared under E7: everyone who can edit the entry sees it, as `shared_conversations` says. `EditReviews` is the service the addons call. It holds no CMS code.
+
+```php
+$reviews = new EditReviews($editReviewStore, $lock, $studio);
+
+$reviews->preview($checkContext, $ref);                      // ['findings' => free suggestions, 'review' => latest, re-checked]; no model
+$review = $reviews->start($ref, $viewer, $now);               // claims the entry; queue run(). Domain\Busy while another run holds it
+$review = $reviews->run($review->id, $reviewInput, $now);     // the queued job: the call(s), validation, stored Ready (or Failed)
+$reviews->decide($id, $suggestionId, SuggestionState::Accepted, $viewer, $now, text: $wordsThatWentIn);
+$reviews->decide($id, $suggestionId, SuggestionState::Dismissed, $viewer, $now);
+$reviews->decide($id, $suggestionId, SuggestionState::Confirmed, $viewer, $now);    // It's still right (Fact to check only)
+$reviews->decide($id, $suggestionId, SuggestionState::Accepted, $viewer, $now, answer: '8');   // Use it
+$reviews->undo($id, $suggestionId, $viewer, $now);
+$reviews->another($id, $suggestionId, $reviewInput, $now);    // Write another: list<string>, validated
+$reviews->saved($ref, $savedCheckContext, $now);              // after a save: Done and Stale (Reconciler)
+$reviews->expire($now);                                       // daily: unactioned suggestions after 14 days
+$reviews->quieted($ref, $now);                                // Quieted, for every CheckContext of this entry
+```
+
+- **History.** Decisions (`Decision`: suggestion, state, by, at, answer, text) are only ever added. A suggestion's state is its last decision's. Undo adds an Open decision. Core adds Done, Stale and Expired with `by` null. `EditReviewStore::history($entry)` lists an entry's reviews, newest first. A decision on the same suggestion (same id) in an earlier review carries over to a new one.
+- **Expiry.** Suggestions nobody acted on expire `EditReview::EXPIRES_DAYS` (14) after the review finished: `expire()` marks them Expired and drops their words. Reviews and decisions are kept. `EditReviewStore::delete()` is only for a deleted entry.
+- **Dismissals stick.** `quieted()` gives each suggestion's last Dismissed or Confirmed decision as a `Quiet`. It lasts 12 months, or until its passage changes. Pass it to `CheckContext` so the free checks, the revisit list and the next review all leave it out.
+- **One run per entry at a time.** `start()` works under the `Lock` (`edit-review:<entry key>`). A run that has held the entry for `STALE_RUN` (15 minutes) is taken to have died. `Busy::messageFor()` gives "Priya is reviewing this page. It opens here when it is ready."
+- **Concurrency.** Every change is made under the entry's lock with the store's version check, and retried once on a `Conflict`.
+- **Access** (`EditReviewAccess::from($domainOptions)`): shared, anyone who can edit the entry; not shared, its starter and admins. `canDecide()` also needs the run to have finished.
+- **Accepted** is recorded for the history. The change itself is in one person's form until they save, and `saved()` then marks it Done.
+- **Alt text** is saved to the asset by the addon, after its confirm. Then `decide(…, Accepted)`. The Reconciler marks it Done from `AssetAlt`.
+- **Failed.** When the call fails or its reply can't be read, the review is Failed with a short `error`, and the free findings stand as its suggestions.
+
+### `Reconciler`
+
+`reconcile(EditReview, CheckContext $saved, $now)`: for each suggestion still open or accepted, **Done** when the saved field has its new words. Those can be the replacement, an alternative, a later version, the editor's own words, the filled template, the version without, the new link target, or the asset's alt text. **Stale** when its quote is gone and none of those is there, or a whole-value field changed to something else. Otherwise it stays as it was. `preview()` runs it on a copy against the form's current values, so a stored review opens with its stale suggestions marked and nothing stored.
+
+### The port
+
+| Port | What | Contract |
+|---|---|---|
+| `Suggest\EditReviewStore` | `find`, `latestFor`, `history`, `save` (version check, `Domain\Conflict`), `dueToExpire`, `delete`. Statamic: a JSON file per review, with a pointer per entry. Craft: `{{%ghostwriter_edit_reviews}}`. Filament: an Eloquent table with `workspace`. | `Tests\Contracts\EditReviewStoreContract` |
+
+In-memory version for tests: `Suggest\Testing\InMemoryEditReviewStore`.
+
 ## Ports the free checks read
+
+Every port the addons implement, in one place: `Gaps\AssetAlt`, `Gaps\SeoFields`, `Suggest\EntryIndex` (below), `Revisit\RevisitStore`, `Revisit\EntrySource`, `Revisit\LinkProbe` (core's `HttpLinkProbe` will do) and `Suggest\EditReviewStore` (above), plus the existing `Gaps\LinkTargets`, `AssetRefs`, `PlaceholderAssets` and `Domain\Lock`. Each has a contract trait in `tests/Contracts` the addon's own test extends.
 
 | Port | What | Contract |
 |---|---|---|
