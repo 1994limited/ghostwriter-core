@@ -2,13 +2,17 @@
 
 Editors comment on the draft where they see it: a block in the preview, a card, some words, a field or the whole page. Comments live on the session, shared by everyone on the piece (E7), and follow their words from layout to layout and from turn to turn. Nothing here is a setting. The design is `page-preview-layouts-design.md` (§9).
 
-Everything is in `NineteenNinetyFour\Ghostwriter\Core\Review`. Addons call `Review\SessionReview`; the classes under it are documented further down. Nothing in this page calls a model.
+**Apply N comments** sends every comment not sent yet (up to 12) to the model in **one** call. Each comment may change only the units it is anchored to; core checks every change with no model and applies what passes, re-arranges the layouts and keeps a before and after on each thread.
+
+Everything is in `NineteenNinetyFour\Ghostwriter\Core\Review`. Addons call `Review\SessionReview`; the classes under it are documented further down. Only Apply calls a model.
 
 ## What the addon calls: `SessionReview`
 
 ```php
-$comments = new SessionReview(SessionGuard $guard);
+$comments = new SessionReview(SessionGuard $guard, ?Studio $studio, ?SessionLayouts $sessionLayouts, Layouts $layouts = new Layouts, ?LoggerInterface $logger);
 ```
+
+The Studio (or the addon's `SessionLayouts`) is needed only for Apply and Put it back; comments, replies, resolving and the list need neither.
 
 Every change goes through `SessionGuard::annotate()`: under the session's lock, for anyone who can see the piece (`SessionAccess::canSee`), and allowed while Ghostwriter works on it (§9.5): a comment made during a run waits, *Not sent*, for the next Apply. Each method returns the `Thread` it changed.
 
@@ -72,7 +76,77 @@ Each note has `id`, `kind` (`comment`, `reply`, `change` or `system`), `by` (the
 - **Between layouts** nothing changes: `threads($session, $planId)` and `where()` place each thread in whichever layout by its units. A comment made on the writer's "Text" block is on three blocks in a layout that splits it.
 - **Between turns**: `SessionLayouts::afterEdit()` (and so `afterWriter()`) re-anchors the comments after it carries the unit ids over (`Arrange\UnitMatcher`): a unit reworded a little keeps its id and its comments; a unit replaced outright takes them to *Detached*. A quote found only fuzzily is taken again from the text. Call nothing else.
 
-### Limits
+## Apply
+
+```php
+// The controller (POST …/sessions/{id}/review/apply):
+$session = $comments->apply($sessionId, $viewer, ?int $version);   // then start the job
+// The job:
+$outcome = $comments->revise($sessionId, $conversation, $writerContext, $site, $names = []);
+```
+
+- **`apply()`** claims the piece for a run, as Send does (`SessionGuard::begin()`): one run at a time, so a second Apply, a chat message or a hand edit while it runs is refused (`Busy`, with whose run it is: "Priya is waiting on Ghostwriter"). Under the same lock it puts up to 12 *Not sent* threads into the run (*Revising*), recording the review's version and each unit's hash, and adds the editor's line to the chat (`messages[]`: role `user`, `review.step` `apply`, the thread numbers and how many wait; show it as a system line, "Daniel applied 2 comments"). `Conflict` when nothing is *Not sent*. Comments made during the run wait for the next one.
+- **`revise()`**, in the queued job, builds the `RevisionRequest`, makes **one call** to the `reviser` agent, then checks and applies the reply under the session's lock (`SessionGuard::change()`). Build `$conversation` and `$writerContext` as for a writer's turn (`Layout::fromSchema()`); `$site` is the `LayoutContext` layouts use; `$names` (user id → name) puts "By Priya" in the prompt.
+- **The outcome** (`ApplyOutcome`), by thread number: `changed`, `replied`, `refused` (number → the validator's rules), `conflicted`, `laidOut`, `units` (what changed), `summary` (the chat's line), `failed` (why the run couldn't happen) and `usage`.
+- **After it**, each thread in the run is *Changed* (a `change` note: the reply, with a `Change` per unit), *Replied* (a `reply` note), or back to *Not sent* with a `system` note saying why. The chat gets one assistant message (`review.step` `revised`): "Revised 2 blocks from your comments: Visits list, Who it suits. Nothing else changed." The tokens go on `Session::$usage`, and the piece is idle again. Re-render the preview: `draftVersion` isn't kept; compare the review's `version` and the draft.
+- **If the call fails** (a provider error, or a reply cut off even with more room: `reviser` is in `StudioOptions::WHOLE`), every thread goes back to *Not sent* with a line saying so, the chat says so, and the piece is idle. Nothing in the draft changes.
+
+### What a comment may change
+
+The reviser gets the writer's instructions (voice, rules, gap markers, the fields, the examples; not the extras section) and then `resources/prompts/reviser.md`. The prompt is the current draft, the comments (each with its label, the units it may change, any quoted words, and an earlier answer when it was replied to since), the text of those units, the extra items in scope and the chosen layout. Each comment may:
+
+- **change its units' text**, keeping house style, the gap markers and the extras rules, as the writer must: a whole unit (`units:`), or exact words in it (`replace:`). A comment on some words may change only the sentences they're in;
+- **answer a fact** (decision 4): a fact the editor gives in the comment (or the brief has) may fill an `[[ask: …]]`. The `Change` records it in `filled` (`ask`, `value`, `by`: the comment's author), and the reply ends "Filled in from your comment: “£60”." Label it as the editor's in the before and after;
+- **lay its block out anew**, only when it asks to (`layout:`, in the layout planner's form): the block or blocks holding its units are replaced in the chosen layout, if the result passes the layout rules (`PlanValidator`). The writer's own layout is the draft, so the draft is re-arranged; another layout is replaced in `Session::$plans`. Otherwise the text change still applies and the reply says "I kept the layout: …";
+- **change or remove an extra item** in its scope (`extras:`); an edited item's source becomes the editor (`SourceKind::Editor`);
+- **only reply**, changing nothing (*Replied*): a question, an image, something it would have to invent.
+
+### The checks (`RevisionValidator`, no model)
+
+Each comment's changes are checked on their own, against the draft as it is under the lock. A comment that breaks a rule keeps the draft as it was and goes back to *Not sent*, with a plain line in its thread; the others are applied.
+
+| Rule | Refused when | The line in the thread |
+|---|---|---|
+| `scope` | A unit or extra item outside the comment's scope changes, or `exact` isn't in its unit exactly once (by the shared quote rules, with the comment's quote's context) | "I couldn’t make this change without touching other parts of the page. Try commenting on the whole section." |
+| `text-range` | A comment on some words changes text outside the sentences they're in (`ScopedEditCheck`) | "…within the words you picked. Try commenting on the whole block." |
+| `markers` | An `[[ask: …]]`, `[[check: …]]` or `#gw-link:` link is lost or added; an ask filled with something neither the comment nor the brief gave | "…without losing or making up a gap left for you to fill, or a link to choose." |
+| `link` | A link to another site, an email address or a phone number appears | "That change added a link to another site…" |
+| `facts` | A figure, quotation or name none of its sources has (`SourceCheck`): the unit before, the comment and its replies, the brief and answers, the draft, a shown entry | "That change needed something I don’t have (£75). Tell me in a reply and apply again." |
+| `lost` | The draft's units aren't what they were: a unit emptied, a section's heading taken out (merging it into the one before), a unit split or turned into another kind | "…would have merged, split or removed part of the page…" |
+| `shape` | The text doesn't fit where it goes: an image, or a row given a different number of paragraphs than it has fields | "I couldn’t fit that change into this block’s fields." |
+| `missing` | The reply had nothing for the comment | "I didn’t get to this comment. Apply again to send it." |
+| `size` *(a warning)* | Under 40% or over 160% of the words, and the comment didn't ask for length ("shorter", "expand"…) | Applied; the reply adds a line |
+| `layout` *(a warning)* | A new arrangement the layout rules refuse | The text is applied; "I kept the layout: …" |
+
+### Concurrency (§9.5)
+
+- Only one Apply runs at a time, under the session's claim; comments, replies, resolving and reopening go on meanwhile (`annotate()`).
+- Each thread records each unit's hash when it joins the run (`Thread::$hashes`, `Arrange\Unit::hash()`; extra items too). Under the lock, every unit or item a comment's change touches is compared with it; one someone changed during the run is **skipped and reported**: the thread goes back to *Not sent* with "Someone changed this block while I was working, so I changed nothing. Apply again to use the new version." (`ApplyOutcome::$conflicted`). So is a unit an earlier comment in the same run rewrote whole.
+- Unit ids are kept by place through a revision (the checks make sure the units are the same), then `SessionLayouts::afterEdit()` re-arranges every layout and re-anchors the comments, with no call. A comment on some words moves its quote to the sentence that took their place.
+
+## Before and after, Put it back, Show before
+
+```php
+$comments->changes($session, $threadId);                       // every change made for it, oldest first
+$comments->putBack($sessionId, $viewer, $threadId, $site);      // the last change undone
+$comments->beforeData($session, $threadId, $site);             // the draft data with it undone, for "Show before" (nothing saved)
+```
+
+- **`changes()`** gives, for each change: `unit`, `before`, `after`, `version`, `filled`, `layout` (a new arrangement, with no text), `canPutBack`, and `diff`: a word diff (`WordDiff`), runs of `['=', 'kept ']`, `['-', 'taken out ']`, `['+', 'put in ']`.
+- **`putBack()`** writes each `before` back through `Text\DraftEditor` after checking the text is still the `after` (`Conflict` if it changed since). It adds "Put back." by the viewer and keeps the thread's state. Refused while Ghostwriter works, as hand edits are. A layout change, and a change cut at 4 KB, can't be put back.
+- **`beforeData()`**: render it through the preview, read-only, with a "Before" badge.
+
+## Cost
+
+| Moment | Calls |
+|---|---|
+| Add, edit, delete, reply, resolve, reopen, pin again, the list, switching layout, before and after, Put it back, Show before | 0 |
+| **Apply N comments** | **1** (`reviser`), whatever N is, up to 12; replies to every comment come from it. ~4–8k tokens in, ~1–3k out. A reply cut off is asked for once more with twice the room (16000), as for every agent |
+| Checking, applying, re-arranging the layouts | 0 |
+
+`reviser`: 8000 max tokens, effort `medium`, the writing tier, in `StudioOptions::WHOLE`.
+
+## Limits
 
 100 threads per piece, 30 notes per thread, 2000 characters per note (`Review::MAX_THREADS`, `MAX_NOTES`, `Note::MAX_BODY`), and 12 threads per Apply (`Review::PER_APPLY`; the rest wait for the next).
 
@@ -87,6 +161,18 @@ Each note has `id`, `kind` (`comment`, `reply`, `change` or `system`), `by` (the
 | `Scope`, `ScopeKind` | What a comment is about (above). `editableUnits(Units, $extraIds)`: what a revision for it may change. |
 | `ThreadStatus` | The states (above), with `label()`. |
 | `ReviewRules` | Who may do what (§14): `mayComment()`, `mayEdit()`, `mayDelete()`, `mayApply()`. Add the CMS's own checks around it. |
+| `RevisionRequest` | One Apply's threads, the units, extras, chosen layout, writer context and conversation; `prompt()`, `editable()`. `Studio::revise()` sends it. |
+| `RevisionReply`, `RevisionItem` | The reviser's `<changes>` read into one item per comment: `reply`, `units`, `replace`, `layout`, `extras`. |
+| `RevisionValidator` | The checks above: `check()` gives a `Verdict` (`rules`, `units`, `extras`, `filled`, `layout`, `warnings`, `unsourced`, `data`); `layout()` checks a new arrangement. |
+| `RevisionApplier` | Applies a reply to the session under its lock: conflicts, checks, the draft and units, layouts, answers, the chat line. |
+| `ApplyOutcome` | What one Apply did, by thread number. |
+| `WordDiff` | The before and after as runs of words. |
+| `Text\DraftEditor` | Writes a unit's new text into the draft's data (a rich-text section, a text, a list, a row) and dumps the YAML as the addons do. |
+| `Studio::revise()`, `reviserInstructions()` | The call, and its instructions. |
+
+## Checking parity
+
+`bin/compare-requests` on core's own suite, before and after Apply was added (`GHOSTWRITER_RECORD_REQUESTS=… vendor/bin/phpunit`, `StudioTestCase` records), finds only the new tests' `reviser` requests: the writer's and the layout planner's requests are byte for byte the same.
 
 ## Storing it
 

@@ -21,6 +21,8 @@ use NineteenNinetyFour\Ghostwriter\Core\Domain\Stock\ModelInputGuard;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\GapRefused;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Markers;
 use NineteenNinetyFour\Ghostwriter\Core\Prompts\PromptLibrary;
+use NineteenNinetyFour\Ghostwriter\Core\Review\RevisionReply;
+use NineteenNinetyFour\Ghostwriter\Core\Review\RevisionRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Text\LenientYaml;
 use NineteenNinetyFour\Ghostwriter\Core\Text\Slug;
 use NineteenNinetyFour\Ghostwriter\Core\Text\TaggedResponse;
@@ -791,6 +793,44 @@ final class Studio
      */
     public function writerInstructions(WriterContext $context): string
     {
+        return $this->writerBase($context).$this->extrasSection($context);
+    }
+
+    /**
+     * The reviser's instructions: the writer's (voice, rules, gap markers,
+     * the fields, the examples) without the extras section, then the
+     * `reviser` prompt, which asks for a `<changes>` block instead.
+     */
+    public function reviserInstructions(WriterContext $context): string
+    {
+        return $this->writerBase($context)."\n\n".$this->prompt('reviser');
+    }
+
+    /**
+     * Revises the draft from comments (Review\RevisionRequest): one call to
+     * the `reviser` agent, whatever the number of comments. The reply is
+     * read but not validated (Review\RevisionValidator decides what is
+     * applied). An unreadable reply gives no items, with a warning.
+     *
+     * @return Result<RevisionReply>
+     *
+     * @throws Truncated when the reply is cut off even with more room.
+     * @throws ProviderException
+     */
+    public function revise(RevisionRequest $request): Result
+    {
+        $response = $this->ask('reviser', $request->prompt(), instructions: $this->reviserInstructions($request->writer));
+        $reply = RevisionReply::read($response->text);
+
+        if ($reply->problem !== '') {
+            $this->unreadable("the reviser's reply had no usable changes ({$reply->problem})", 'reviser', $response->text);
+        }
+
+        return new Result($reply, $response->usage);
+    }
+
+    private function writerBase(WriterContext $context): string
+    {
         $kind = $context->kind;
 
         return strtr($this->prompt('writer'), [
@@ -802,7 +842,7 @@ final class Studio
             '{{ fields }}' => $context->layout->fields,
             '{{ examples }}' => $this->examples($context->layout),
             '{{ images }}' => $context->images,
-        ]).$this->extrasSection($context);
+        ]);
     }
 
     /**

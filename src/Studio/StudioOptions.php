@@ -16,7 +16,7 @@ final class StudioOptions
      * cut-off draft or guide is reported rather than kept. Every other
      * agent keeps what came back.
      */
-    public const WHOLE = ['writer', 'type-analyst', 'voice-analyst', 'voice-editor'];
+    public const WHOLE = ['writer', 'type-analyst', 'voice-analyst', 'voice-editor', 'reviser'];
 
     /** What the person is told when one of the WHOLE agents is cut off even with more room. */
     public const CUT_OFF_MESSAGES = [
@@ -24,6 +24,7 @@ final class StudioOptions
         'type-analyst' => 'The description of this kind of content was longer than Ghostwriter allows and was cut off. Try again.',
         'voice-analyst' => 'The voice guide was longer than Ghostwriter allows and was cut off. Try again.',
         'voice-editor' => 'The voice guide was longer than Ghostwriter allows and was cut off. Try asking for a shorter guide.',
+        'reviser' => 'The revision was longer than Ghostwriter allows and was cut off. Try applying fewer comments at a time.',
     ];
 
     /** @var array<string, string> */

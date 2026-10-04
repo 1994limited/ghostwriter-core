@@ -22,6 +22,7 @@ final class Agents
         'planner' => 16000,
         'kind-finder' => 8000,
         'layout-planner' => 4000,
+        'reviser' => 8000,
         'brief-filler' => 6000,
         'brief-writer' => 6000,
         'imagery-analyst' => 6000,
@@ -40,6 +41,7 @@ final class Agents
         'photo-scout' => 'low',
         'gap-filler' => 'low',
         'layout-planner' => 'low',
+        'reviser' => 'medium',
     ];
 
     /** The tier of the agents that write, read and plan: the default. */

@@ -343,6 +343,27 @@ final class SessionGuard
     }
 
     /**
+     * Starts Ghostwriter on a run that isn't a chat message (applying
+     * comments): claims the piece as send() does, then prepares the run
+     * under the same lock. If preparing throws, nothing is saved. Start
+     * the run's job after.
+     *
+     * @param  callable(Session, DateTimeImmutable): void  $prepare
+     *
+     * @throws Busy while Ghostwriter answers a request (anyone's)
+     */
+    public function begin(string $id, Viewer $viewer, callable $prepare, string $busy = 'Ghostwriter is still working on the last message.'): Session
+    {
+        return $this->locked($id, $viewer, function (Session $session, DateTimeImmutable $now) use ($viewer, $prepare, $busy) {
+            if (! $session->claim($viewer->id, $this->options, $now)) {
+                throw $this->busy($session, $viewer, $busy);
+            }
+
+            $prepare($session, $now);
+        });
+    }
+
+    /**
      * A change anyone who can see the piece may make whatever Ghostwriter
      * is doing, under its lock: a comment, a reply, resolving or reopening
      * one, which a run going now doesn't touch (§9.5). The change may

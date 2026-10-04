@@ -37,6 +37,7 @@ final class PromptLibrary
         'photo-query',
         'photo-researcher',
         'planner',
+        'reviser',
         'type-analyst',
         'voice-analyst',
         'voice-editor',
