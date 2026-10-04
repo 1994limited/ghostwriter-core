@@ -9,6 +9,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Domain\DomainOptions;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Format;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\RoundTrips;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Viewer;
+use NineteenNinetyFour\Ghostwriter\Core\Studio\Asks;
 use NineteenNinetyFour\Ghostwriter\Core\Text\Draft;
 
 /**
@@ -43,7 +44,7 @@ final class Session
 
     /**
      * @param  array<string, mixed>  $answers
-     * @param  array<int, array<string, mixed>>  $messages  Each with `role`, `content` and `at`; a person's with `by`; the writer's may say whether it `asks`, and what it did to the `draft`.
+     * @param  array<int, array<string, mixed>>  $messages  Each with `role`, `content` and `at`; a person's with `by`; the writer's may say whether it `asks` (and what, under `asked`: Studio\Asks), and what it did to the `draft`; a person's answers to them are under `answers`.
      * @param  array<string, int>  $usage  Tokens, `input` and `output`.
      * @param  array<int, int|string>  $examples  Records the piece is modelled on, chosen with the brief.
      * @param  array<string, array<string, mixed>>  $images  Images chosen or made for the draft, by field (see SessionImages).
@@ -273,8 +274,13 @@ final class Session
      * Ghostwriter's answer to the turn: the reply, the draft if it wrote or
      * changed one (kept even when it doesn't parse, with the problem added
      * to the reply), and the tokens used. The piece is idle again.
+     *
+     * `$questions` is the writer's `<questions>` block (TaggedResponse):
+     * asking before a draft, its questions are kept under `asked`
+     * (Studio\Asks) with the reply as their intro. A block that can't be
+     * read is added to the reply as it came, so nothing asked is lost.
      */
-    public function answer(string $reply, ?string $document, int $inputTokens = 0, int $outputTokens = 0, ?DateTimeInterface $now = null): void
+    public function answer(string $reply, ?string $document, int $inputTokens = 0, int $outputTokens = 0, ?DateTimeInterface $now = null, ?string $questions = null): void
     {
         $before = $this->draft;
 
@@ -290,9 +296,21 @@ final class Session
             $this->draft = $document;
         }
 
+        $asks = $document === null ? Asks::read($questions, $reply) : null;
+
+        if ($asks !== null) {
+            $reply = $asks->text();
+        } elseif ($document === null && $questions !== null) {
+            $reply = trim($reply."\n\n".$questions);
+        }
+
         // A turn that hands nothing back and ends on a question is the
         // writer waiting on its colleague, which the panel makes plain.
-        $extra = ['asks' => $document === null && str_contains($reply, '?')];
+        $extra = ['asks' => $document === null && ($asks !== null || str_contains($reply, '?'))];
+
+        if ($asks !== null) {
+            $extra[Asks::KEY] = $asks->toArray();
+        }
 
         // What this turn did to the draft, for the conversation's log.
         if ($document !== null && $document !== $before) {

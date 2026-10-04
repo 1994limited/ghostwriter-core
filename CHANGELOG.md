@@ -4,6 +4,21 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
+### Added (structured questions before the draft)
+
+- **The writer's questions come back structured.** When it must ask before drafting, the writer now sends at most four short questions in a `<questions>` YAML block beside a one-sentence `<reply>`, in the same call. Each item is `{id, question, hint?, kind: text|choice, options?, optional?}`. See docs/studio.md#questions-before-the-draft-17.
+  - `TaggedResponse::$questions` holds the block.
+  - `Studio\Asks` and `Studio\AskedQuestion` read it: `read()`, `fromMessage()`, `toArray()`, `text()`, `reply()`, `present()` and `isAnswers()`.
+- **`Session::answer(..., questions:)`** keeps them on the writer's message under `asked`, with the intro and a numbered list as its `content`. A block that can't be read is added to the reply as it came.
+- **`SessionGuard::answerQuestions()`** sends the person's answers as one message: "question → answer" pairs, "skipped" for one left empty, then "Also: …". The answers are kept under `answers` and `more`.
+- **The writer prompt** asks for short, plain questions:
+  - one per item;
+  - no compound questions;
+  - a hint that never holds an invented fact;
+  - a one-sentence intro.
+
+  A question answered "skipped" is never asked again: the writer writes around it or marks it `[[ask: …]]`. The never-invent rules are unchanged.
+- Older messages, without `asked`, are plain text as before.
 ### Added (the brief chooses what to model it on)
 
 - **With nothing ticked, the brief filler chooses the records to model the piece on.** A piece of a kind that wasn't taught (`any:journal`) opened with nothing under "Model it on", though the brief itself pointed at existing entries ("Match 'What to do in the garden in October'…"). Now:

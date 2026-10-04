@@ -110,7 +110,7 @@ Core keeps the whole thread in the session's messages (`BriefThread`), so no sto
 | `Filling` | "Filling in the brief…" while `isWorking()`; when `hasFailed()`, the error and Try again (`retry()`) | the brief job: `fillBrief()` then `propose()` |
 | `Proposed` | The brief card: a labelled region with the working title, every question with its answer, "Model it on" with the examples ticked, "Looks right, start writing" and "Try again". Announce `brief.filled` politely when it arrives. | `agree()` or `tryAgain()` |
 | `Writing` | The agreed card, collapsed to "Show the brief"; the writer working | the turn's job, as today |
-| `Questions` | "Ghostwriter needs your answer" and "Just draft it with what you have", as today | `send()`, as today |
+| `Questions` | "Ghostwriter needs your answer": the questions card (below) and "Just draft it with what you have" | `answerQuestions()`, or `send()` for an older piece |
 | `Drafting` | The draft and the conversation, as today | `send()`, as today |
 
 `BriefStage::agreed()` is true for the last three. A piece started from the old brief screen, or one editing a record, is in them from its first message, so pieces carried on from before 1.6 work as they did.
@@ -190,6 +190,46 @@ Each addon passes the candidates and pre-ticks the card from `examples`, with th
 The `brief-filler` prompt tells the model to propose the angle, reader, structure and length, and to leave every fact about the organisation it wasn't given in square brackets (`[Add: …]`). `BriefCheck` then enforces it, as `fillGap()` does, without a second call: a figure or a quotation that isn't in what the person said (their reply, the idea, answers they wrote themselves) or in the kind's own text becomes `[Add: the figure]` or `[Add: the quote]`; a length or count of the piece ("about 600 words", "three sections") stays. Figures are compared by what they say, not how they're written (from 1.6.1): "800-word", "eight hundred" and "about 800" all give 800, "£12k" is "£12,000" or "twelve thousand pounds", "40%" is "forty per cent", "2026-05-14" is "14 May 2026", and a range is given when both ends are; a percentage or a price must be given as one, or as a plain number. Only quoted speech or testimonials are taken out ("they said …", "Testimonial: …", or a quotation that can't be told from one): quoted titles and names stay, namely the titles of the group's entries the model was given (the examples to model it on are among them), the working title, terms the person used, and titles or headings the brief proposes ("Sections: …", "called …"). A figure inside one of those titles is part of the title. A set-answer question gets one of its values or nothing, and a required question left blank gets `[Add: <question>]`. What it took out is logged, without the reply unless `logReplies` is on. Names and other facts without a figure are left to the prompt.
 
 "Try again" sends the same call with the brief the person didn't take, the answers they changed listed as kept (copied back exactly), and the rest to answer afresh.
+
+### Questions before the draft (1.7)
+
+When the writer can't write the entry honestly without something only the person knows, it asks first. It used to ask in its reply's prose; now it sends at most four short questions in a `<questions>` block of YAML beside a one-sentence `<reply>`, in the same call (no extra call, so it costs nothing more). The writer's reply stays tag-based, as before.
+
+```yaml
+- id: project
+  question: Which real project should this be about?
+  hint: Client, place and what you did
+- id: phasing
+  question: How do you usually phase larger projects?
+  kind: choice
+  options: [All at once, In stages, It depends on the client]
+  optional: true
+```
+
+- `TaggedResponse::$questions` holds the block. Pass it on: `$session->answer($response->reply, $response->document, …, questions: $response->questions)`.
+- `Studio\Asks::read()` reads it, with the reply as the `intro`:
+  - at most `Asks::MAX` (4) questions;
+  - ids made safe and unique (`q1`, `q2`… when missing);
+  - a `choice` with fewer than two options becomes `text`;
+  - a code fence is ignored.
+- `Session::answer()` keeps the questions on the writer's message under `asked` (`Asks::toArray()`: `{intro, questions: [{id, question, hint, kind, options, optional}]}`). The message's `content` is the intro and a numbered list (`Asks::text()`), so the writer sees what it asked and an older panel still reads well. A block that can't be read is added to the reply as it came, so nothing asked is lost; a block beside a draft is ignored.
+- `SessionGuard::answerQuestions($id, $answers, $more, $viewer, $busy, $skipped, $also)` sends the person's answers, by question id, as one message and claims the run; start the turn's job after.
+  - The `content` is "question → answer" pairs, one paragraph each, with "skipped" for one left empty, then "Also: …" for anything else they added.
+  - The answers are kept under `answers` (`[{id, question, answer|null}]`), and the extra text under `more`.
+  - It refuses (`Conflict`) when the last message isn't the questions any more, or nothing was answered or added.
+- The writer prompt says a skipped question is never asked again: the writer writes around it or marks the place with `[[ask: …]]`.
+
+Rendering: `Asks::present($message, $next)` gives a writer's message with questions as `{intro, answered, questions: [… + answer]}`, pairing it with the next message when that is the answers. `Asks::isAnswers($message)` says whether a person's message is answers. In that case the panel shows them in the card, and only its `more` (if any) as a message of its own.
+
+- While asking (the last message, idle): a labelled region announcing "Ghostwriter needs your answer"; the intro; a numbered list with one labelled input per question, which is:
+  - a textarea growing from one or two rows, or radios for `choice`;
+  - the hint as help text;
+  - marked "optional" when it is;
+  - with a per-question Skip.
+- Below: Send (sends all the answers as one message, ⌘↵ too, which must not save the CMS form), "Just draft it with what you have", and the free-text composer collapsed to "Add anything else".
+- Once answered: the same card, read-only, each question with its answer or "Skipped".
+
+A message from before 1.7 has no `asked`: it is plain text, answered with the composer as before.
 
 ## Checking parity
 

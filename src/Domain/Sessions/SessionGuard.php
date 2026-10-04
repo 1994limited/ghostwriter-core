@@ -11,6 +11,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Domain\Lock;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\NotAllowed;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\NotFound;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Viewer;
+use NineteenNinetyFour\Ghostwriter\Core\Studio\Asks;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\Brief;
 
 /**
@@ -292,6 +293,44 @@ final class SessionGuard
             }
 
             $session->addMessage('user', $message, $viewer->id, $extra, $now);
+        });
+    }
+
+    /**
+     * The person's answers to the questions the writer asked (Studio\Asks),
+     * sent as one message: each question with its answer, "skipped" for one
+     * left empty, then anything else they added. Start the turn's job after.
+     *
+     * @param  array<string, string|null>  $answers  By question id.
+     *
+     * @throws Busy while Ghostwriter answers a request (anyone's)
+     * @throws Conflict when the questions have been answered already, or
+     *                  nothing was answered or added
+     */
+    public function answerQuestions(string $id, array $answers, string $more, Viewer $viewer, string $busy = 'Ghostwriter is still working on the last message.', string $skipped = 'skipped', string $also = 'Also:'): Session
+    {
+        return $this->locked($id, $viewer, function (Session $session, DateTimeImmutable $now) use ($answers, $more, $viewer, $busy, $skipped, $also) {
+            if ($session->isWorking() && ! $session->isStale($this->options, $now)) {
+                throw $this->busy($session, $viewer, $busy);
+            }
+
+            $last = $session->lastMessage();
+            $asks = ($last['role'] ?? null) === 'assistant' ? Asks::fromMessage($last) : null;
+
+            if ($asks === null) {
+                throw new Conflict('Those questions have been answered already.');
+            }
+
+            if ($asks->unanswered($answers, $more)) {
+                throw new Conflict('Answer at least one question, or ask for the draft as it is.');
+            }
+
+            if (! $session->claim($viewer->id, $this->options, $now)) {
+                throw $this->busy($session, $viewer, $busy);
+            }
+
+            $reply = $asks->reply($answers, $more, $skipped, $also);
+            $session->addMessage('user', $reply['content'], $viewer->id, $reply['extra'], $now);
         });
     }
 
