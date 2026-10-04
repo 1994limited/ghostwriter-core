@@ -179,7 +179,7 @@ final class HeadingFixer
      * between a tight list's items). A removed block's own lines go.
      *
      * @param  list<string>  $lines
-     * @param  list<Block>  $blocks
+     * @param  array<int, Block>  $blocks
      */
     private static function assemble(array $lines, array $blocks): string
     {
@@ -212,7 +212,7 @@ final class HeadingFixer
     }
 
     /**
-     * @param  list<Block>  $blocks
+     * @param  array<int, Block>  $blocks
      */
     private static function next(array $blocks, int $i): ?int
     {
