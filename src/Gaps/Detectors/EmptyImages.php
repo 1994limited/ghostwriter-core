@@ -23,8 +23,10 @@ use NineteenNinetyFour\Ghostwriter\Core\Images\Placeholders;
  * - `required`: the CMS requires it;
  * - `prominent`: it is the page's prominent image: in the block type the
  *   template prints the page's `h1` from (the render profile), or, where
- *   there are too few published entries to go by, a top-level image whose
- *   name says so ("Hero image", "Banner", "Cover photo");
+ *   the group's published entries were looked at and are too few to go by,
+ *   a top-level image whose name says so ("Hero image", "Banner", "Cover
+ *   photo"). Without a pattern at all (a context that didn't look, such
+ *   as Suggest edits' checks), a name alone is nothing;
  * - `siblings`: at least SHARE of the group's newest published entries
  *   (FillRates, at least SIBLINGS_KNOWN of them) fill it;
  * - `draft`: the draft left it for a person.
@@ -95,7 +97,7 @@ final class EmptyImages implements Detector
             $visit->field->required => 'required',
             self::rendersAtTop($context, $visit) => 'prominent',
             $known && $context->fillRate($visit->rateKey) >= self::SHARE => 'siblings',
-            ! $known && self::namedHero($visit) => 'prominent',
+            $context->pattern !== null && ! $known && self::namedHero($visit) => 'prominent',
             $context->session->expects($visit->path, $visit->label) => 'draft',
             default => null,
         };

@@ -4,6 +4,10 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
+### Changed (a hero-like name needs the group looked at)
+
+- **`EmptyImages`' name rule applies only where the group's published entries were looked at** (`GapContext::$pattern` given) and are too few to go by. A context without a pattern, such as Suggest edits' checks, no longer prompts for an optional image on its name alone.
+
 ### Added (SEO layer: inherited SEO values, noindex and the site name)
 
 - **`Gaps\SeoSource`, `SeoField::$source`:** where the text a page prints comes from: `Custom`, `Field` (another field's text), `Default` (a section's or site's fixed text), `Template` (Antlers or Twig core can't evaluate) or `Disabled`. `SeoField::inherited()`, `isEmpty()` and `checkable()`. The constructor's new last argument defaults from the others, so existing calls are unchanged.

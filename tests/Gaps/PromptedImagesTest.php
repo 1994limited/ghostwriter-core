@@ -109,8 +109,10 @@ class PromptedImagesTest extends TestCase
         $this->assertSame('prominent', $gaps[0]->meta['why']);
         $this->assertSame('Hero image is the page\'s main image, and it\'s empty. Add one?', $gaps[0]->message()->english());
 
-        $none = GapFinder::standard()->find($this->context(['body' => self::BODY]))->all();
-        $this->assertSame(['image-empty|heroImage||0'], array_map(fn (Gap $gap) => $gap->id, $none), 'No pattern at all: the name is all there is.');
+        $empty = GapFinder::standard()->find($this->context(['body' => self::BODY], pattern: new Pattern))->all();
+        $this->assertSame(['image-empty|heroImage||0'], array_map(fn (Gap $gap) => $gap->id, $empty), 'No published entries yet: the name is all there is.');
+
+        $this->assertSame([], GapFinder::standard()->find($this->context(['body' => self::BODY]))->all(), 'No pattern at all: nobody looked, so a name alone is nothing.');
     }
 
     public function test_hero_like_names(): void
@@ -118,7 +120,7 @@ class PromptedImagesTest extends TestCase
         $named = function (string $handle, string $label): bool {
             $schema = new Schema([new Field($handle, Kind::Reference, $label, files: true, meta: ['images' => true]), new Field('body', Kind::RichText, 'Body')]);
 
-            return GapFinder::standard()->find(new GapContext(schema: $schema, entry: new EntryData(['body' => self::BODY])))->count() === 1;
+            return GapFinder::standard()->find(new GapContext(schema: $schema, entry: new EntryData(['body' => self::BODY]), pattern: new Pattern))->count() === 1;
         };
 
         $this->assertTrue($named('heroImage', 'Hero image'));
