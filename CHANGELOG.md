@@ -4,6 +4,17 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
+### Changed (structured output for more Studio calls)
+
+- **The kind finder, the planner, the brief writer and filler, the reworder and the gap filler use structured output.** Each call carries its reply's schema; where the model is held to it (docs/providers.md#structured-output) the reply is read from `TextResponse::$structured`, and elsewhere from the tags and YAML as before. See docs/studio.md#structured-output.
+  - `kind-finder`: `Studio::kindsSchema()`: `{kinds: [{why, title, description, examples}]}`, the evidence first, `examples` an enum of the sample IDs shown. An empty list is nothing to add.
+  - `planner`: `Studio::ideasSchema()`: `{ideas: [{why, title, <group key>, type, notes}]}`, the group key the vocabulary's (`collection`, `section`, `resource`) with an enum of the groups' handles; an empty `type` is none.
+  - `brief-writer` and `brief-filler`: `Studio::briefSchema()`, built per kind: `{title?, answers: {<key>: string}}` with every answer required (an empty string for nothing), so a long brief stays within Claude's 24 optional fields; a question with options is an enum of them plus `""`. `Studio::briefKeys()` turns each handle into a safe property name (`what-to-avoid` is `what_to_avoid`), which the structured prompt lists, and maps the answers back.
+  - `reworder`: `resources/schemas/reworder-reply.json`, `{versions: [string, string]}`.
+  - `gap-filler`: `resources/schemas/gap-filler-reply.json`, `{result}`.
+- **Every one of them asks once more when a reply can't be read** (and wasn't cut off), with the problem quoted after the same prompt, as the reviewer and verifier do. The log says "…could not be read (…); asking again once." and, still unreadable, "…could not be read again (…).". A reworder reply with no version counts as unreadable.
+- **Prompts choose their reply format.** `{{# tagged }}…{{/ tagged }}` and `{{# structured }}…{{/ structured }}` mark the parts for a model only asked for tags and YAML, and for one held to a schema. `Studio::prompt($name, $structured = false)` and `Studio::replyFormat($text, $structured)` keep one; the tagged rendering is each addon's prompt exactly, as before. An override without the markers is used as it is.
+
 ### Added (structured output)
 
 - **Provider-native structured output.** A `TextRequest` may carry an `OutputSchema` (`new TextRequest(..., schema: $schema)`, `withSchema()`): the JSON Schema its reply must match. Each provider holds the model to it where it can, and keeps today's prompt-and-parse path where it can't. See docs/providers.md#structured-output.

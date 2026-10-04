@@ -102,13 +102,15 @@ class WritingJobsTest extends StudioTestCase
 
     public function test_the_brief_writer_lists_the_questions_and_the_existing_titles(): void
     {
+        $this->fake->withoutStructuredOutput(); // The tagged prompt, as the addons sent it.
+
         $this->fake->respond('brief-writer', self::reply("<brief>\nwhat: A new kiln\nwhen: 2026\nwho: [a, list]\nextra: ignored\n</brief>", 3, 4));
 
         $brief = $this->studio()->draftBrief($this->kind(), 'Kiln opening', "  Opens in May.  \n", ['Old kiln', 'Mill']);
 
         $request = $this->sent('brief-writer');
         $this->assertSame("Working title: Kiln opening\n\nNotes:\nOpens in May.", $request->prompt);
-        $this->assertSame(strtr($this->library()->get('brief-writer'), [
+        $this->assertSame(strtr(Studio::replyFormat($this->library()->get('brief-writer'), false), [
             '{{ type_title }}' => 'Project',
             '{{ type_description }}' => 'One project, start to finish.',
             '{{ type_guidance }}' => 'Lead with the outcome.',

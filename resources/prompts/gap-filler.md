@@ -16,6 +16,6 @@ You finish one small piece of a web page for an editor, who has just pressed a b
 
 ## How you answer
 
-<result>
+{{# tagged }}<result>
 Your text, and nothing else.
-</result>
+</result>{{/ tagged }}{{# structured }}Your text as the `result` of the JSON you are given the shape of, and nothing else in it.{{/ structured }}
