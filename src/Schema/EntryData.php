@@ -26,6 +26,9 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Schema;
  * itself, and to name it as an example), its title as a person would know
  * it, and the page it sits under, if any. An adapter leaves the parent out
  * when it is the site's home page, which every top-level page sits under.
+ * Its group (a collection, section or resource handle) and site handle,
+ * where the adapter gives them, say whose defaults apply to it (an SEO
+ * addon's section and site defaults: SeoFields).
  */
 final class EntryData
 {
@@ -38,7 +41,19 @@ final class EntryData
         private readonly ?string $title = null,
         public readonly int|string|null $parentId = null,
         public readonly ?string $parentTitle = null,
+        public readonly ?string $group = null,
+        public readonly ?string $site = null,
     ) {}
+
+    /**
+     * The same entry, in the same place, with other values.
+     *
+     * @param  array<string, mixed>  $values
+     */
+    public function withValues(array $values): self
+    {
+        return new self($values, $this->id, $this->title, $this->parentId, $this->parentTitle, $this->group, $this->site);
+    }
 
     /**
      * The entry's title: as given, or the `title` value.

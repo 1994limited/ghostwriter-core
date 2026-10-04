@@ -54,6 +54,9 @@ use NineteenNinetyFour\Ghostwriter\Core\Gaps\Walk;
  *   page order; `page-share`: the model's own suggestions would change
  *   more than PAGE_SHARE of the page's words.
  * - `verifier`: dropped by the second pass (verify()).
+ * - `inherited`: a new SEO value where the page inherits one that fits
+ *   (another field's text, a section's default: SeoSource), which stays
+ *   as the site set it up.
  *
  * A source the model claims that can't be shown (a voice guide heading
  * that isn't one, an entry it wasn't shown) becomes `general`, and the
@@ -65,7 +68,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Gaps\Walk;
  */
 final class SuggestionValidator
 {
-    public const DROPS = ['unreadable', 'anchor', 'finding', 'declined', 'unanswered', 'scope', 'size', 'markers', 'link', 'facts', 'fit', 'claims', 'voice', 'dismissed', 'overlap', 'cap', 'page-share', 'verifier'];
+    public const DROPS = ['unreadable', 'anchor', 'finding', 'declined', 'unanswered', 'scope', 'size', 'markers', 'link', 'facts', 'fit', 'claims', 'voice', 'dismissed', 'overlap', 'cap', 'page-share', 'verifier', 'inherited'];
 
     public const SHORT_FIELD = 120;
 
@@ -408,8 +411,16 @@ final class SuggestionValidator
             return $problems[0];
         }
 
-        if ($category === Category::Seo && ($limit = $this->seoLimit($anchor, $input)) !== null && mb_strlen($replacement) > $limit) {
+        $seo = $this->seoAt($anchor, $input);
+
+        if ($category === Category::Seo && $seo !== null && mb_strlen($replacement) > $seo->limit) {
             return 'size';
+        }
+
+        // An SEO value the page inherits (another field's text, a section's
+        // default) that fits stays as the site set it up (decision 11).
+        if ($seo !== null && $seo->inherited() && $seo->checkable() && ! $seo->isEmpty() && ! $seo->tooLong()) {
+            return 'inherited';
         }
 
         return $this->fits($category, $anchor, $replacement, $input) ? null : 'fit';
@@ -695,13 +706,13 @@ final class SuggestionValidator
         return false;
     }
 
-    private function seoLimit(Anchor $anchor, ReviewInput $input): ?int
+    private function seoAt(Anchor $anchor, ReviewInput $input): ?SeoField
     {
         $context = $input->context->gaps;
 
         foreach ($context->seo?->in($context->schema, $context->entry) ?? [] as $field) {
             if ($field instanceof SeoField && $field->path->equals($anchor->path)) {
-                return $field->limit;
+                return $field;
             }
         }
 

@@ -5,6 +5,7 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Tests\Suggest;
 use DateTimeImmutable;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\GapContext;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\PlainSeoFields;
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\SeoFields;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Testing\MemoryAssetAlt;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Testing\MemoryAssets;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Testing\MemoryLinkTargets;
@@ -70,7 +71,7 @@ final class Northfold
         return new EntryRef('pages', 'services', 'default');
     }
 
-    public static function context(?EntryData $entry = null, ?Quieted $quieted = null, ?EntryIndex $index = null, ?string $now = null, ?SuggestOptions $options = null, ?AgePolicy $age = null, string $updated = self::UPDATED): CheckContext
+    public static function context(?EntryData $entry = null, ?Quieted $quieted = null, ?EntryIndex $index = null, ?string $now = null, ?SuggestOptions $options = null, ?AgePolicy $age = null, string $updated = self::UPDATED, ?SeoFields $seo = null): CheckContext
     {
         $assets = new MemoryAssets;
 
@@ -83,7 +84,7 @@ final class Northfold
                 assets: $assets,
                 targets: new MemoryLinkTargets(['e12' => ['title' => 'A walled garden in Corbridge, two years on', 'slug' => 'walled-garden-corbridge', 'url' => '/journal/walled-garden-corbridge']]),
                 alt: new MemoryAssetAlt,
-                seo: new PlainSeoFields,
+                seo: $seo ?? new PlainSeoFields,
             ),
             now: new DateTimeImmutable($now ?? self::NOW),
             updatedAt: new DateTimeImmutable($updated),

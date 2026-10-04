@@ -8,6 +8,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Domain\Stock\AssetRef;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Gap;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\GapFinder;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\GapKind;
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\GapReport;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\LinkTarget;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Message;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\SeoField;
@@ -95,7 +96,7 @@ final class Findings
 
     public function report(CheckContext $context): FindingReport
     {
-        $gaps = $this->gaps->find($context->gaps);
+        $gaps = $this->withoutFilledSeo($this->gaps->find($context->gaps), $context);
         $found = [];
 
         foreach ($this->checks as $check) {
@@ -121,6 +122,31 @@ final class Findings
         }
 
         return new FindingReport($this->inFormOrder(array_values($kept), $context), $gaps);
+    }
+
+    /**
+     * The gaps without an "expected" one on an SEO field the page fills
+     * all the same: one inheriting another field's text or a section's
+     * default, or filled by a template, or switched off. It's neither a
+     * suggestion nor an empty field in the revisit list (decision 11).
+     */
+    private function withoutFilledSeo(GapReport $gaps, CheckContext $context): GapReport
+    {
+        $expected = $gaps->ofKind(GapKind::Expected);
+        $seo = $expected === [] ? [] : ($context->gaps->seo?->in($context->gaps->schema, $context->gaps->entry) ?? []);
+        $filled = [];
+
+        foreach ($seo as $field) {
+            if (! $field->isEmpty()) {
+                $filled[$field->path->toString()] = true;
+            }
+        }
+
+        if ($filled === []) {
+            return $gaps;
+        }
+
+        return new GapReport(array_values(array_filter($gaps->all(), fn (Gap $gap) => $gap->kind !== GapKind::Expected || ! isset($filled[$gap->path->toString()]))));
     }
 
     /** A Finish gap that is also a suggestion, as a finding; null for the rest. */
@@ -179,17 +205,21 @@ final class Findings
             'label' => $gap->label,
             'length' => is_int($gap->meta['length'] ?? null) ? $gap->meta['length'] : 0,
             'limit' => is_int($gap->meta['limit'] ?? null) ? $gap->meta['limit'] : 0,
-        ]), array_intersect_key($gap->meta, array_flip(['role', 'limit', 'length', 'writable', 'inheritsFrom'])));
+        ]), array_intersect_key($gap->meta, array_flip(['role', 'limit', 'length', 'writable', 'inheritsFrom', 'source'])));
     }
 
-    /** An empty SEO description most pages like this fill. */
+    /**
+     * An empty SEO description most pages like this fill: one the page
+     * prints nothing for, not one it inherits text for (a fallback field,
+     * a section's default) or one a template fills.
+     */
     private function emptySeo(Gap $gap, CheckContext $context): ?Finding
     {
         $seo = $context->gaps->seo?->in($context->gaps->schema, $context->gaps->entry) ?? [];
         $field = null;
 
         foreach ($seo as $candidate) {
-            if ($candidate->path->equals($gap->path) && $candidate->role === SeoField::DESCRIPTION && $candidate->writable) {
+            if ($candidate->path->equals($gap->path) && $candidate->role === SeoField::DESCRIPTION && $candidate->writable && $candidate->isEmpty()) {
                 $field = $candidate;
             }
         }
@@ -203,6 +233,7 @@ final class Findings
         return Finding::make(Category::Seo, 'seo-empty', $anchor, Needs::Words, new Message('suggest.finding.seo-empty', ['label' => $gap->label]), [
             'role' => $field->role,
             'limit' => $field->limit,
+            'source' => $field->source->value,
         ]);
     }
 

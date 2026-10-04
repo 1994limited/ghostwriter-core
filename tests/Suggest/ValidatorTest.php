@@ -4,6 +4,12 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Tests\Suggest;
 
 use DateTimeImmutable;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Testing\FakeProvider;
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\FieldPath;
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\SeoField;
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\SeoFields;
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\TitleFormat;
+use NineteenNinetyFour\Ghostwriter\Core\Schema\EntryData;
+use NineteenNinetyFour\Ghostwriter\Core\Schema\Schema;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\Category;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\Quiet;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\Quieted;
@@ -269,5 +275,30 @@ final class ValidatorTest extends TestCase
         $review = $this->validate([['finding' => 'f6', 'category' => 'seo', 'unit' => 'u6', 'reason' => 'x', 'source' => ['kind' => 'finding'], 'replacement' => Northfold::SEO]]);
 
         $this->assertSame(['size' => 1], self::droppedOf($review));
+    }
+
+    public function test_no_seo_value_over_an_inherited_one_that_fits(): void
+    {
+        $inherited = new class implements SeoFields
+        {
+            public function in(Schema $schema, EntryData $entry): array
+            {
+                return [new SeoField(FieldPath::of('seo_description'), SeoField::DESCRIPTION, 'SEO description', 300, (string) $entry->get('seo_description'), true, 'Summary')];
+            }
+
+            public function noindex(Schema $schema, EntryData $entry): ?bool
+            {
+                return null;
+            }
+
+            public function titleFormat(Schema $schema, EntryData $entry): ?TitleFormat
+            {
+                return null;
+            }
+        };
+        $item = ['category' => 'seo', 'unit' => 'u6', 'quote' => '', 'reason' => 'Shorter.', 'source' => ['kind' => 'general'], 'replacement' => 'Planting plans, garden design and build across Northumberland, Durham and the Tyne Valley.'];
+
+        $this->assertSame(['inherited' => 1], self::droppedOf($this->validate([$item], ReviewCase::input(Northfold::context(seo: $inherited)))));
+        $this->assertArrayNotHasKey('inherited', self::droppedOf($this->validate([$item])), 'A value of the page\'s own may be rewritten.');
     }
 }
