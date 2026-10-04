@@ -45,11 +45,15 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
  * - `schema`: made up from the request's schema (SchemaFaker), with
  *   `merge` laid over it; in `merge`, `"$all"` for a list of set values
  *   gives every value the schema allows (up to its maxItems), `"$first"`
- *   the first;
+ *   the first, and a `"*"` key stands for every property of that object
+ *   it doesn't name (except those with set values);
  * - `fail`: the call throws a ProviderException with this message.
  *
  * Any reply may wait `delay` milliseconds first (at most 10000), so a test
- * can see a running state. An agent the file doesn't list is answered from
+ * can see a running state. When the folder has a `.requests` folder in it,
+ * each request is written there as a line of JSON (agent, prompt,
+ * instructions), in `<name with / as -->#<run>.jsonl`, for writing
+ * scenarios and reading failed tests. An agent the file doesn't list is answered from
  * its request's schema (`"fallback": "schema"`, the default) or fails
  * (`"fallback": "fail"`).
  */
@@ -134,6 +138,9 @@ final class FakeScenario
         $base = dirname($file);
         $prefix = 'ghostwriter-fake:'.$parsed['name'].'#'.$parsed['run'].':';
         $agents = (array) ($data['agents'] ?? []);
+        // With a .requests folder beside the scenarios, every request is written down there.
+        $root = (string) realpath($dir);
+        $log = is_dir($root.'/.requests') ? $root.'/.requests/'.str_replace('/', '--', $parsed['name']).'#'.$parsed['run'].'.jsonl' : null;
 
         foreach ($agents as $agent => $replies) {
             $replies = array_values(array_filter(is_array($replies) && array_is_list($replies) ? $replies : [$replies], 'is_array'));
@@ -142,8 +149,9 @@ final class FakeScenario
                 continue;
             }
 
-            $fake->respond((string) $agent, function (TextRequest $request) use ($replies, $next, $prefix, $base): string {
+            $fake->respond((string) $agent, function (TextRequest $request) use ($replies, $next, $prefix, $base, $log): string {
                 $index = min(max(0, $next($prefix.$request->agent)), count($replies) - 1);
+                self::record($log, $request, $index);
 
                 return self::answer($replies[$index], $request, $base);
             });
@@ -153,11 +161,36 @@ final class FakeScenario
 
         foreach (array_keys(Agents::MAX_TOKENS) as $agent) {
             if (! array_key_exists($agent, $agents)) {
-                $fake->respond($agent, fn (TextRequest $request) => self::answer($fallback, $request, $base));
+                $fake->respond($agent, function (TextRequest $request) use ($fallback, $base, $log): string {
+                    self::record($log, $request, null);
+
+                    return self::answer($fallback, $request, $base);
+                });
             }
         }
 
         return $fake;
+    }
+
+    /**
+     * One line of JSON per request, for writing scenarios and reading a failed test.
+     */
+    private static function record(?string $log, TextRequest $request, ?int $reply): void
+    {
+        if ($log === null) {
+            return;
+        }
+
+        $line = json_encode([
+            'agent' => $request->agent,
+            'reply' => $reply,
+            'schema' => $request->schema?->name,
+            'prompt' => $request->prompt,
+            'history' => count($request->history),
+            'instructions' => $request->instructions,
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+
+        @file_put_contents($log, $line."\n", FILE_APPEND | LOCK_EX);
     }
 
     /**
@@ -235,6 +268,19 @@ final class FakeScenario
         }
 
         $properties = is_array($node['properties'] ?? null) ? $node['properties'] : [];
+
+        // "*" stands for every property not named, apart from those with set values.
+        if (array_key_exists('*', $over)) {
+            foreach ($properties as $key => $property) {
+                $property = is_array($property) ? self::resolve($property, $root) : [];
+
+                if (! array_key_exists((string) $key, $over) && ! isset($property['enum']) && ! isset($property['const'])) {
+                    $over[(string) $key] = $over['*'];
+                }
+            }
+
+            unset($over['*']);
+        }
 
         foreach ($over as $key => $value) {
             $data[$key] = self::merge($data[$key] ?? null, $value, is_array($properties[$key] ?? null) ? $properties[$key] : [], $root);
