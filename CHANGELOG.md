@@ -11,6 +11,16 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
   - `Review` (threads, the next pin number, a version; `reanchor()`, and `send()`, `answer()`, `sendBack()` for a run), `Thread`, `Note`, `NoteKind`, `Change`, `Scope`, `ScopeKind`, `ThreadStatus` (Not sent, Revising, Changed, Replied, Resolved, Detached) and `ReviewRules`. Limits: 100 threads per piece, 30 notes per thread, 2000 characters per note, 12 threads per Apply.
 - **`Session::$review`**: the piece's comments (`Review::toArray()`), stored like `units`, under `review` (Filament: a JSON column the addon adds).
 - `SessionGuard::annotate()`: a change anyone who can see the piece may make whatever Ghostwriter is doing, under the session's lock.
+- **Suggest edits, the free checks (`Suggest\*`).** Deterministic checks over an entry's current values, with no model and no request. See docs/suggest-edits.md.
+  - `Findings::standard()->report(CheckContext)`: `FindingReport` (`findings` in form order, Finish's `gaps`, `leftovers()`, `emptyFields()`). `find()`, `without()`, `with()`, `checks()`.
+  - Checks (`Suggest\Checks\*`): `PastYears` (a past year written as current; history words and a year on its own left alone), `RelativeTime`, `ClosingDates` (in text, and date fields whose handle reads as an end), `StatedCounts` (counts and prices to recheck; a template with `{answer}`), `LongSentences` (a hint only), `EmptyLinkText`, `Overlaps` (5-word shingles against other entries).
+  - Phrase lists in English, German, French, Dutch and Spanish (`resources/suggest/phrases/*.php`, `Phrases::for()`), with dates read in each (`Dates`).
+  - `Finding`, `Category` (`isWording()`, `rank()`, `label()`, `speech()`), `Needs`, `Anchor` (a `FieldPath` and an `Anchor\TextQuote`, an asset, or a whole value; `key()`, `hash()`), `AnchorScope`, `CheckContext`, `CheckText`, `Check`, `EntryRef`, `Shingles`, `IndexedParagraph`, `DigestEntry`.
+  - Decisions that stick: `Quiet` and `Quieted`. "It's still right" and Dismiss last 12 months, or until the passage is edited.
+  - `SuggestOptions` (`claims`: the per-site claim-check switch) and `Revisit\AgePolicy` (a quarter weight in groups with a date field, with a switch per group).
+  - Ports: `Suggest\EntryIndex`, with `Testing\MemoryEntryIndex` and `Tests\Contracts\EntryIndexContract`.
+- **Finish this page: `MissingAlt` and `SeoLength` detectors**, in `GapFinder::standard()` as suggestions (never counted, never blocking). Ports `Gaps\AssetAlt` and `Gaps\SeoFields`, with `SeoField`, `PlainSeoFields`, `Testing\MemoryAssetAlt`, `Tests\Contracts\AssetAltContract` and `SeoFieldsContract`. `GapContext` gains `alt` and `seo` (named, optional): without them, neither detector finds anything, so Finish is unchanged until an addon passes them.
+- `resources/lang/en/suggest.php`. `Gaps\Message::english()` and `strings()` read any namespace with a file in `resources/lang/en/`; keys without one are `gaps` keys, as before.
 
 ### Changed
 

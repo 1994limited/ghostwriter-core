@@ -28,6 +28,9 @@ use NineteenNinetyFour\Ghostwriter\Core\Schema\Schema;
  *   brief, the answers and the draft: `ExtraSources::fromSession()->all()`).
  *   With them, a count whose list has since changed says so; without
  *   them, a count is only checked against its own list.
+ * - `alt` and `seo` (Suggest edits): an asset's alt text and the entry's
+ *   SEO values, for MissingAlt and SeoLength. Without them, neither finds
+ *   anything.
  *
  * Use named arguments: the order may grow.
  */
@@ -48,6 +51,8 @@ final class GapContext
         public readonly ?Pattern $pattern = null,
         public readonly SessionGaps $session = new SessionGaps,
         public readonly array $sources = [],
+        public readonly ?AssetAlt $alt = null,
+        public readonly ?SeoFields $seo = null,
     ) {}
 
     /** How often entries of this group fill this place, 0 when unknown. */
