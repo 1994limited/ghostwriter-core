@@ -196,9 +196,18 @@ final class Arranger
     public static function construct(string $type, array $pieces): string
     {
         if (preg_match('/^h([1-6])$/', $type, $m) === 1) {
+            $level = (int) $m[1];
+            $headings = array_filter($pieces, fn (Piece $piece) => $piece->kind === Piece::HEADING);
+
+            // Lead-ins turned to headings, each with its paragraph: a heading
+            // per lead-in at the construct's level, not one heading of it all.
+            if ($headings !== [] && count($headings) < count($pieces)) {
+                return Content::joinMarkdown(array_map(fn (Piece $piece) => $piece->kind === Piece::HEADING ? new Piece(Piece::HEADING, Content::plain($piece), $level) : $piece, $pieces));
+            }
+
             $text = trim(implode(' ', array_map(fn (Piece $piece) => Content::plain($piece), $pieces)));
 
-            return $text === '' ? '' : str_repeat('#', (int) $m[1]).' '.$text;
+            return $text === '' ? '' : str_repeat('#', $level).' '.$text;
         }
 
         return match (true) {
