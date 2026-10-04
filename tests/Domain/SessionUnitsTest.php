@@ -83,6 +83,24 @@ final class SessionUnitsTest extends TestCase
     }
 
     #[DataProvider('formats')]
+    public function test_the_seo_state_round_trips_and_is_left_out_until_there_is_some(Format $format): void
+    {
+        $session = Session::start($format, 'page', ['brief' => 'Winter care']);
+
+        $this->assertArrayNotHasKey('seo', $session->toArray(), 'a store with no place for it is never sent the key');
+
+        $session->seo = ['links' => [['unit' => 'u3', 'words' => 'tell us about your garden', 'href' => 'statamic://entry::contact', 'title' => 'Contact us', 'type' => 'Pages', 'url' => '/contact', 'why' => 'Get in touch.']], 'notice' => ['key' => 'seo.notice.links-one', 'params' => ['count' => 1, 'titles' => 'Contact us']], 'checked' => '2026-10-04T10:00:00Z'];
+        $stored = $session->toArray();
+        $back = Session::fromArray($stored, $format);
+
+        $this->assertSame($session->seo, $back->seo);
+        $this->assertSame($stored, $back->toArray());
+
+        $back->seo = [];
+        $this->assertArrayHasKey('seo', $back->toArray(), 'a record that had it can be emptied');
+    }
+
+    #[DataProvider('formats')]
     public function test_comments_are_conversation_messages_with_no_store_of_their_own(Format $format): void
     {
         $session = Session::start($format, 'page', ['brief' => 'Winter care']);

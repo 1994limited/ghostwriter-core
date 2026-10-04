@@ -58,6 +58,13 @@ enum GapKind: string
 
     case OffStyleImage = 'off-style-image';
 
+    /**
+     * A link to another page of the site that Ghostwriter's SEO pass added
+     * to the draft, still in the form: one to check (SEO layer §12). A
+     * suggestion, never blocking.
+     */
+    case LinksAdded = 'links-added';
+
     /** How much it matters, unless a detector says otherwise. */
     public function severity(): Severity
     {

@@ -5,6 +5,7 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Arrange;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\Pattern;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\EntryData;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Schema;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\LinkContext;
 use NineteenNinetyFour\Ghostwriter\Core\Seo\RenderProfile;
 
 /**
@@ -13,7 +14,9 @@ use NineteenNinetyFour\Ghostwriter\Core\Seo\RenderProfile;
  * PatternFinder::find() took them), the kind's own defaults, and the ids
  * of the examples the writer was shown (for entry sources), and how its
  * template prints headings (Seo\RenderProfile::resolve(); null for the
- * default: the title is the H1).
+ * default: the title is the H1), and, where the addon links drafts to the
+ * site's other pages, what the SEO pass needs for it (Seo\LinkContext;
+ * null: no links are added).
  */
 final class LayoutContext
 {
@@ -29,5 +32,6 @@ final class LayoutContext
         public readonly array $defaults = [],
         public readonly array $exampleIds = [],
         public readonly ?RenderProfile $profile = null,
+        public readonly ?LinkContext $links = null,
     ) {}
 }

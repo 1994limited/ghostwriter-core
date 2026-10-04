@@ -42,6 +42,8 @@ final class PromptLibrary
         'reviewer',
         'reworder',
         'scoped-edit',
+        'seo-editor',
+        'seo-verifier',
         'type-analyst',
         'verifier',
         'voice-analyst',

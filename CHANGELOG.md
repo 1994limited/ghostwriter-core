@@ -4,6 +4,21 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
+### Added (SEO layer: internal links, row 4)
+
+- **Links on a first draft** (`Seo\SeoLinks`, run by `SeoPass::afterWriter()` before units and the layout planner, so every layout carries them): where `LayoutContext::$links` (a new `Seo\LinkContext`: the link index, an `InlineLinks` dialect, group, site, page, kind, voice, locale) is given, one **`seo-editor`** call picks words and pages from the index's candidates (`Studio::seoEdit(SeoRequest)`, structured output with the units and targets as enums), **`Seo\LinkValidator`** checks every pick in code, and one **`seo-verifier`** call keeps or drops each link in its paragraph (`Studio::verifySeoLinks(LinkCheck)`). About one link per 250 words, 2 to 5, existing links counted, never forced. Both agents are on the writing tier, high effort, with cached instructions (`Agents`: 6,000 and 4,000 tokens).
+- **`Layout\InlineLinks::inlineHref()`** (a new interface beside `LinkDialect`): `StatamicLinks` `statamic://entry::id`, `CraftLinks` `{entry:12@1:url||/address}`, `NoLinks` none, and the new **`Layout\Links\FilamentLinks`** (the public address).
+- **`Seo\SeoState`** on the new **`Session::$seo`** (stored like `units`; Filament needs a JSON column): the links added, those removed, the notice, when links were looked for.
+- **`Seo\LinkGuard`**: after every writer turn (with a `LinkContext`), an address the writer wasn't given becomes a `#gw-link:` marker; a removed link stays removed.
+- **`SessionLayouts::afterWriter(…, $progress)`** says what is under way (`SeoPass::CHECKING`, `SessionLayouts::PLANNING`) and returns the SEO calls' tokens with the planner's; **`SessionLayouts::removeLink()`** and `SeoPass::removeLink()` for the Text tab's Remove link.
+- **`GapKind::LinksAdded`** and the **`AddedLinks`** detector (in `GapFinder::standard()`): "Check 3 links Ghostwriter added", one suggestion a link still in the form, Keep it · Remove the link; `SessionGaps::$links`. `Gap::message()` passes `title`, `url` and `count` from the meta.
+- Prompts `seo-editor` and `seo-verifier`, schemas `seo-editor-reply.json` and `seo-verifier-reply.json`, strings `resources/lang/en/seo.php` and the `links-added` gap strings.
+- **`LinkInsertContract`** for the addons.
+
+### Fixed
+
+- **`HtmlDialect::fromMarkdown()` keeps Craft reference tags in links** (`{entry:12@1:url||…}`), which CommonMark percent-encoded so Craft didn't resolve them. `LinkCandidates::linkKey()` reads CKEditor's in-editor form of one (`…#entry:12@1:url`).
+
 ### Added (SEO layer: the link index, row 3)
 
 - **Link rows** (decision 9): the entry index can hold every routable page of a site, not only Ghostwriter's own groups. `Suggest\IndexRow` (title, address, summary, type, kind, live dates, noindex, key page, link reference, stems, published, updated, indexed; `make()`, `toArray()`, `fromArray()`, `digest()`), `Suggest\IndexScope` (`Full`, `Link`) and `Suggest\RowKind` (`Entry`, `Term`, `Category`, `Record`).

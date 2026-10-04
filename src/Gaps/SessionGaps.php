@@ -4,6 +4,7 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Gaps;
 
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Sessions\Session;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\BuiltEntry;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\SeoState;
 
 /**
  * The gap list a session keeps from the moment a draft was applied
@@ -17,6 +18,10 @@ use NineteenNinetyFour\Ghostwriter\Core\Layout\BuiltEntry;
  *
  * Each entry is `{kind, path?, label?, hint?, reason?}`, with `kind` one of
  * GapKind's values or `place` (a reference still to choose).
+ *
+ * It also carries the links the SEO pass added to the session's draft
+ * (Seo\SeoState::$links), so Finish this page can ask the editor to check
+ * them (Detectors\AddedLinks).
  */
 final class SessionGaps
 {
@@ -29,11 +34,17 @@ final class SessionGaps
     /** @var list<array{kind: string, path: string|null, label: string|null, hint: string|null, reason: string|null}> */
     public readonly array $entries;
 
+    /** @var list<array{unit: string, words: string, href: string, title: string, type: string, url: ?string, why: string}> The links the SEO pass added. */
+    public readonly array $links;
+
     /**
      * @param  array<int, mixed>  $entries
+     * @param  array<int, mixed>  $links  Seo\SeoState::$links.
      */
-    public function __construct(array $entries = [])
+    public function __construct(array $entries = [], array $links = [])
     {
+        $this->links = SeoState::fromArray(['links' => $links])->links;
+
         $clean = [];
 
         foreach ($entries as $entry) {
@@ -55,7 +66,7 @@ final class SessionGaps
 
     public static function fromSession(Session $session): self
     {
-        return new self($session->gaps);
+        return new self($session->gaps, SeoState::of($session)->links);
     }
 
     /**
@@ -155,7 +166,7 @@ final class SessionGaps
 
     public function isEmpty(): bool
     {
-        return $this->entries === [];
+        return $this->entries === [] && $this->links === [];
     }
 
     /**

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/1994limited/ghostwriter-core/resources/schemas/seo-editor-reply.json",
+  "title": "Ghostwriter seo-editor reply (structured output)",
+  "description": "The links chosen from a new page to other pages of its site. The unit and target enums are filled for each call.",
+  "type": "object",
+  "required": ["notes", "links"],
+  "additionalProperties": false,
+  "properties": {
+    "notes": {"type": "string", "maxLength": 600, "description": "First: one or two sentences for yourself on what the page is about, who reads it, and which of the site's pages are genuinely related. Never shown to the editor."},
+    "links": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["unit", "exact", "prefix", "target", "hint", "why"],
+        "additionalProperties": false,
+        "properties": {
+          "unit": {"type": "string", "enum": ["u1"], "description": "The unit the words are in: one marked \"links allowed\"."},
+          "exact": {"type": "string", "maxLength": 80, "description": "2 to 8 words copied exactly from that unit, to become the link's words."},
+          "prefix": {"type": "string", "maxLength": 40, "description": "Up to 32 characters just before the words, only when they appear twice in the unit; otherwise empty."},
+          "target": {"type": "string", "enum": ["e1", ""], "description": "The page to link to (e1, e2…), or empty for a link only the editor can choose."},
+          "hint": {"type": "string", "maxLength": 60, "description": "Only with an empty target: a few hyphenated words saying where it should go. Otherwise empty."},
+          "why": {"type": "string", "maxLength": 200, "description": "One short sentence on why a reader would want that page there."}
+        }
+      }
+    }
+  }
+}

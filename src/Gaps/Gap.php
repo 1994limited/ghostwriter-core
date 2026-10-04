@@ -85,7 +85,7 @@ final class Gap
             $params['excerpt'] = $this->excerpt;
         }
 
-        foreach (['words', 'library', 'list', 'newCount', 'newValue', 'group'] as $key) {
+        foreach (['words', 'library', 'list', 'newCount', 'newValue', 'group', 'title', 'url', 'count'] as $key) {
             if (is_scalar($this->meta[$key] ?? null)) {
                 $params[$key] = $this->meta[$key];
             }

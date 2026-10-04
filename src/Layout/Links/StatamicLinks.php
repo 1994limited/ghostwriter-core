@@ -3,9 +3,11 @@
 namespace NineteenNinetyFour\Ghostwriter\Core\Layout\Links;
 
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Markers;
+use NineteenNinetyFour\Ghostwriter\Core\Layout\InlineLinks;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\LinkDialect;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\LinkPlaceholders;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Field;
+use NineteenNinetyFour\Ghostwriter\Core\Suggest\DigestEntry;
 
 /**
  * Statamic's links: a `link` field holds a URL or `entry::id` string, an
@@ -18,8 +20,12 @@ use NineteenNinetyFour\Ghostwriter\Core\Schema\Field;
  * to choose". Entries to pick can't be stood in for. With the sentinel
  * (placeholderFor()) the field holds `#gw-link:<hint>`, as the fieldtype
  * stores any string.
+ *
+ * An inline link to another page (inlineHref()) is `statamic://entry::id`,
+ * as Bard's link picker stores it; a taxonomy term, which Bard links only
+ * by address, is its address.
  */
-final class StatamicLinks implements LinkDialect, LinkPlaceholders
+final class StatamicLinks implements InlineLinks, LinkDialect, LinkPlaceholders
 {
     use MarksLinks;
 
@@ -59,6 +65,25 @@ final class StatamicLinks implements LinkDialect, LinkPlaceholders
     public function toSelf(int|string $id): string
     {
         return "entry::{$id}";
+    }
+
+    public function inlineHref(DigestEntry $entry): ?string
+    {
+        $link = is_string($entry->link) ? trim($entry->link) : '';
+
+        if (preg_match('#^(?:statamic://)?entry::([^\s()]+)$#', $link, $m) === 1) {
+            return 'statamic://entry::'.$m[1];
+        }
+
+        return self::address($link !== '' ? $link : $entry->url);
+    }
+
+    /** An address that can stand in a markdown link: a site path or a web address. */
+    private static function address(?string $address): ?string
+    {
+        $address = trim((string) $address);
+
+        return preg_match('#^(?:https?://[^\s()<>]+|/[^\s()<>]*)$#i', $address) === 1 ? $address : null;
     }
 
     public function placeholder(Field $field, array $siblings): ?array

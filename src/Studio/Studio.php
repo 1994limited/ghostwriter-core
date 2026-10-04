@@ -28,6 +28,9 @@ use NineteenNinetyFour\Ghostwriter\Core\Gaps\Markers;
 use NineteenNinetyFour\Ghostwriter\Core\Prompts\PromptLibrary;
 use NineteenNinetyFour\Ghostwriter\Core\Review\RevisionReply;
 use NineteenNinetyFour\Ghostwriter\Core\Review\RevisionRequest;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\LinkCheck;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\SeoReply;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\SeoRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\AnchorScope;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\Phrases;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\ReviewInput;
@@ -913,6 +916,121 @@ final class Studio
             '{{ reply_language }}' => self::languageName($input->replyLanguage),
             ...$this->answerFormat('verifier', self::verifierSchema(), 'verdicts'),
         ]));
+    }
+
+    /**
+     * The SEO pass's `seo-editor` call, links part (SEO layer §8): one
+     * call that reads the draft by unit and picks the words to link to the
+     * site's other pages (SeoRequest's candidates, e1…). The units and the
+     * targets are enums in the schema, so nothing else can be named. The
+     * reply is read, not trusted: Seo\LinkValidator checks every pick.
+     *
+     * The instructions (the rules and the voice guide) are the same for
+     * every call on a site, so they are cached (Agents::CACHED). A reply
+     * that can't be read gives no links, with a warning.
+     *
+     * @return Result<SeoReply>
+     *
+     * @throws ProviderException
+     */
+    public function seoEdit(SeoRequest $request): Result
+    {
+        $schema = $request->schema(self::schema('seo', 'seo-editor-reply.json'));
+        $prompt = $request->prompt()."\n\nWrite `notes` and each `why` in ".self::languageName($request->language).'.';
+
+        [$response, $reply] = $this->askStructured('seo-editor', $prompt, $schema, function (TextResponse $response): array {
+            $data = $response->structured ?? self::taggedJson($response->text, 'seo');
+
+            return is_array($data) && is_array($data['links'] ?? null)
+                ? [SeoReply::fromArray($data), null]
+                : [new SeoReply, $response->structured !== null ? 'there was no "links" list' : 'there was no <seo> with a "links" list'];
+        }, "the seo-editor's reply couldn't be read", instructions: $this->seoEditorInstructions($request->voice, $schema));
+
+        return new Result($reply instanceof SeoReply ? $reply : new SeoReply, $response->usage);
+    }
+
+    /**
+     * The `seo-editor` call's instructions: the link rules and the voice
+     * guide. The same for every call on a site.
+     */
+    public function seoEditorInstructions(string $voice, ?OutputSchema $schema = null): string
+    {
+        $schema ??= self::schema('seo', 'seo-editor-reply.json');
+
+        return self::tidy(strtr($this->prompt('seo-editor'), [
+            '{{ voice }}' => trim($voice) !== '' ? trim($voice) : 'No voice guide has been written yet. Judge by the page itself.',
+            ...$this->answerFormat('seo-editor', $schema, 'seo'),
+        ]));
+    }
+
+    /**
+     * The SEO pass's `seo-verifier` call (SEO layer §8.3, decision 10):
+     * each link LinkValidator kept, in its paragraph, kept or dropped. It
+     * never rewrites. Returns the links to drop, by id (l1…), with why; a
+     * link with no verdict is kept. A reply that can't be read drops
+     * nothing, with a warning: the links already passed every check in code.
+     *
+     * @return Result<array<string, string>>
+     *
+     * @throws ProviderException
+     */
+    public function verifySeoLinks(LinkCheck $check): Result
+    {
+        if ($check->links === []) {
+            return new Result([]);
+        }
+
+        $schema = $check->schema(self::schema('seo-verdicts', 'seo-verifier-reply.json'));
+        $prompt = $check->prompt()."\n\nWrite each `reason` in ".self::languageName($check->language).'.';
+
+        [$response, $verdicts] = $this->askStructured('seo-verifier', $prompt, $schema, function (TextResponse $response): array {
+            $data = $response->structured ?? self::taggedJson($response->text, 'verdicts');
+
+            if (! is_array($data) || ! is_array($data['verdicts'] ?? null)) {
+                return [null, $response->structured !== null ? 'there was no "verdicts" list' : 'there was no <verdicts> with a "verdicts" list'];
+            }
+
+            $drop = [];
+
+            foreach ($data['verdicts'] as $verdict) {
+                if (is_array($verdict) && is_string($verdict['id'] ?? null) && ($verdict['verdict'] ?? null) === 'drop') {
+                    $drop[$verdict['id']] = is_scalar($verdict['reason'] ?? null) ? trim((string) $verdict['reason']) : '';
+                }
+            }
+
+            return [$drop, null];
+        }, "the seo-verifier's reply couldn't be read", instructions: $this->seoVerifierInstructions($schema));
+
+        $drop = [];
+
+        foreach (is_array($verdicts) ? $verdicts : [] as $id => $why) {
+            $drop[(string) $id] = is_string($why) ? $why : '';
+        }
+
+        return new Result($drop, $response->usage);
+    }
+
+    /** The `seo-verifier` call's instructions: the same for every call. */
+    public function seoVerifierInstructions(?OutputSchema $schema = null): string
+    {
+        $schema ??= self::schema('seo-verdicts', 'seo-verifier-reply.json');
+
+        return self::tidy(strtr($this->prompt('seo-verifier'), $this->answerFormat('seo-verifier', $schema, 'verdicts')));
+    }
+
+    /**
+     * The JSON object in `<tag>…</tag>` of a tagged reply, or anywhere in
+     * it; null when there is none.
+     *
+     * @return array<string, mixed>|null
+     */
+    private static function taggedJson(string $text, string $tag): ?array
+    {
+        if (preg_match('/<'.$tag.'>\s*(\{.*\})\s*(?:<\/'.$tag.'>|$)/s', $text, $m) === 1 && is_array($data = json_decode($m[1], true))) {
+            return $data;
+        }
+
+        return JsonReply::decode($text);
     }
 
     /**
