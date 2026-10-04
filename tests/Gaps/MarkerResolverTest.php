@@ -108,4 +108,32 @@ class MarkerResolverTest extends TestCase
         $this->assertFalse($inline['whole']);
         $this->assertSame('Or [write to us](/contact).', MarkerResolver::apply($inline['text'], $inline, '/contact'));
     }
+
+    public function test_a_link_for_a_field_the_draft_doesnt_hold_is_chosen_by_hint_and_put_in_where_built(): void
+    {
+        $data = MarkerResolver::chooseLink(['title' => 'Winter'], 'Button  link', 'entry::abc', '/about');
+        $data = MarkerResolver::chooseLink($data, 'contact-page', 'entry::def', '/contact');
+
+        $this->assertSame(['button link' => ['link' => 'entry::abc', 'url' => '/about'], 'contact page' => ['link' => 'entry::def', 'url' => '/contact']], $data[MarkerResolver::CHOSEN_LINKS]);
+
+        $chosen = MarkerResolver::chosenLinks($data);
+        $built = [
+            'hero' => ['button_link' => '#gw-link:button-link', 'other' => '#gw-link:something-else'],
+            'craft' => ['type' => 'url', 'value' => 'https://example.com/#gw-link:button-link'],
+            'bard' => [['type' => 'text', 'marks' => [['type' => 'link', 'attrs' => ['href' => '#gw-link:contact-page']]]]],
+            'html' => '<p><a href="https://example.com/#gw-link:contact-page">Us</a> and [x](#gw-link:nope)</p>',
+        ];
+
+        $this->assertSame([
+            'hero' => ['button_link' => 'entry::abc', 'other' => '#gw-link:something-else'],
+            'craft' => ['type' => 'url', 'value' => 'entry::abc'],
+            'bard' => [['type' => 'text', 'marks' => [['type' => 'link', 'attrs' => ['href' => '/contact']]]]],
+            'html' => '<p><a href="/contact">Us</a> and [x](#gw-link:nope)</p>',
+        ], MarkerResolver::withChosenLinks($built, $chosen));
+
+        // Addresses only (Craft's link fields take a URL).
+        $this->assertSame('/about', MarkerResolver::withChosenLinks($built, $chosen, references: false)['craft']['value']);
+        $this->assertSame($built, MarkerResolver::withChosenLinks($built, []));
+        $this->assertSame([], MarkerResolver::chosenLinks(['gw_links' => 'nonsense']));
+    }
 }
