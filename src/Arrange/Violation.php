@@ -52,6 +52,9 @@ final class Violation
     /** The same layout as an earlier plan. */
     public const SAME = 'same';
 
+    /** Headings made (lead-in-to-heading, heading-level, an hN construct) in a field whose editor shows none. */
+    public const NO_HEADINGS = 'no-headings-here';
+
     /** Building the entry from it says something is wrong. */
     public const ROUND_TRIP = 'round-trip';
 

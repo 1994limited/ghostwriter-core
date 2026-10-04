@@ -15,6 +15,8 @@ use NineteenNinetyFour\Ghostwriter\Core\Layout\Pattern;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Field;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Kind;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Schema;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\HeadingPolicy;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\RenderProfile;
 
 /**
  * What the layout planner is shown (Studio::planLayouts()): the draft's
@@ -32,6 +34,7 @@ final class LayoutBrief
     /**
      * @param  list<array{id: string, field: string, sequence: list<string>, count: int, share: float, example: string, exampleId: int|string|null}>  $patterns  Arrange\SitePatterns::find().
      * @param  array<string, array{headings: float, lists: float, quotes: float, entries: int}>  $profile  Arrange\SitePatterns::profile().
+     * @param  RenderProfile|null  $render  How the template prints headings, for each rich-text field's real levels; null for the default.
      */
     public function __construct(
         public readonly Units $units,
@@ -42,6 +45,7 @@ final class LayoutBrief
         public readonly Plan $writer,
         public readonly int $count = 2,
         public readonly ?Pattern $pattern = null,
+        public readonly ?RenderProfile $render = null,
     ) {}
 
     public function prompt(): string
@@ -114,7 +118,8 @@ final class LayoutBrief
                 array_push($lines, ...$this->sets($field, 1));
             } elseif (Plans::isMarkdown($field)) {
                 $sets = array_keys(array_filter($field->sets, fn ($set) => true));
-                $lines[] = "{$field->handle}: rich text. Constructs: text, p, h2–h6, list, quote".($sets !== [] ? ', '.implode(', ', array_map(fn ($set) => "set:{$set}", $sets)) : '').'.'.(isset($this->profile[$field->handle]) ? ' The site\'s own: '.$this->profile[$field->handle]['headings'].' headings per 100 words, '.round($this->profile[$field->handle]['lists'] * 100).'% list items, '.round($this->profile[$field->handle]['quotes'] * 100).'% quotes.' : '');
+                $headings = HeadingPolicy::for($field, $this->render)->constructs();
+                $lines[] = "{$field->handle}: rich text. Constructs: text, p, ".($headings !== '' ? $headings.', ' : '').'list, quote'.($sets !== [] ? ', '.implode(', ', array_map(fn ($set) => "set:{$set}", $sets)) : '').'.'.($headings === '' ? ' No headings.' : '').(isset($this->profile[$field->handle]) ? ' The site\'s own: '.$this->profile[$field->handle]['headings'].' headings per 100 words, '.round($this->profile[$field->handle]['lists'] * 100).'% list items, '.round($this->profile[$field->handle]['quotes'] * 100).'% quotes.' : '');
             } elseif (in_array($field->kind, [Kind::Text, Kind::LongText, Kind::List], true)) {
                 $lines[] = "{$field->handle}: ".self::kind($field).($field->required ? ', required' : '');
             }
@@ -142,7 +147,14 @@ final class LayoutBrief
                     $fields[] = "{$setField->handle} (blocks: ".implode(', ', array_keys($setField->sets)).')';
                 } elseif ($setField->isWritable() || $setField->files) {
                     // Only what the planner must place words in is "required": an image, a link or a setting it never fills.
-                    $fields[] = "{$setField->handle} (".self::kind($setField).(PlanValidator::requiredWords($setField) ? ', required' : '').')';
+                    $kind = self::kind($setField);
+
+                    if (Plans::isMarkdown($setField)) {
+                        $headings = HeadingPolicy::for($setField, $this->render, (string) $handle)->constructs();
+                        $kind .= $headings !== '' ? ", headings {$headings}" : ', no headings';
+                    }
+
+                    $fields[] = "{$setField->handle} ({$kind}".(PlanValidator::requiredWords($setField) ? ', required' : '').')';
                 }
             }
 

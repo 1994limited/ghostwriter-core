@@ -4,6 +4,7 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Arrange;
 
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Extras\Extras;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Schema;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\RenderProfile;
 
 /**
  * Only layouts that look noticeably different are offered. Run after
@@ -26,6 +27,10 @@ use NineteenNinetyFour\Ghostwriter\Core\Schema\Schema;
  * under the hero, is kept, as is a post whose ten lead-in paragraphs
  * become two checklists (61%).
  *
+ * Headings are compared as the SEO pass fits them ($profile), so a plan
+ * that only moves heading levels the pass would move back is not
+ * different.
+ *
  * Near-copies of each other: the preferred one (the Suggested one, when
  * the caller says) is weighed first, so it is the one kept.
  */
@@ -44,7 +49,7 @@ final class LayoutGate
      * @param  Extras|array<int, mixed>  $extras
      * @return array{kept: list<Plan>, dropped: array<string, string>} The plans kept, in their order; why each dropped one went, by its id.
      */
-    public function filter(array $plans, Units $units, Extras|array $extras, Schema $schema, ?string $prefer = null): array
+    public function filter(array $plans, Units $units, Extras|array $extras, Schema $schema, ?string $prefer = null, ?RenderProfile $profile = null): array
     {
         $writer = null;
 
@@ -69,7 +74,7 @@ final class LayoutGate
 
         foreach ($order as $plan) {
             foreach ($kept as $other) {
-                $diff = LayoutDiff::between($other, $plan, $writer, $units, $extras, $schema);
+                $diff = LayoutDiff::between($other, $plan, $writer, $units, $extras, $schema, $profile);
 
                 if (! self::noticeable($diff)) {
                     $dropped[$plan->id] = self::why($diff, $other);

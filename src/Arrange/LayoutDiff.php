@@ -7,6 +7,9 @@ use NineteenNinetyFour\Ghostwriter\Core\Arrange\Extras\ExtraKind;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Extras\Extras;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Field;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Schema;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\HeadingFixer;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\HeadingPolicy;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\RenderProfile;
 
 /**
  * How two layouts of the same words differ on the page, with no model:
@@ -76,14 +79,19 @@ final class LayoutDiff
      * How $b differs from $a. $writer gives the fields a plan leaves as
      * written (the writer's plan itself, usually one of the two).
      *
+     * Rich text is compared with its headings as the SEO pass will fit
+     * them (Seo\HeadingFixer, with $profile), so a heading level the pass
+     * would change back makes no difference.
+     *
      * @param  Extras|array<int, mixed>  $extras
      */
-    public static function between(Plan $a, Plan $b, Plan $writer, Units $units, Extras|array $extras, Schema $schema): self
+    public static function between(Plan $a, Plan $b, Plan $writer, Units $units, Extras|array $extras, Schema $schema, ?RenderProfile $profile = null): self
     {
+        $profile ??= RenderProfile::default();
         $extras = $extras instanceof Extras ? $extras : Extras::fromArray($extras);
         $content = new Content($units, $extras);
-        $left = self::items($a, $writer, $units, $content, $schema);
-        $right = self::items($b, $writer, $units, $content, $schema);
+        $left = self::items($a, $writer, $units, $content, $schema, $profile);
+        $right = self::items($b, $writer, $units, $content, $schema, $profile);
         [$keptLeft, $keptRight, $regions] = self::align(array_column($left, 'key'), array_column($right, 'key'));
 
         $removed = array_values(array_diff_key($left, $keptLeft));
@@ -342,7 +350,7 @@ final class LayoutDiff
      *
      * @return list<array<string, mixed>>
      */
-    private static function items(Plan $plan, Plan $writer, Units $units, Content $content, Schema $schema): array
+    private static function items(Plan $plan, Plan $writer, Units $units, Content $content, Schema $schema, RenderProfile $profile): array
     {
         $items = [];
 
@@ -357,7 +365,7 @@ final class LayoutDiff
 
             if ($field->isBuilder()) {
                 foreach ($blocks as $i => $block) {
-                    self::blockItems($block, $field, $field->handle, ['block' => $i] + $at, $units, $content, $items);
+                    self::blockItems($block, $field, $field->handle, ['block' => $i] + $at, $units, $content, $items, $profile);
                 }
             } elseif (Plans::isMarkdown($field)) {
                 $chunks = [];
@@ -378,7 +386,7 @@ final class LayoutDiff
                     }
                 }
 
-                self::sectionItems(implode("\n\n", $chunks), $field->handle, $at, $refs, $content, $items);
+                self::sectionItems(self::fitted(implode("\n\n", $chunks), HeadingPolicy::for($field, $profile)), $field->handle, $at, $refs, $content, $items);
             } else {
                 foreach (isset($blocks[0]) ? $blocks[0]->placements : [] as $placement) {
                     self::placementItem($placement, $field, $field->handle, $at, $units, $content, $items);
@@ -402,7 +410,7 @@ final class LayoutDiff
      * @param  array{field: string, block: int|null, section: int|null}  $at
      * @param  list<array<string, mixed>>  $items
      */
-    private static function blockItems(PlanBlock $block, Field $builder, string $root, array $at, Units $units, Content $content, array &$items): void
+    private static function blockItems(PlanBlock $block, Field $builder, string $root, array $at, Units $units, Content $content, array &$items, RenderProfile $profile): void
     {
         $set = $builder->set($block->type);
         $refs = $block->refs();
@@ -416,7 +424,7 @@ final class LayoutDiff
             }
 
             if (Plans::isMarkdown($target)) {
-                self::sectionItems(Content::joinMarkdown($content->resolve($placement->from, $placement->transform, $placement->options) ?? []), $root, $at, $placement->refs(), $content, $items);
+                self::sectionItems(self::fitted(Content::joinMarkdown($content->resolve($placement->from, $placement->transform, $placement->options) ?? []), HeadingPolicy::for($target, $profile, $block->type)), $root, $at, $placement->refs(), $content, $items);
             } else {
                 self::placementItem($placement, $target, $root, $at, $units, $content, $items);
             }
@@ -427,10 +435,16 @@ final class LayoutDiff
 
             if ($child !== null && $child->isBuilder()) {
                 foreach ($children as $nested) {
-                    self::blockItems($nested, $child, $root, $at, $units, $content, $items);
+                    self::blockItems($nested, $child, $root, $at, $units, $content, $items, $profile);
                 }
             }
         }
+    }
+
+    /** A rich-text value with its headings as the SEO pass fits them. */
+    private static function fitted(string $markdown, HeadingPolicy $policy): string
+    {
+        return (new HeadingFixer)->fix($markdown, $policy)->markdown;
     }
 
     /**

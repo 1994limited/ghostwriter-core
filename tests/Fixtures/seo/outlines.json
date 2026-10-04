@@ -1,0 +1,608 @@
+{
+    "about": "Rendered pages with preview markers ({f1} is a marker with that payload), what locator.js outline() reports for each, and the RenderProfile core reads from it. Shared by tests/js/locator.test.js and tests/Seo/RenderProfileTest.php.",
+    "cases": [
+        {
+            "name": "title in h1",
+            "html": "<header><a href=\"/\">Northfold Gardens</a><nav><a href=\"/x\">X</a></nav></header><main><h1>Winter care{f1}</h1><div class=\"prose\"><p>Winter is when a garden is set up.{s1}</p><h2>The visits</h2><p>Four a winter.{s2}{f2}</p></div></main><footer><p>© Northfold</p></footer>",
+            "map": [
+                {
+                    "key": "f1",
+                    "kind": "field",
+                    "path": "title",
+                    "label": "title",
+                    "parent": null,
+                    "type": "title",
+                    "units": [
+                        "u1"
+                    ],
+                    "fields": {},
+                    "assets": [],
+                    "anchors": []
+                },
+                {
+                    "key": "f2",
+                    "kind": "field",
+                    "path": "body",
+                    "label": "body",
+                    "parent": null,
+                    "type": "body",
+                    "units": [],
+                    "fields": {},
+                    "assets": [],
+                    "anchors": []
+                },
+                {
+                    "key": "s1",
+                    "kind": "section",
+                    "path": "body",
+                    "label": "body",
+                    "parent": "f2",
+                    "type": "",
+                    "units": [
+                        "u2"
+                    ],
+                    "fields": {},
+                    "assets": [],
+                    "anchors": []
+                },
+                {
+                    "key": "s2",
+                    "kind": "section",
+                    "path": "body",
+                    "label": "body",
+                    "parent": "f2",
+                    "type": "",
+                    "units": [
+                        "u3"
+                    ],
+                    "fields": {},
+                    "assets": [],
+                    "anchors": []
+                }
+            ],
+            "outline": [
+                {
+                    "level": 1,
+                    "text": "Winter care",
+                    "field": "title",
+                    "unit": "u1",
+                    "inContent": false
+                },
+                {
+                    "level": 2,
+                    "text": "The visits",
+                    "field": "body",
+                    "unit": "u3",
+                    "inContent": true
+                }
+            ],
+            "profile": {
+                "h1": "title",
+                "h1Field": "title",
+                "fieldLevels": {},
+                "bodyOwnsH1": []
+            }
+        },
+        {
+            "name": "hero heading in h1, title as an h2",
+            "html": "<header><a href=\"/\">Northfold Gardens</a><nav><a href=\"/x\">X</a></nav></header><main><section class=\"hero\"><h1>Gardens that last{b1.0}</h1></section><h2>Winter care{f1}</h2><div class=\"prose\"><p>Winter is when a garden is set up.{s1}</p><h2>The visits</h2><p>Four a winter.{s2}{f2}</p></div></main><footer><p>© Northfold</p></footer>",
+            "map": [
+                {
+                    "key": "f1",
+                    "kind": "field",
+                    "path": "title",
+                    "label": "title",
+                    "parent": null,
+                    "type": "title",
+                    "units": [
+                        "u1"
+                    ],
+                    "fields": {},
+                    "assets": [],
+                    "anchors": []
+                },
+                {
+                    "key": "b1",
+                    "kind": "block",
+                    "path": "page_builder/0",
+                    "label": "page_builder/0",
+                    "parent": null,
+                    "type": "hero",
+                    "units": [],
+                    "fields": {
+                        "0": "heading"
+                    },
+                    "assets": [],
+                    "anchors": []
+                },
+                {
+                    "key": "f2",
+                    "kind": "field",
+                    "path": "body",
+                    "label": "body",
+                    "parent": null,
+                    "type": "body",
+                    "units": [],
+                    "fields": {},
+                    "assets": [],
+                    "anchors": []
+                },
+                {
+                    "key": "s1",
+                    "kind": "section",
+                    "path": "body",
+                    "label": "body",
+                    "parent": "f2",
+                    "type": "",
+                    "units": [
+                        "u2"
+                    ],
+                    "fields": {},
+                    "assets": [],
+                    "anchors": []
+                },
+                {
+                    "key": "s2",
+                    "kind": "section",
+                    "path": "body",
+                    "label": "body",
+                    "parent": "f2",
+                    "type": "",
+                    "units": [
+                        "u3"
+                    ],
+                    "fields": {},
+                    "assets": [],
+                    "anchors": []
+                }
+            ],
+            "outline": [
+                {
+                    "level": 1,
+                    "text": "Gardens that last",
+                    "field": "hero.heading",
+                    "unit": null,
+                    "inContent": false
+                },
+                {
+                    "level": 2,
+                    "text": "Winter care",
+                    "field": "title",
+                    "unit": "u1",
+                    "inContent": false
+                },
+                {
+                    "level": 2,
+                    "text": "The visits",
+                    "field": "body",
+                    "unit": "u3",
+                    "inContent": true
+                }
+            ],
+            "profile": {
+                "h1": "field",
+                "h1Field": "hero.heading",
+                "fieldLevels": {},
+                "bodyOwnsH1": []
+            }
+        },
+        {
+            "name": "a logo as the h1",
+            "html": "<header><h1 class=\"logo\">Northfold Gardens</h1></header><main><h2>Winter care{f1}</h2><div class=\"prose\"><p>Winter is when a garden is set up.{s1}</p><h2>The visits</h2><p>Four a winter.{s2}{f2}</p></div></main><footer><p>© Northfold</p></footer>",
+            "map": [
+                {
+                    "key": "f1",
+                    "kind": "field",
+                    "path": "title",
+                    "label": "title",
+                    "parent": null,
+                    "type": "title",
+                    "units": [
+                        "u1"
+                    ],
+                    "fields": {},
+                    "assets": [],
+                    "anchors": []
+                },
+                {
+                    "key": "f2",
+                    "kind": "field",
+                    "path": "body",
+                    "label": "body",
+                    "parent": null,
+                    "type": "body",
+                    "units": [],
+                    "fields": {},
+                    "assets": [],
+                    "anchors": []
+                },
+                {
+                    "key": "s1",
+                    "kind": "section",
+                    "path": "body",
+                    "label": "body",
+                    "parent": "f2",
+                    "type": "",
+                    "units": [
+                        "u2"
+                    ],
+                    "fields": {},
+                    "assets": [],
+                    "anchors": []
+                },
+                {
+                    "key": "s2",
+                    "kind": "section",
+                    "path": "body",
+                    "label": "body",
+                    "parent": "f2",
+                    "type": "",
+                    "units": [
+                        "u3"
+                    ],
+                    "fields": {},
+                    "assets": [],
+                    "anchors": []
+                }
+            ],
+            "outline": [
+                {
+                    "level": 1,
+                    "text": "Northfold Gardens",
+                    "field": null,
+                    "unit": null,
+                    "inContent": false
+                },
+                {
+                    "level": 2,
+                    "text": "Winter care",
+                    "field": "title",
+                    "unit": "u1",
+                    "inContent": false
+                },
+                {
+                    "level": 2,
+                    "text": "The visits",
+                    "field": "body",
+                    "unit": "u3",
+                    "inContent": true
+                }
+            ],
+            "profile": {
+                "h1": "static",
+                "h1Field": null,
+                "fieldLevels": {},
+                "bodyOwnsH1": []
+            }
+        },
+        {
+            "name": "two h1s",
+            "html": "<header><h1 class=\"logo\">Northfold Gardens</h1></header><main><h1>Winter care{f1}</h1><div class=\"prose\"><p>Winter is when a garden is set up.{s1}</p><h2>The visits</h2><p>Four a winter.{s2}{f2}</p></div></main><footer><p>© Northfold</p></footer>",
+            "map": [
+                {
+                    "key": "f1",
+                    "kind": "field",
+                    "path": "title",
+                    "label": "title",
+                    "parent": null,
+                    "type": "title",
+                    "units": [
+                        "u1"
+                    ],
+                    "fields": {},
+                    "assets": [],
+                    "anchors": []
+                },
+                {
+                    "key": "f2",
+                    "kind": "field",
+                    "path": "body",
+                    "label": "body",
+                    "parent": null,
+                    "type": "body",
+                    "units": [],
+                    "fields": {},
+                    "assets": [],
+                    "anchors": []
+                },
+                {
+                    "key": "s1",
+                    "kind": "section",
+                    "path": "body",
+                    "label": "body",
+                    "parent": "f2",
+                    "type": "",
+                    "units": [
+                        "u2"
+                    ],
+                    "fields": {},
+                    "assets": [],
+                    "anchors": []
+                },
+                {
+                    "key": "s2",
+                    "kind": "section",
+                    "path": "body",
+                    "label": "body",
+                    "parent": "f2",
+                    "type": "",
+                    "units": [
+                        "u3"
+                    ],
+                    "fields": {},
+                    "assets": [],
+                    "anchors": []
+                }
+            ],
+            "outline": [
+                {
+                    "level": 1,
+                    "text": "Northfold Gardens",
+                    "field": null,
+                    "unit": null,
+                    "inContent": false
+                },
+                {
+                    "level": 1,
+                    "text": "Winter care",
+                    "field": "title",
+                    "unit": "u1",
+                    "inContent": false
+                },
+                {
+                    "level": 2,
+                    "text": "The visits",
+                    "field": "body",
+                    "unit": "u3",
+                    "inContent": true
+                }
+            ],
+            "profile": {
+                "h1": "several",
+                "h1Field": null,
+                "fieldLevels": {},
+                "bodyOwnsH1": []
+            }
+        },
+        {
+            "name": "no h1",
+            "html": "<header><a href=\"/\">Northfold Gardens</a><nav><a href=\"/x\">X</a></nav></header><main><p class=\"title\">Winter care{f1}</p><div class=\"prose\"><p>Winter is when a garden is set up.{s1}</p><h2>The visits</h2><p>Four a winter.{s2}{f2}</p></div></main><footer><p>© Northfold</p></footer>",
+            "map": [
+                {
+                    "key": "f1",
+                    "kind": "field",
+                    "path": "title",
+                    "label": "title",
+                    "parent": null,
+                    "type": "title",
+                    "units": [
+                        "u1"
+                    ],
+                    "fields": {},
+                    "assets": [],
+                    "anchors": []
+                },
+                {
+                    "key": "f2",
+                    "kind": "field",
+                    "path": "body",
+                    "label": "body",
+                    "parent": null,
+                    "type": "body",
+                    "units": [],
+                    "fields": {},
+                    "assets": [],
+                    "anchors": []
+                },
+                {
+                    "key": "s1",
+                    "kind": "section",
+                    "path": "body",
+                    "label": "body",
+                    "parent": "f2",
+                    "type": "",
+                    "units": [
+                        "u2"
+                    ],
+                    "fields": {},
+                    "assets": [],
+                    "anchors": []
+                },
+                {
+                    "key": "s2",
+                    "kind": "section",
+                    "path": "body",
+                    "label": "body",
+                    "parent": "f2",
+                    "type": "",
+                    "units": [
+                        "u3"
+                    ],
+                    "fields": {},
+                    "assets": [],
+                    "anchors": []
+                }
+            ],
+            "outline": [
+                {
+                    "level": 2,
+                    "text": "The visits",
+                    "field": "body",
+                    "unit": "u3",
+                    "inContent": true
+                }
+            ],
+            "profile": {
+                "h1": "none",
+                "h1Field": null,
+                "fieldLevels": {},
+                "bodyOwnsH1": []
+            }
+        },
+        {
+            "name": "the body's own # is the only h1",
+            "html": "<header><a href=\"/\">Northfold Gardens</a><nav><a href=\"/x\">X</a></nav></header><main><p class=\"title\">Winter care{f1}</p><div class=\"prose\"><h1>Winter care, done properly</h1><p>Winter is when a garden is set up.{s1}</p><h2>The visits</h2><p>Four a winter.{s2}{f2}</p></div></main><footer><p>© Northfold</p></footer>",
+            "map": [
+                {
+                    "key": "f1",
+                    "kind": "field",
+                    "path": "title",
+                    "label": "title",
+                    "parent": null,
+                    "type": "title",
+                    "units": [
+                        "u1"
+                    ],
+                    "fields": {},
+                    "assets": [],
+                    "anchors": []
+                },
+                {
+                    "key": "f2",
+                    "kind": "field",
+                    "path": "body",
+                    "label": "body",
+                    "parent": null,
+                    "type": "body",
+                    "units": [],
+                    "fields": {},
+                    "assets": [],
+                    "anchors": []
+                },
+                {
+                    "key": "s1",
+                    "kind": "section",
+                    "path": "body",
+                    "label": "body",
+                    "parent": "f2",
+                    "type": "",
+                    "units": [
+                        "u2"
+                    ],
+                    "fields": {},
+                    "assets": [],
+                    "anchors": []
+                },
+                {
+                    "key": "s2",
+                    "kind": "section",
+                    "path": "body",
+                    "label": "body",
+                    "parent": "f2",
+                    "type": "",
+                    "units": [
+                        "u3"
+                    ],
+                    "fields": {},
+                    "assets": [],
+                    "anchors": []
+                }
+            ],
+            "outline": [
+                {
+                    "level": 1,
+                    "text": "Winter care, done properly",
+                    "field": "body",
+                    "unit": "u2",
+                    "inContent": true
+                },
+                {
+                    "level": 2,
+                    "text": "The visits",
+                    "field": "body",
+                    "unit": "u3",
+                    "inContent": true
+                }
+            ],
+            "profile": {
+                "h1": "none",
+                "h1Field": null,
+                "fieldLevels": {},
+                "bodyOwnsH1": [
+                    "body"
+                ]
+            }
+        },
+        {
+            "name": "block heading fields at h2",
+            "html": "<header><a href=\"/\">Northfold Gardens</a><nav><a href=\"/x\">X</a></nav></header><main><h1>Winter care{f1}</h1><section class=\"b\"><h2>What we do{b1.0}</h2><div><p>We prune.{b1.1}</p></div></section><section class=\"b\"><h2>Who it suits{b2.0}</h2><div><p>Borders.{b2.1}</p></div></section></main><footer><p>© Northfold</p></footer>",
+            "map": [
+                {
+                    "key": "f1",
+                    "kind": "field",
+                    "path": "title",
+                    "label": "title",
+                    "parent": null,
+                    "type": "title",
+                    "units": [
+                        "u1"
+                    ],
+                    "fields": {},
+                    "assets": [],
+                    "anchors": []
+                },
+                {
+                    "key": "b1",
+                    "kind": "block",
+                    "path": "page_builder/0",
+                    "label": "page_builder/0",
+                    "parent": null,
+                    "type": "section",
+                    "units": [],
+                    "fields": {
+                        "0": "heading",
+                        "1": "body"
+                    },
+                    "assets": [],
+                    "anchors": []
+                },
+                {
+                    "key": "b2",
+                    "kind": "block",
+                    "path": "page_builder/1",
+                    "label": "page_builder/1",
+                    "parent": null,
+                    "type": "section",
+                    "units": [],
+                    "fields": {
+                        "0": "heading",
+                        "1": "body"
+                    },
+                    "assets": [],
+                    "anchors": []
+                }
+            ],
+            "outline": [
+                {
+                    "level": 1,
+                    "text": "Winter care",
+                    "field": "title",
+                    "unit": "u1",
+                    "inContent": false
+                },
+                {
+                    "level": 2,
+                    "text": "What we do",
+                    "field": "section.heading",
+                    "unit": null,
+                    "inContent": false
+                },
+                {
+                    "level": 2,
+                    "text": "Who it suits",
+                    "field": "section.heading",
+                    "unit": null,
+                    "inContent": false
+                }
+            ],
+            "profile": {
+                "h1": "title",
+                "h1Field": "title",
+                "fieldLevels": {
+                    "section.heading": 2
+                },
+                "bodyOwnsH1": []
+            }
+        }
+    ]
+}

@@ -170,7 +170,11 @@
                     }
                 }
             },
-            "expected": "- `title` (short text, required)\n- `intro` (markdown)\n- `content` (markdown)"
+            "expected": "- `title` (short text, required)\n- `intro` (markdown)\n- `content` (markdown)",
+            "deliberate": {
+                "reason": "SEO layer: each rich-text field lists the heading levels it takes, from the template's H1 and its editor's heading buttons.",
+                "expected": "- `title` (short text, required)\n- `intro` (markdown). Section headings: `##` to `######` (the page's main heading is the title)\n- `content` (markdown). Section headings: `##` to `######` (the page's main heading is the title)"
+            }
         }
     ]
 }

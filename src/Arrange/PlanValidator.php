@@ -10,6 +10,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Layout\EntryBuilder;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\Pattern;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\EntryData;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Field;
+use NineteenNinetyFour\Ghostwriter\Core\Schema\HeadingLevels;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Kind;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Schema;
 use NineteenNinetyFour\Ghostwriter\Core\Text\Draft;
@@ -42,6 +43,10 @@ use Psr\Log\NullLogger;
  * 6. **Distinctness.** It isn't the same layout as an earlier plan.
  * 7. **Round trip.** EntryBuilder, given the arranged draft, notes nothing
  *    new that is "not a field here", "not an option" or an unknown block.
+ * 8. **No headings here.** No heading is made (lead-in-to-heading,
+ *    heading-level, an `h1`–`h6` construct) in a field whose editor shows
+ *    none (Schema\HeadingLevels::allowed() empty). A level the field
+ *    can't show isn't a violation: the SEO pass maps it.
  *
  * validate() says which plans were dropped and by which rules (Validated);
  * valid() gives only the plans kept.
@@ -156,6 +161,10 @@ final class PlanValidator
                     if (! self::isConstruct($block->type, $field)) {
                         $violations[] = new Violation(Violation::UNKNOWN_BLOCK, "\"{$block->type}\" is not something {$handle} can hold.");
                     }
+
+                    if (HeadingLevels::allowed($field) === [] && self::makesHeadings($block->type, $block->placements)) {
+                        $violations[] = new Violation(Violation::NO_HEADINGS, "{$handle} shows no headings, so none can be made in it.");
+                    }
                 }
             } else {
                 $placement = $blocks[0]->placements[0] ?? null;
@@ -260,6 +269,10 @@ final class PlanValidator
 
                 $placed[] = explode('/', $placement->field)[0];
                 array_push($violations, ...$this->fits($placement, $target, $content, $units, "{$block->type}: {$placement->field}"));
+
+                if (Plans::isMarkdown($target) && HeadingLevels::allowed($target) === [] && self::makesHeadings('', [$placement])) {
+                    $violations[] = new Violation(Violation::NO_HEADINGS, "{$block->type}: {$placement->field} shows no headings, so none can be made in it.");
+                }
 
                 if (in_array($block->type, $boilerplate, true) && $placement->refs() !== []) {
                     $violations[] = new Violation(Violation::BOILERPLATE, "{$block->type} is copied whole on this site; words can't go in it.");
@@ -442,6 +455,26 @@ final class PlanValidator
     {
         foreach (array_keys($used) as $key) {
             if (str_starts_with($key, $item.'.') || $key === $item) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether a construct or its placements make headings.
+     *
+     * @param  list<Placement>  $placements
+     */
+    private static function makesHeadings(string $type, array $placements): bool
+    {
+        if (preg_match('/^h[1-6]$/', $type) === 1) {
+            return true;
+        }
+
+        foreach ($placements as $placement) {
+            if (in_array($placement->transform, [Transform::LeadInToHeading, Transform::HeadingLevel], true)) {
                 return true;
             }
         }

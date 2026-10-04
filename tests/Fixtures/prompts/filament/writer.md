@@ -35,6 +35,7 @@ Your colleague answers each question in its own box, so make each one easy to an
 - Never put a mark (described under "Marking what only your colleague knows") in the title.
 - What is widely known about the subject itself, such as what a well-known product does and what it is good and bad at, you may state from your own knowledge. Keep to what is settled and uncontroversial, give no statistics or prices, and say in your reply that you did so.
 - Anything the brief says must not appear does not appear.
+- A heading says what its section is about in a few words, under 70 characters. Never use bold text on its own line as a heading.
 - Use only the fields and blocks listed under "The fields". Leave out any field you have nothing real to put in; a person will fill in links and dates afterwards. Images are arranged as described under "Images".
 - Match the existing entries shown as examples: their structure, their length, the way their blocks are used.
 
@@ -73,7 +74,7 @@ Only when images should change, as described under "Images". Otherwise leave thi
 
 The draft is a YAML document whose keys are the field handles listed under "The fields".
 - `title` comes first.
-- Markdown fields are written as YAML block scalars (`field: |` followed by indented markdown). Use `##` for section headings inside them.
+- Markdown fields are written as YAML block scalars (`field: |` followed by indented markdown). Use the heading levels each field lists for its section headings.
 - A list of blocks is a YAML list; each item starts with `type:` and then that block's own fields.
 - Quote any single-line value that contains a colon followed by a space, and always with double quotes: text has apostrophes in it, which break single quotes.
 - Do not wrap the draft in a code fence.

@@ -229,7 +229,11 @@
                     }
                 }
             },
-            "expected": "- `title` (short text, required)\n- `summary` (plain text). Shown in lists\n- `theme` (one of light, dark)\n- `kind` (one of project, guide)\n- `pageBuilder` (list of blocks)\n  Each block is written as `type: <block>` followed by that block's fields. Blocks:\n  - `hero`: Hero\n      - `heading` (short text)\n  - `longForm`: LongForm\n      - `content` (markdown)\n      - `numbered` (true or false)\n      - `width` (one of narrow, wide)\n  - `cards`: Cards\n      - `heading` (short text)\n      - `items` (list of rows)\n        - `text` (short text)\n  - `related`: Related\n      - `heading` (short text)\n      - `limit` (number)\n  - `gallery`: Gallery\n      - `caption` (short text)"
+            "expected": "- `title` (short text, required)\n- `summary` (plain text). Shown in lists\n- `theme` (one of light, dark)\n- `kind` (one of project, guide)\n- `pageBuilder` (list of blocks)\n  Each block is written as `type: <block>` followed by that block's fields. Blocks:\n  - `hero`: Hero\n      - `heading` (short text)\n  - `longForm`: LongForm\n      - `content` (markdown)\n      - `numbered` (true or false)\n      - `width` (one of narrow, wide)\n  - `cards`: Cards\n      - `heading` (short text)\n      - `items` (list of rows)\n        - `text` (short text)\n  - `related`: Related\n      - `heading` (short text)\n      - `limit` (number)\n  - `gallery`: Gallery\n      - `caption` (short text)",
+            "deliberate": {
+                "reason": "SEO layer: each rich-text field lists the heading levels it takes, from the template's H1 and its editor's heading buttons.",
+                "expected": "- `title` (short text, required)\n- `summary` (plain text). Shown in lists\n- `theme` (one of light, dark)\n- `kind` (one of project, guide)\n- `pageBuilder` (list of blocks)\n  Each block is written as `type: <block>` followed by that block's fields. Blocks:\n  - `hero`: Hero\n      - `heading` (short text)\n  - `longForm`: LongForm\n      - `content` (markdown). Section headings: `##` to `######`\n      - `numbered` (true or false)\n      - `width` (one of narrow, wide)\n  - `cards`: Cards\n      - `heading` (short text)\n      - `items` (list of rows)\n        - `text` (short text)\n  - `related`: Related\n      - `heading` (short text)\n      - `limit` (number)\n  - `gallery`: Gallery\n      - `caption` (short text)"
+            }
         }
     ]
 }

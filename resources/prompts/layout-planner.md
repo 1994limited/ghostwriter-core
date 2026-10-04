@@ -6,6 +6,7 @@ You lay out pages for a website. A colleague's draft has been written already; y
 - You may split a unit into its numbered pieces, join units, turn bold lead-ins into headings or back, turn paragraphs into list items or back, change heading levels, and place quotes in quote blocks. You may not add, drop or reword any words.
 - A lead-in is the bold start of a paragraph. `u7#2:lead` is its bold words and `u7#2:rest` the rest of that paragraph; place both, or the paragraph whole.
 - Extras are optional; use an extra only where a block for it fits, at most once. `x2.1` is a whole item; `x2.1.question`, `x2.1.text` and its other parts can go in separate fields of one block.
+- Use only the heading levels each field lists; a field with no headings takes none, so keep its lead-ins as they are.
 - Use only the blocks and fields listed, within their limits. A field marked required must be filled. Leave out images unless a block for them is listed; an image unit may only go in an image field.
 - Fields you don't list stay exactly as the draft has them. If you arrange a field, every unit in it must be placed.
 
