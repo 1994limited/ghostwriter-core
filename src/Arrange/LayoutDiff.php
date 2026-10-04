@@ -388,7 +388,7 @@ final class LayoutDiff
 
         $indexed = [];
 
-        foreach (array_values($items) as $i => $item) {
+        foreach ($items as $i => $item) {
             $item['index'] = $i;
             $indexed[] = $item;
         }
