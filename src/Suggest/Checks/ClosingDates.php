@@ -13,6 +13,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Suggest\CheckContext;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\Dates;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\Finding;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\Needs;
+use NineteenNinetyFour\Ghostwriter\Core\Suggest\Watches;
 
 /**
  * A closing or end date that has passed:
@@ -25,7 +26,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Suggest\Needs;
  * Only the editor knows the new date: each is a Fact to check, with the
  * quote as the template around the answer.
  */
-final class ClosingDates implements Check
+final class ClosingDates implements Check, Watches
 {
     use ReadsText;
 
@@ -98,5 +99,41 @@ final class ClosingDates implements Check
                 'date' => $date->format('Y-m-d'),
             ]), ['date' => $date->format('Y-m-d'), 'answer' => 'date', 'field' => true]);
         }
+    }
+
+    /** The day after each closing date still to come. */
+    public function watch(CheckContext $context): array
+    {
+        $today = $context->now->setTime(0, 0);
+        $days = [];
+        $phrases = $context->phrases();
+
+        if ($phrases !== null && $phrases->closing !== []) {
+            $cue = '/(?<![\p{L}\p{N}])(?:'.implode('|', $phrases->closing).')(?![\p{L}\p{N}])[^.!?\n]{0,20}$/iu';
+
+            foreach ($context->texts() as $text) {
+                foreach (Dates::find($text->plain, $phrases) as $date) {
+                    $at = $text->chars($date['offset']);
+
+                    if ($date['date'] >= $today && preg_match($cue, mb_substr($text->plain, max(0, $at - 40), min($at, 40))) === 1) {
+                        $days[] = $date['date']->modify('+1 day');
+                    }
+                }
+            }
+        }
+
+        foreach (Walk::entry($context->gaps->schema, $context->gaps->entry) as $visit) {
+            $field = $visit->field;
+
+            if ($field->kind === Kind::Reference && str_contains(strtolower($field->type), 'date') && preg_match(self::FIELD, $field->handle) === 1) {
+                $date = Dates::value($visit->value);
+
+                if ($date !== null && $date >= $today) {
+                    $days[] = $date->modify('+1 day');
+                }
+            }
+        }
+
+        return $days;
     }
 }

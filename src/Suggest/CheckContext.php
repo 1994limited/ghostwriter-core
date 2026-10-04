@@ -6,6 +6,7 @@ use DateTimeImmutable;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\GapContext;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Walk;
 use NineteenNinetyFour\Ghostwriter\Core\Revisit\AgePolicy;
+use NineteenNinetyFour\Ghostwriter\Core\Revisit\LinkResult;
 
 /**
  * What the free checks read: the entry as Finish this page reads it
@@ -18,6 +19,9 @@ use NineteenNinetyFour\Ghostwriter\Core\Revisit\AgePolicy;
  * - `age`: dated groups weigh past years less (AgePolicy).
  * - `options`: the claim-check switch (SuggestOptions).
  * - `quieted`: decisions that keep findings quiet (Quieted).
+ * - `external`: the opt-in weekly check's last results for the entry's
+ *   links to other sites, by address (RevisitRow::$external). A link
+ *   found gone twice in a row is a Link finding.
  *
  * Use named arguments: the order may grow.
  */
@@ -26,6 +30,9 @@ final class CheckContext
     /** @var list<CheckText>|null */
     private ?array $texts = null;
 
+    /**
+     * @param  array<string, LinkResult>  $external
+     */
     public function __construct(
         public readonly GapContext $gaps,
         public readonly DateTimeImmutable $now,
@@ -36,7 +43,14 @@ final class CheckContext
         public readonly AgePolicy $age = new AgePolicy,
         public readonly SuggestOptions $options = new SuggestOptions,
         public readonly Quieted $quieted = new Quieted,
+        public readonly array $external = [],
     ) {}
+
+    /** The same entry read at another time: what the revisit scan uses, so "now" is the scan's. */
+    public function at(DateTimeImmutable $now): self
+    {
+        return new self($this->gaps, $now, $this->updatedAt, $this->language, $this->index, $this->entry, $this->age, $this->options, $this->quieted, $this->external);
+    }
 
     /**
      * Every field holding text, in form order.

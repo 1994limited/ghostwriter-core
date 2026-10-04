@@ -14,6 +14,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Gaps\SeoField;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Walk;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\Checks\ClosingDates;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\Checks\EmptyLinkText;
+use NineteenNinetyFour\Ghostwriter\Core\Suggest\Checks\ExternalLinks;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\Checks\LongSentences;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\Checks\Overlaps;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\Checks\PastYears;
@@ -60,6 +61,7 @@ final class Findings
             new LongSentences,
             new EmptyLinkText,
             new Overlaps,
+            new ExternalLinks,
         ]);
     }
 
