@@ -6,8 +6,8 @@ use NineteenNinetyFour\Ghostwriter\Core\Anchor\TextQuote;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Units;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Format;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Sessions\Session;
-use NineteenNinetyFour\Ghostwriter\Core\Domain\Viewer;
-use NineteenNinetyFour\Ghostwriter\Core\Review\Review;
+use NineteenNinetyFour\Ghostwriter\Core\Review\Comment;
+use NineteenNinetyFour\Ghostwriter\Core\Review\Comments;
 use NineteenNinetyFour\Ghostwriter\Core\Review\Scope;
 use NineteenNinetyFour\Ghostwriter\Core\Tests\Arrange\UnitsTest;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -83,22 +83,16 @@ final class SessionUnitsTest extends TestCase
     }
 
     #[DataProvider('formats')]
-    public function test_the_comments_round_trip_and_are_left_out_until_there_are_some(Format $format): void
+    public function test_comments_are_conversation_messages_with_no_store_of_their_own(Format $format): void
     {
         $session = Session::start($format, 'page', ['brief' => 'Winter care']);
-
-        $this->assertArrayNotHasKey('review', $session->toArray());
-
-        $review = new Review;
-        $review->add(Scope::text('u8', new TextQuote('mixed borders')), 'Which ones?', new Viewer(1));
-        $session->review = $review->toArray();
+        $comment = Comment::make(1, Scope::text('u8', new TextQuote('mixed borders')), 'Which ones?', 1);
+        $session->addMessage('user', '1 comment on the draft', 1, [Comments::KEY => ['items' => [$comment->toArray()]]]);
         $stored = $session->toArray();
         $back = Session::fromArray($stored, $format);
 
-        $this->assertSame($session->review, $back->review);
+        $this->assertArrayNotHasKey('review', $stored);
+        $this->assertEquals([$comment], Comments::itemsOf($back->lastMessage() ?? []));
         $this->assertSame($stored, $back->toArray());
-
-        $back->review = [];
-        $this->assertArrayHasKey('review', $back->toArray());
     }
 }

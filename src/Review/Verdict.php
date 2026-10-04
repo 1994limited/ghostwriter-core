@@ -20,7 +20,7 @@ final class Verdict
      * @param  array<string, mixed>|null  $data  The draft data with the change made, when it passed.
      */
     public function __construct(
-        public readonly Thread $thread,
+        public readonly Comment $comment,
         public readonly string $reply,
         public readonly array $rules = [],
         public readonly array $units = [],

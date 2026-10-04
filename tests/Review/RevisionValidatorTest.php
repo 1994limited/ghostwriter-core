@@ -6,13 +6,11 @@ use NineteenNinetyFour\Ghostwriter\Core\Anchor\TextQuote;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Extras\Extras;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Plans;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Units;
-use NineteenNinetyFour\Ghostwriter\Core\Domain\Viewer;
-use NineteenNinetyFour\Ghostwriter\Core\Review\Review;
+use NineteenNinetyFour\Ghostwriter\Core\Review\Comment;
 use NineteenNinetyFour\Ghostwriter\Core\Review\RevisionItem;
 use NineteenNinetyFour\Ghostwriter\Core\Review\RevisionReply;
 use NineteenNinetyFour\Ghostwriter\Core\Review\RevisionValidator;
 use NineteenNinetyFour\Ghostwriter\Core\Review\Scope;
-use NineteenNinetyFour\Ghostwriter\Core\Review\Thread;
 use NineteenNinetyFour\Ghostwriter\Core\Review\Verdict;
 use NineteenNinetyFour\Ghostwriter\Core\Tests\Arrange\Northfold;
 use PHPUnit\Framework\TestCase;
@@ -30,10 +28,8 @@ final class RevisionValidatorTest extends TestCase
     private function verdict(Scope $scope, string $comment, ?RevisionItem $item, ?array $data = null, ?Extras $extras = null): Verdict
     {
         $data ??= Northfold::blocksDraft();
-        $review = new Review;
-        $thread = $review->add($scope, $comment, new Viewer(1));
 
-        return (new RevisionValidator(Northfold::blocks()))->check($thread, $item, $data, Units::fromDraft($data, Northfold::blocks()), $extras ?? Northfold::extras(), self::BRIEF, []);
+        return (new RevisionValidator(Northfold::blocks()))->check(Comment::make(1, $scope, $comment, 1), $item, $data, Units::fromDraft($data, Northfold::blocks()), $extras ?? Northfold::extras(), self::BRIEF, []);
     }
 
     /**
@@ -218,6 +214,5 @@ final class RevisionValidatorTest extends TestCase
         $this->assertSame(['x1.1' => null, 'x1.2' => ['text' => 'From £60', 'parts' => []]], $reply->item(2)?->extras);
         $this->assertNull($reply->item(1));
         $this->assertSame('there was no <changes> block', RevisionReply::read('Sorry.')->problem);
-        $this->assertInstanceOf(Thread::class, (new Review)->add(Scope::page(), 'x', new Viewer(1)));
     }
 }

@@ -4,7 +4,19 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
-### Changed
+### Changed (breaking for comments, which no addon has shipped)
+
+- **Comments are conversation messages.** The separate review store is gone. Pins not sent yet are the editor's own, in their panel; **Apply** sends them as one message from the editor (`comments.items`: each comment's number, scope, words, author and the hashes of what it may change), claiming the piece as Send does, and the job's one `reviser` call ends in one message from Ghostwriter (`comments.answers` naming the editor's message, `comments.results`: Changed with its before and after, Replied, Refused or Skipped, each with a reply in plain words). Put back and Resolve are noted on that answer. Shared conversations (E7) need nothing more: one run at a time through the session's claim, with no version to compare. See docs/comments.md.
+  - `Review\Comments` replaces `SessionReview`: `apply()`, `revise()`, `fail()`, `resolve()` (and reopen), `putBack()`, `pins()` (every sent comment with its status worked out from the conversation, the blocks holding it in a layout, and whether its words have gone), `where()`, `unanswered()`, `nextNumber()`, `itemsOf()`, `resultsOf()`, `blocksOf()`.
+  - `Comment`, `CommentResult`, `CommentOutcome`, `CommentStatus` (Revising, Changed, Replied, Not applied, Skipped, Resolved, Detached).
+  - `RevisionRequest`, `RevisionValidator::check()`, `Verdict` and `RevisionApplier::apply()` take `Comment`s; `Change::$version` is the index of the editor's message.
+  - `ReviewRules` keeps `mayComment()` and `mayApply()`.
+
+### Removed
+
+- `Session::$review` (and its `review` key), `Review`, `Thread`, `Note`, `NoteKind`, `ThreadStatus`, `SessionReview` and its add, edit, delete, reply, repin and version checks, `beforeData()`, and the re-anchoring in `SessionLayouts::afterEdit()` (a pin follows its unit ids, which `UnitMatcher` carries; one whose words are gone shows Detached).
+
+### Changed (Suggest edits)
 
 - **Suggest edits: no suggestion reaches the editor without the model judging it in context.** See docs/suggest-edits.md.
   - **Every free finding is a candidate.** `ReviewInput::numbered()` now numbers every finding (the long-sentence hint and a link field to a deleted page included). The prompt's `<findings>` is now `<candidates>`: each line has its unit, the heading it sits under, its quote, the check's message, the dated words for an Out of date one, and what to write if it is kept.
@@ -15,7 +27,7 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
   - `EditReview::decide(Confirmed)` ("It's still right") is allowed for Out of date as well as Fact to check.
   - **The `reviewer` runs on the writing tier at effort `high`** (16000 tokens). `reworder` moves from the quick tier to the writing tier, at effort `medium` (4000 tokens).
 
-### Added
+### Added (Suggest edits)
 
 - **The verifier: a second pass.** After validation, `Studio::verifyEdits(ReviewInput, list<Suggestion>): Result<SuggestionReply>` makes one `verifier` call per part that kept anything (new prompt `resources/prompts/verifier.md`, writing tier, effort `high`, 12000 tokens; `Suggest\VerifyPrompt`). Each kept suggestion is shown with its whole paragraph, its heading, why it was made and the site entry it cites; the reply is `<verdicts>` with `{"id": "s1", "verdict": "keep" | "fix" | "drop", "reason", "replacement"?, "alternatives"?}`. `SuggestionValidator::verify()` applies it: a fix passes every check again; a drop goes into `checked` (`by: 'verifier'`). If the verifier fails, the validated suggestions stand and a warning is logged. `Studio::verifierInstructions()`. `EditReviews::run()` does reviewer, validation, then verifier.
 - `ReviewInput::modelCalls()`: the most model calls a review makes (a reviewer and a verifier call per part). `calls()` is still the number of parts, for the confirm. `EditReview::$calls` and `$usage` count both agents.

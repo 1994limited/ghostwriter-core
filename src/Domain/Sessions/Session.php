@@ -56,7 +56,6 @@ final class Session
      * @param  list<array<string, mixed>>  $extras  The extras the writer prepared with the draft (Arrange\Extras\Extras::toArray()), kept until it sends new ones. Stored like `units`, under `extras`.
      * @param  list<array<string, mixed>>  $plans  The layouts (Arrange\Plans::toArray()): the writer's first, then the planner's. Stored like `units`, under `plans`.
      * @param  string|null  $plan  The chosen layout's id, shared by everyone on the piece; null for the writer's. Stored under `plan` once chosen.
-     * @param  array<string, mixed>  $review  The comments on the piece (Review\Review::toArray()): threads, the next pin number and a version, shared by everyone on it. Stored like `units`, under `review`.
      */
     public function __construct(
         public readonly Format $format,
@@ -89,7 +88,6 @@ final class Session
         public array $extras = [],
         public array $plans = [],
         public ?string $plan = null,
-        public array $review = [],
     ) {
         $this->editing = $editing || $source !== null;
     }
@@ -472,10 +470,6 @@ final class Session
             $data['plans'] = $format !== Format::Filament ? $this->plans : ($this->plans === [] ? null : $format->json($this->plans));
         }
 
-        if ($this->review !== [] || array_key_exists('review', $this->stored)) {
-            $data['review'] = $format !== Format::Filament ? $this->review : ($this->review === [] ? null : $format->json($this->review));
-        }
-
         if ($this->plan !== null || array_key_exists('plan', $this->stored)) {
             $data['plan'] = $this->plan;
         }
@@ -521,7 +515,6 @@ final class Session
             extras: self::records($data['extras'] ?? []),
             plans: self::records($data['plans'] ?? []),
             plan: self::nullableText($data['plan'] ?? null),
-            review: self::units($data['review'] ?? []),
         );
     }
 
@@ -558,7 +551,6 @@ final class Session
             extras: self::records($data['extras'] ?? []),
             plans: self::records($data['plans'] ?? []),
             plan: self::nullableText($data['plan'] ?? null),
-            review: self::units($data['review'] ?? []),
         );
     }
 
@@ -598,7 +590,6 @@ final class Session
             extras: self::records(self::decoded($row['extras'] ?? null)),
             plans: self::records(self::decoded($row['plans'] ?? null)),
             plan: self::nullableText($row['plan'] ?? null),
-            review: self::units(self::decoded($row['review'] ?? null)),
         );
     }
 
