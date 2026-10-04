@@ -7,14 +7,15 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Gaps;
  * returns sentences. Each addon translates the key with its own system
  * (Statamic `__()`, Craft `Craft.t('ghostwriter', …)`, Filament
  * `__('ghostwriter::gaps.*')`); the English source strings are in core's
- * `resources/lang/en/gaps.php`, with Laravel-style `:name` parameters.
+ * `resources/lang/en/{namespace}.php` (`gaps`, `suggest`, `revisit`), with
+ * Laravel-style `:name` parameters.
  *
  *     new Message('gaps.ask', ['label' => 'Intro', 'hint' => 'adult ticket price'])
  */
 final class Message
 {
-    /** @var array<string, string>|null */
-    private static ?array $english = null;
+    /** @var array<string, array<string, string>> Source strings by namespace. */
+    private static array $english = [];
 
     /**
      * @param  array<string, scalar|null>  $params
@@ -30,9 +31,8 @@ final class Message
      */
     public function english(): string
     {
-        $strings = self::strings();
-        $name = str_starts_with($this->key, 'gaps.') ? substr($this->key, 5) : $this->key;
-        $text = $strings[$name] ?? $this->key;
+        [$namespace, $name] = self::split($this->key);
+        $text = self::strings($namespace)[$name] ?? $this->key;
         $params = $this->params;
 
         // Longest names first, so `:items` isn't taken for `:item`.
@@ -54,23 +54,43 @@ final class Message
     }
 
     /**
-     * Core's English source strings, by key without the `gaps.` prefix:
-     * what each addon's build copies into its own format.
+     * Core's English source strings for a namespace (`gaps`, `suggest`,
+     * `revisit`), by key without the prefix: what each addon's build copies
+     * into its own format.
      *
      * @return array<string, string>
      */
-    public static function strings(): array
+    public static function strings(string $namespace = 'gaps'): array
     {
-        if (self::$english === null) {
-            $strings = require self::stringsFile();
-            self::$english = is_array($strings) ? array_filter($strings, 'is_string') : [];
+        if (! isset(self::$english[$namespace])) {
+            $file = self::stringsFile($namespace);
+            $strings = is_file($file) ? require $file : [];
+            self::$english[$namespace] = is_array($strings) ? array_filter($strings, 'is_string') : [];
         }
 
-        return self::$english;
+        return self::$english[$namespace];
     }
 
-    public static function stringsFile(): string
+    public static function stringsFile(string $namespace = 'gaps'): string
     {
-        return dirname(__DIR__, 2).'/resources/lang/en/gaps.php';
+        return dirname(__DIR__, 2).'/resources/lang/en/'.$namespace.'.php';
+    }
+
+    /**
+     * A key's namespace and name: "suggest.speech.voice" is `suggest` and
+     * "speech.voice". A key with no namespace core has strings for is a
+     * `gaps` key, as it always was.
+     *
+     * @return array{0: string, 1: string}
+     */
+    private static function split(string $key): array
+    {
+        $dot = strpos($key, '.');
+
+        if ($dot !== false && preg_match('/^[a-z]+$/', substr($key, 0, $dot)) === 1 && is_file(self::stringsFile(substr($key, 0, $dot)))) {
+            return [substr($key, 0, $dot), substr($key, $dot + 1)];
+        }
+
+        return ['gaps', $key];
     }
 }
