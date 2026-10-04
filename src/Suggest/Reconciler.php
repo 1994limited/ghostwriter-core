@@ -76,14 +76,19 @@ final class Reconciler
         }
 
         $haystack = ' '.self::norm($plain).' ';
-        $found = $anchor->quote !== null && $text !== null && $this->quotes->find($anchor->quote, $plain, $anchor->occurrence) !== null;
+        $match = $anchor->quote !== null && $text !== null ? $this->quotes->find($anchor->quote, $plain, $anchor->occurrence) : null;
+        $found = $match !== null;
         $quote = $anchor->quote !== null ? self::norm($anchor->quote->exact) : '';
 
         foreach ($candidates as $words) {
             // New words that were in the old ones already ("Winter care
             // visits" in "New for 2024: winter care visits") count only once
-            // the old words have gone, unless they hold them.
-            if (str_contains($haystack, ' '.$words.' ') && (! $found || ($quote !== '' && str_contains(' '.$words.' ', ' '.$quote.' ')))) {
+            // the old words have gone, unless they hold them. A fuzzy match
+            // holding the new words is the new sentence, not the old one:
+            // the old sentence less its dated words is close enough to it.
+            $old = $found && ! ($match->fuzzy && str_contains(' '.self::norm($match->text($plain)).' ', ' '.$words.' '));
+
+            if (str_contains($haystack, ' '.$words.' ') && (! $old || ($quote !== '' && str_contains(' '.$words.' ', ' '.$quote.' ')))) {
                 return SuggestionState::Done;
             }
         }
