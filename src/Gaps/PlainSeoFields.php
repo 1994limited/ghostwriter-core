@@ -64,7 +64,7 @@ final class PlainSeoFields implements SeoFields
         return null;
     }
 
-    public function titleFormat(Schema $schema, EntryData $entry): ?TitleFormat // @phpstan-ignore return.unusedType (SeoFields::titleFormat(), declared with @method until the addons implement it)
+    public function titleFormat(Schema $schema, EntryData $entry): ?TitleFormat
     {
         return null;
     }

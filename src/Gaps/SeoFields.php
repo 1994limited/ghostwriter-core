@@ -16,15 +16,6 @@ use NineteenNinetyFour\Ghostwriter\Core\Schema\Schema;
  * EntryData::$group and ::$site say which section's and site's defaults
  * apply; without them, an addon reads the entry's own values and the
  * default site's.
- *
- * noindex() and titleFormat() are declared here for the type checker
- * only until every addon's main implements them (an addon still on the
- * old interface would otherwise fail to load); they become interface
- * methods again then. Call them only on an implementation that has them
- * (every implementation in this repo does).
- *
- * @method ?bool noindex(Schema $schema, EntryData $entry) Whether the page asks search engines not to index it, from the setting (never the rendered tag): true or false where an addon or a field says, null where nothing does.
- * @method ?TitleFormat titleFormat(Schema $schema, EntryData $entry) How the page's `<title>` adds the site name to its SEO title; null where nothing adds one.
  */
 interface SeoFields
 {
@@ -35,4 +26,18 @@ interface SeoFields
      * @return list<SeoField>
      */
     public function in(Schema $schema, EntryData $entry): array;
+
+    /**
+     * Whether the page asks search engines not to index it, from the
+     * setting (never the rendered tag, which some addons change outside
+     * production): true or false where an addon or a field says, null
+     * where nothing does.
+     */
+    public function noindex(Schema $schema, EntryData $entry): ?bool;
+
+    /**
+     * How the page's `<title>` adds the site name to its SEO title; null
+     * where nothing adds one (plain fields, no SEO addon).
+     */
+    public function titleFormat(Schema $schema, EntryData $entry): ?TitleFormat;
 }
