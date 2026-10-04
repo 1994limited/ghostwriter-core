@@ -156,6 +156,57 @@ final class BriefThreadTest extends TestCase
         $this->assertSame([0, 1, 4, 6, 7, 8], array_keys(BriefThread::visible($session)));
     }
 
+    public function test_with_nothing_ticked_the_kinds_examples_come_first_then_the_fillers_choice(): void
+    {
+        $guard = $this->guard();
+        $viewer = new Viewer(1);
+        $id = $guard->open(Session::start($this->format, 'project', [], 1, [], $this->now), $viewer)->id;
+        $session = $guard->details($id, 'Kiln opening.', $viewer);
+        $candidates = [7 => 'Mill', 8 => 'Harbour'];
+
+        $this->assertSame([7, 8], BriefThread::request($session, $this->kind(), ['Mill'], $candidates, [7, 8])->examples, "The kind's own.");
+        $this->assertFalse(BriefThread::request($session, $this->kind(), ['Mill'], $candidates, [7, 8])->choosesExamples());
+
+        $request = BriefThread::request($session, $this->kind(), ['Mill'], $candidates);
+        $this->assertSame([], $request->examples);
+        $this->assertSame([['id' => 7, 'title' => 'Mill'], ['id' => 8, 'title' => 'Harbour']], $request->candidates);
+        $this->assertTrue($request->choosesExamples());
+        $this->assertFalse(BriefThread::request($session, $this->kind(), ['Mill'])->choosesExamples(), 'Nothing to choose from.');
+
+        // The person's ticks win.
+        $ticked = $this->guard()->details($this->opened()->id, 'Kiln.', $viewer);
+        $this->assertSame([4, 5], BriefThread::request($ticked, $this->kind(), [], $candidates, [7])->examples);
+        $this->assertFalse(BriefThread::request($ticked, $this->kind(), [], $candidates)->choosesExamples());
+    }
+
+    public function test_try_again_keeps_the_ticks_on_the_card(): void
+    {
+        $guard = $this->guard();
+        $viewer = new Viewer(1);
+        $candidates = [7 => 'Mill', 8 => 'Harbour'];
+        $id = $guard->open(Session::start($this->format, 'project', [], 1, [], $this->now), $viewer)->id;
+        $guard->details($id, 'Kiln opening.', $viewer);
+
+        // The filler chose 8; the person leaves it ticked.
+        $guard->propose($id, new Brief('Kiln', ['client' => 'x', 'result' => 'y'], [8]));
+        $this->assertSame([8], $this->find($id)->examples);
+        $request = BriefThread::request($guard->tryAgain($id, $viewer, [], [8]), $this->kind(), [], $candidates);
+        $this->assertSame([8], $request->examples);
+        $this->assertFalse($request->choosesExamples());
+
+        // They untick it: none are chosen for them.
+        $guard->propose($id, new Brief('Kiln', ['client' => 'x', 'result' => 'y'], [8], 2));
+        $request = BriefThread::request($guard->tryAgain($id, $viewer, [], []), $this->kind(), [], $candidates, [7]);
+        $this->assertSame([], $request->examples);
+        $this->assertTrue($request->examplesKept);
+        $this->assertFalse($request->choosesExamples());
+
+        // A card that had none, left as it was: the filler chooses again.
+        $guard->propose($id, new Brief('Kiln', ['client' => 'x', 'result' => 'y'], [], 3));
+        $request = BriefThread::request($guard->tryAgain($id, $viewer, [], []), $this->kind(), [], $candidates);
+        $this->assertTrue($request->choosesExamples());
+    }
+
     public function test_the_agreed_brief_stays_editable(): void
     {
         $id = $this->agreedPiece();

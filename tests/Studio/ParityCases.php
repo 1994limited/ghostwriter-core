@@ -151,6 +151,11 @@ final class ParityCases
                 'inputs' => [BriefRequest::fromDetails($kind, 'Kiln opening. Opens in May, for the trust.', ['Harbour Trust', 'Mill Lane'], [$one, $two])],
                 'replies' => ['brief-filler' => ["<title>The new kiln opens</title>\n<brief>\nclient: The Harbour Trust\nscope: site\nresult: \"[Add: what changed for the trust]\"\n</brief>"]],
             ],
+            'brief-choose' => [
+                'job' => 'fillBrief',
+                'inputs' => [BriefRequest::fromDetails($kind, 'Kiln opening. Like the mill one.', ['Draft one', 'Harbour Trust', 'Mill Lane'])->withCandidates([['id' => $one, 'title' => 'Harbour Trust'], ['id' => $two, 'title' => 'Mill Lane']])],
+                'replies' => ['brief-filler' => ["<title>The new kiln opens</title>\n<brief>\nclient: The Harbour Trust\nscope: site\nresult: \"[Add: what changed for the trust]\"\n</brief>\n<examples>{$two}, nope</examples>"]],
+            ],
             'brief-try-again' => [
                 'job' => 'fillBrief',
                 'inputs' => [BriefRequest::fromIdea($kind, 'Kiln opening', 'Nothing on the kiln yet.', ['Harbour Trust'], [$one])->tryAgain(

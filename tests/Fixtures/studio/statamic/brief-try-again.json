@@ -67,7 +67,9 @@
             },
             "kept": [
                 "client"
-            ]
+            ],
+            "candidates": [],
+            "examplesKept": false
         }
     ],
     "replies": {

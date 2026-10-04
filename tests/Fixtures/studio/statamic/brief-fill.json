@@ -55,7 +55,9 @@
                 "8a7b6c5d-4e3f-4a1b-9c8d-7e6f5a4b3c2d"
             ],
             "previous": null,
-            "kept": []
+            "kept": [],
+            "candidates": [],
+            "examplesKept": false
         }
     ],
     "replies": {

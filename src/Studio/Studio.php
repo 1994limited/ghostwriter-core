@@ -533,8 +533,10 @@ final class Studio
      * The brief, filled in for the conversation's brief card from what the
      * person said (their quick details, or a plan idea): a working title,
      * an answer for every one of the kind's questions, and the records to
-     * model it on (the request's, as the brief screen ticked them). One
-     * call. For "Try again", pass `$request->tryAgain($brief, $edited)`.
+     * model it on: the request's, as ticked, or with none ticked the
+     * filler's choice from the request's candidates
+     * (BriefRequest::choosesExamples()), best first. One call. For "Try
+     * again", pass `$request->tryAgain($brief, $edited)`.
      *
      * Facts about the organisation are never invented: the prompt forbids
      * it, and BriefCheck turns any figure or quotation the person didn't
@@ -548,8 +550,8 @@ final class Studio
     public function fillBrief(BriefRequest $request): Result
     {
         $kind = $request->kind;
-        $schema = self::briefSchema($kind, true);
-        [$response, $parsed, $problem] = $this->askStructured('brief-filler', $this->briefFillerPrompt($request), $schema, $this->briefReader($kind), 'the brief could not be read', instructions: $this->briefInstructions('brief-filler', $kind, $request->titles, $schema));
+        $schema = self::briefSchema($kind, true, array_column($request->candidates, 'id'));
+        [$response, $parsed, $problem] = $this->askStructured('brief-filler', $this->briefFillerPrompt($request), $schema, $this->briefReader($kind), 'the brief could not be read', instructions: $this->briefInstructions('brief-filler', $kind, $request->titles, $schema, $request->candidates));
 
         if ($problem !== null || ! is_array($parsed)) {
             throw new UnreadableReply('Ghostwriter could not fill in the brief from that. Try again, or say a little more about it.', 'brief-filler', $problem ?? 'there was no brief');
@@ -569,7 +571,7 @@ final class Studio
             : (preg_match('/<title>(.*?)<\/title>/s', $response->text, $match) === 1 ? trim((string) preg_replace('/\s+/u', ' ', $match[1])) : '');
 
         // Titles the model was given or gave may be quoted, figures and all.
-        [$answers, $problems] = BriefCheck::check($kind, $answers, $request->source(), $request->previous !== null ? $request->kept : [], [...$request->titles, $request->title, $title]);
+        [$answers, $problems] = BriefCheck::check($kind, $answers, $request->source(), $request->previous !== null ? $request->kept : [], [...$request->titles, ...array_column($request->candidates, 'title'), $request->title, $title]);
 
         if ($problems !== []) {
             $this->log('warning', 'the brief had facts the person did not give, now left for them ('.implode('; ', $problems).')', 'brief-filler', $response->text);
@@ -577,21 +579,60 @@ final class Studio
 
         $title = $request->title !== null && $request->title !== '' ? $request->title : ($title !== '' ? mb_substr($title, 0, 200) : self::opening($request->details, 80));
 
+        $examples = $request->choosesExamples() ? self::chosenExamples($request, $response) : $request->examples;
+
         return new Result(
-            new Brief($title, $answers, $request->examples, $request->previous !== null ? $request->previous->attempt + 1 : 1),
+            new Brief($title, $answers, $examples, $request->previous !== null ? $request->previous->attempt + 1 : 1),
             $response->usage,
         );
     }
 
     /**
-     * What the brief filler is sent: what the person said, and for "Try
-     * again" the brief they didn't take.
+     * The records the filler chose to model it on: candidates only, in its
+     * order, at most Brief::MAX_EXAMPLES. Structured, `examples`; tagged,
+     * the IDs in an `<examples>` block, separated by commas or lines.
+     *
+     * @return array<int, int|string>
+     */
+    private static function chosenExamples(BriefRequest $request, TextResponse $response): array
+    {
+        if ($response->structured !== null) {
+            $given = is_array($response->structured['examples'] ?? null) ? $response->structured['examples'] : [];
+        } else {
+            $given = preg_match('/<examples>(.*?)<\/examples>/s', $response->text, $match) === 1
+                ? (array) preg_split('/[\s,]+/', trim(str_replace(['"', "'", '`', '[', ']', '- '], ' ', $match[1])), -1, PREG_SPLIT_NO_EMPTY)
+                : [];
+        }
+
+        $chosen = [];
+
+        foreach ($given as $id) {
+            $candidate = $request->candidate($id);
+
+            if ($candidate !== null && ! in_array($candidate, $chosen, true)) {
+                $chosen[] = $candidate;
+            }
+        }
+
+        return array_slice($chosen, 0, Brief::MAX_EXAMPLES);
+    }
+
+    /**
+     * What the brief filler is sent: what the person said, whether it
+     * chooses the records to model it on, and for "Try again" the brief
+     * they didn't take.
      */
     public function briefFillerPrompt(BriefRequest $request): string
     {
         $said = $request->title !== null && $request->title !== ''
             ? "Working title: {$request->title}\n\nNotes:\n".($request->details !== '' ? $request->details : '(none)')
             : "What your colleague said:\n".($request->details !== '' ? $request->details : '(nothing)');
+
+        if ($request->candidates !== []) {
+            $said .= "\n\n".($request->choosesExamples()
+                ? 'Your colleague has not chosen what to model it on: choose for them.'
+                : 'Your colleague has already chosen what to model it on: leave the examples empty.');
+        }
 
         if ($request->previous === null) {
             return $said;
@@ -609,9 +650,16 @@ final class Studio
     /**
      * The brief writer's or filler's instructions for a kind, filled in.
      *
+     * The entries are listed by title, newest first; a candidate to model
+     * it on (published) also gives its ID, as `[id: 123]`, and with any
+     * candidates the prompt's `{{# examples }}…{{/ examples }}` parts are
+     * kept. They depend only on the group, so the instructions stay the
+     * same from one request to the next.
+     *
      * @param  array<int, string>  $titles
+     * @param  array<int, array{id: int|string, title: string}>  $candidates
      */
-    private function briefInstructions(string $agent, ContentKind $kind, array $titles, ?OutputSchema $schema = null): string
+    private function briefInstructions(string $agent, ContentKind $kind, array $titles, ?OutputSchema $schema = null, array $candidates = []): string
     {
         $held = $schema !== null && $this->takesSchema($agent, $schema);
         $keys = self::briefKeys($kind);
@@ -621,13 +669,54 @@ final class Studio
             $kind->questions,
         ));
 
-        return strtr($this->prompt($agent, $held), [
+        $entries = self::briefEntries($titles, $candidates);
+        $prompt = $this->prompt($agent, $held);
+
+        if (str_contains($prompt, '{{# examples }}')) {
+            $prompt = self::tidy((string) preg_replace($candidates !== [] ? '/\{\{[#\/] examples \}\}/' : '/\{\{# examples \}\}.*?\{\{\/ examples \}\}/s', '', $prompt));
+        }
+
+        return strtr($prompt, [
             '{{ type_title }}' => $kind->title,
             '{{ type_description }}' => $kind->description,
             '{{ type_guidance }}' => $kind->guidance,
             '{{ questions }}' => $questions,
-            '{{ entries }}' => $titles !== [] ? implode("\n", array_map(fn (string $title) => '- '.$title, $titles)) : 'None yet.',
+            '{{ entries }}' => $entries !== [] ? implode("\n", $entries) : 'None yet.',
         ]);
+    }
+
+    /**
+     * The group's entries for the brief prompt, newest first: `- Title`,
+     * with ` [id: …]` after each candidate to model it on. Candidates whose
+     * title isn't among the titles come after them.
+     *
+     * @param  array<int, string>  $titles
+     * @param  array<int, array{id: int|string, title: string}>  $candidates
+     * @return list<string>
+     */
+    private static function briefEntries(array $titles, array $candidates): array
+    {
+        $lines = [];
+
+        foreach ($titles as $title) {
+            $id = null;
+
+            foreach ($candidates as $i => $candidate) {
+                if ($candidate['title'] === trim((string) preg_replace('/\s+/u', ' ', $title))) {
+                    $id = $candidate['id'];
+                    unset($candidates[$i]);
+                    break;
+                }
+            }
+
+            $lines[] = '- '.$title.($id !== null ? " [id: {$id}]" : '');
+        }
+
+        foreach ($candidates as $candidate) {
+            $lines[] = '- '.$candidate['title']." [id: {$candidate['id']}]";
+        }
+
+        return $lines;
     }
 
     /**
@@ -953,8 +1042,12 @@ final class Studio
      * The brief writer's or filler's reply: an answer for every question,
      * all required (an empty string for nothing), so a long brief stays
      * within the optional-field limits; the filler's working title first.
+     * With candidate IDs, also `examples`: up to Brief::MAX_EXAMPLES of
+     * them, best first, an enum of the IDs as text.
+     *
+     * @param  array<int, int|string>  $candidates  The IDs the filler may choose to model it on.
      */
-    public static function briefSchema(ContentKind $kind, bool $title): OutputSchema
+    public static function briefSchema(ContentKind $kind, bool $title, array $candidates = []): OutputSchema
     {
         $keys = self::briefKeys($kind);
         $answers = [];
@@ -971,6 +1064,15 @@ final class Studio
 
         $properties = $title ? ['title' => ['type' => 'string', 'description' => 'The working title.']] : [];
         $properties['answers'] = ['type' => 'object', 'required' => array_values($keys), 'properties' => $answers === [] ? (object) [] : $answers];
+
+        if ($candidates !== []) {
+            $properties['examples'] = [
+                'type' => 'array',
+                'maxItems' => Brief::MAX_EXAMPLES,
+                'items' => ['type' => 'string', 'enum' => array_values(array_unique(array_map('strval', $candidates)))],
+                'description' => 'The IDs of up to '.Brief::MAX_EXAMPLES.' to model it on, best first; empty when your colleague has chosen.',
+            ];
+        }
 
         return new OutputSchema('brief', ['type' => 'object', 'required' => array_keys($properties), 'properties' => $properties]);
     }

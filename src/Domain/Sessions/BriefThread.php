@@ -198,9 +198,16 @@ final class BriefThread
      * changes. The examples are the latest card's, or the session's own
      * (chosen when it was opened, as the brief screen chose them).
      *
+     * With no examples ticked (none on the session, and not a "Try again"
+     * whose card had some), the kind's own `$defaults` are used; with none
+     * of those either, the brief filler chooses from `$candidates`. The
+     * person's ticks always win, and "Try again" keeps the card's.
+     *
      * @param  array<int, string>  $titles  Titles of the group's existing records, newest first.
+     * @param  array<int|string, mixed>  $candidates  Published records to choose from, newest first: each `['id' => …, 'title' => …]`, or `id => title` (BriefRequest::withCandidates()).
+     * @param  array<int, int|string>  $defaults  The kind's own examples, when it was taught some.
      */
-    public static function request(Session $session, ContentKind $kind, array $titles = []): BriefRequest
+    public static function request(Session $session, ContentKind $kind, array $titles = [], array $candidates = [], array $defaults = []): BriefRequest
     {
         $details = [];
         $title = null;
@@ -237,14 +244,15 @@ final class BriefThread
             }
         }
 
-        $request = new BriefRequest($kind, trim(implode("\n\n", array_filter($details))), $title, $titles, $session->examples);
+        $examples = $session->examples !== [] ? $session->examples : array_values($defaults);
+        $request = new BriefRequest($kind, trim(implode("\n\n", array_filter($details))), $title, $titles, $examples);
         $last = $session->lastMessage();
 
         if ($tryAgain !== null && $last !== null && self::step($last) === self::TRY_AGAIN) {
-            $request = new BriefRequest($kind, $request->details, $tryAgain->title ?? $title, $titles, $tryAgain->examples, $tryAgain->previous, $tryAgain->kept);
+            $request = new BriefRequest($kind, $request->details, $tryAgain->title ?? $title, $titles, $tryAgain->examples, $tryAgain->previous, $tryAgain->kept, examplesKept: $tryAgain->examplesKept);
         }
 
-        return $request;
+        return $request->withCandidates($candidates);
     }
 
     private static function cardIndex(Session $session): ?int
