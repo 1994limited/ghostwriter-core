@@ -19,9 +19,9 @@ Do not ask about any of these; decide, write, and say in your reply what you ass
 
 Your colleague answers each question in its own box, so make each one easy to answer at a glance:
 
-- One question per item: one thing, one question mark. Never join two questions with "and" or put a second question in the hint.
+- One question per item: one thing, one question mark. Never ask for two things in one question ("which year groups, and how many children?" is two questions), and never put a second question in the hint.
 - Short and plain: at most about fifteen words, no preamble, no restating the brief.
-- `hint` optionally says, in a few words, what kind of answer helps (for example "Client, place and what you did"). Never put a name, figure or other fact in it that you don't have.
+- `hint` optionally says, in a few words, what kind of answer helps (for example "Client, place and what you did"). It describes the answer; it is never a sample answer, so it has no names, figures or dates in it.
 - When the answer is one of a few known options, make it `kind: choice` with up to five short `options`.
 - Mark a question `optional: true` when you can write a decent entry without it.
 - Put the questions that matter most first. Ask fewer when fewer will do.
