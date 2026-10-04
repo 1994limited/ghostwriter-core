@@ -31,15 +31,15 @@ Checklist:
 
 ## How you answer
 
-Only this, with nothing before or after it:
+{{ answer_intro }}
 
-<suggestions>
+{{ answer_open }}
 {"suggestions": [
-  {"finding": "f1", "category": "out-of-date", "unit": "u1", "quote": "New for 2024: winter care visits", "reason": "…", "source": {"kind": "finding"}, "replacement": "Winter care visits", "alternatives": ["Our winter care visits"]},
-  {"finding": "f2", "category": "fact-to-check", "unit": "u3", "quote": "our team of 6 designers", "reason": "…", "source": {"kind": "finding"}, "fact": {"ask": "Number of designers", "template": "our team of {answer} designers", "without": "our team of designers", "answer": "number"}},
-  {"finding": "f3", "drop": "It reads clearly as it is."},
-  {"category": "voice", "unit": "u2", "quote": "…", "reason": "…", "source": {"kind": "voice-guide", "heading": "What this voice never does"}, "replacement": "…", "alternatives": ["…"]}
+  {"notes": "Posted in 2024, read in 2026: the offer is no longer new.", "finding": "f1", "category": "out-of-date", "unit": "u1", "quote": "New for 2024: winter care visits", "reason": "…", "source": {"kind": "finding"}, "replacement": "Winter care visits", "alternatives": ["Our winter care visits"]},
+  {"notes": "A team size can change; only the editor knows it.", "finding": "f2", "category": "fact-to-check", "unit": "u3", "quote": "our team of 6 designers", "reason": "…", "source": {"kind": "finding"}, "fact": {"ask": "Number of designers", "template": "our team of {answer} designers", "without": "our team of designers", "answer": "number"}},
+  {"notes": "Long, but it reads clearly in its paragraph.", "finding": "f3", "drop": "It reads clearly as it is."},
+  {"notes": "…", "category": "voice", "unit": "u2", "quote": "…", "reason": "…", "source": {"kind": "voice-guide", "heading": "What this voice never does"}, "replacement": "…", "alternatives": ["…"]}
 ]}
-</suggestions>
+{{ answer_close }}
 
-Each kept suggestion has `category` (`out-of-date`, `voice`, `clarity`, `fact-to-check`, `link`, `accessibility`, `seo` or `duplicate`), `unit` (or the image's `i` number), `quote` (the exact words, as the unit has them; leave it out only for a whole short field or an image), `occurrence` (0 for the first time those words appear in the unit, 1 for the second; only when they repeat), `reason` (one or two sentences) and `source` (`kind`: `voice-guide` with `heading`, `kind`, `house`, `finding`, `site-entry` with `entry`, `image` or `general`). Add `replacement` for a change, `fact` for a fact to check, and `link` (`{"entry": "e12"}`) to point a link at a site entry. A kept candidate takes the candidate's place and category whatever you write; a dropped one has only `finding` and `drop`.
+Every item starts with `notes`: a few words for yourself on what you checked in context before deciding. The editor never sees them. Each kept suggestion has `category` (`out-of-date`, `voice`, `clarity`, `fact-to-check`, `link`, `accessibility`, `seo` or `duplicate`), `unit` (or the image's `i` number), `quote` (the exact words, as the unit has them; leave it out only for a whole short field or an image), `occurrence` (0 for the first time those words appear in the unit, 1 for the second; only when they repeat), `reason` (one or two sentences) and `source` (`kind`: `voice-guide` with `heading`, `kind`, `house`, `finding`, `site-entry` with `entry`, `image` or `general`). Add `replacement` for a change, `fact` for a fact to check, and `link` (`{"entry": "e12"}`) to point a link at a site entry. A kept candidate takes the candidate's place and category whatever you write; a dropped one has only `notes`, `finding` and `drop`.

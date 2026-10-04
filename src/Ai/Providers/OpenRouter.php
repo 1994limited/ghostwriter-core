@@ -19,6 +19,9 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\Message;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Models;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Shape;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\StopReason;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Structured\JsonReply;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Structured\Schemas;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\TakesSchemas;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextProvider;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextResponse;
@@ -40,7 +43,7 @@ use SensitiveParameter;
  * Models::OPENROUTER_TIERS): a model chosen for the tier wins, then the
  * model chosen in the settings, then the tier's default.
  */
-class OpenRouter extends HttpProvider implements ImageProvider, TextProvider
+class OpenRouter extends HttpProvider implements ImageProvider, TakesSchemas, TextProvider
 {
     public const URL = 'https://openrouter.ai/api/v1';
 
@@ -112,7 +115,15 @@ class OpenRouter extends HttpProvider implements ImageProvider, TextProvider
             $body['reasoning'] = ['effort' => $effort->value];
         }
 
-        $data = $this->transport->json($this->url('/chat/completions'), $this->headers(), $body, $this->timeoutFor($request->timeout), $request->agent);
+        $mode = $this->structuredMode($request, $model);
+
+        if ($mode !== null && $request->schema !== null) {
+            // Claude through OpenRouter keeps optional properties optional:
+            // strict's nullable unions would pass Claude's limit of 16.
+            $body['response_format'] = OpenAi::responseFormat($request->schema, str_starts_with($model, 'anthropic/') ? Schemas::anthropic($request->schema) : Schemas::strict($request->schema));
+        }
+
+        $data = $this->post($body, $request, $mode);
 
         // OpenRouter can answer 200 with an error in place of a choice.
         if (is_array($data['error'] ?? null) && ! isset($data['choices'])) {
@@ -149,6 +160,8 @@ class OpenRouter extends HttpProvider implements ImageProvider, TextProvider
             new Usage((int) ($usage['prompt_tokens'] ?? 0), (int) ($usage['completion_tokens'] ?? 0)),
             'openrouter',
             is_string($data['model'] ?? null) && $data['model'] !== '' ? $data['model'] : $model,
+            $mode !== null ? JsonReply::decode($text) : null,
+            $mode,
         ), $started);
     }
 
@@ -190,6 +203,30 @@ class OpenRouter extends HttpProvider implements ImageProvider, TextProvider
      * OpenRouter normalises every model's reason to stop, `error` aside,
      * which the provider throws for.
      */
+    /**
+     * The chat completion, sent again without `response_format` if it is
+     * refused (a gateway or model without it); $mode is then null.
+     *
+     * @param  array<string, mixed>  $body
+     * @return array<string, mixed>
+     */
+    private function post(array $body, TextRequest $request, ?string &$mode): array
+    {
+        try {
+            return $this->transport->json($this->url('/chat/completions'), $this->headers(), $body, $this->timeoutFor($request->timeout), $request->agent);
+        } catch (BadResponse $exception) {
+            if (! isset($body['response_format']) || ! $this->refusedTheSchema($exception)) {
+                throw $exception;
+            }
+
+            $this->schemaDropped($request->agent, (string) $body['model'], $exception);
+            unset($body['response_format']);
+            $mode = null;
+
+            return $this->transport->json($this->url('/chat/completions'), $this->headers(), $body, $this->timeoutFor($request->timeout), $request->agent);
+        }
+    }
+
     public static function stopReason(mixed $reason): StopReason
     {
         return match ($reason) {

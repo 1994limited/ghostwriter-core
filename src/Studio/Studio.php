@@ -6,7 +6,9 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\ProviderException;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\Truncated;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Image;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Message;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\OutputSchema;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\TakesSchemas;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextProvider;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextResponse;
@@ -679,14 +681,12 @@ final class Studio
                 }
             }
 
-            $response = $this->ask('reviewer', ReviewPrompt::render($input, $batch, $ids), images: $images, instructions: $instructions);
+            [$response, $read] = $this->askForItems('reviewer', ReviewPrompt::render($input, $batch, $ids), $reader, self::reviewerSchema(), $images, $instructions, "the review reply couldn't be read", ['part' => ($batch->index + 1).' of '.$batch->total]);
             $usage = $usage->plus($response->usage);
-            $read = $reader->read($response->text);
             $attached = [...$attached, ...$ids];
 
             if ($read['problem'] !== null) {
                 $problems[] = $read['problem'];
-                $this->unreadable("the review reply couldn't be read ({$read['problem']})", 'reviewer', $response->text, ['part' => ($batch->index + 1).' of '.$batch->total]);
             } elseif ($read['items'] === []) {
                 // Read, with nothing in it: say so, so an empty review is never silent.
                 $this->log('info', 'the review reply had nothing to suggest', 'reviewer', $response->text, ['part' => ($batch->index + 1).' of '.$batch->total, 'candidates' => (string) count($batch->findings), 'output_tokens' => (string) $response->usage->output]);
@@ -716,7 +716,7 @@ final class Studio
             ? 'You may flag a claim only the editor can confirm ("award-winning", "the only", "the largest") as a `fact-to-check`, never with a value.'
             : 'Don\'t question claims ("award-winning", "the largest"): this site has turned claim checks off. A `fact-to-check` comes only from the findings.';
 
-        return strtr($this->prompt('reviewer'), [
+        return self::tidy(strtr($this->prompt('reviewer'), [
             '{{ scoped_edit_rules }}' => $this->prompt('scoped-edit'),
             '{{ voice }}' => trim($input->writer->voice) !== '' ? trim($input->writer->voice) : 'No voice guide has been written yet. Make no Voice suggestions.',
             '{{ type_title }}' => $kind->title,
@@ -726,7 +726,8 @@ final class Studio
             '{{ claims }}' => $claims,
             '{{ reply_language }}' => self::languageName($input->replyLanguage),
             '{{ part }}' => $input->calls() > 1 ? "- This page is long, so it is reviewed in parts. Review only the units shown; the others are reviewed separately.\n" : '',
-        ]);
+            ...$this->answerFormat('reviewer', self::reviewerSchema(), 'suggestions'),
+        ]));
     }
 
     /**
@@ -766,14 +767,12 @@ final class Studio
                 continue;
             }
 
-            $response = $this->ask('verifier', VerifyPrompt::render($input, $batch, $byBatch[$batch->index]), instructions: $instructions);
+            [$response, $read] = $this->askForItems('verifier', VerifyPrompt::render($input, $batch, $byBatch[$batch->index]), $reader, self::verifierSchema(), [], $instructions, "the verifier's reply couldn't be read", ['part' => ($batch->index + 1).' of '.$batch->total]);
             $usage = $usage->plus($response->usage);
-            $read = $reader->read($response->text);
             $calls++;
 
             if ($read['problem'] !== null) {
                 $problems[] = $read['problem'];
-                $this->unreadable("the verifier's reply couldn't be read ({$read['problem']})", 'verifier', $response->text, ['part' => ($batch->index + 1).' of '.$batch->total]);
             }
 
             if ($read['truncated'] || $response->truncated()) {
@@ -796,13 +795,101 @@ final class Studio
     {
         $kind = $input->writer->kind;
 
-        return strtr($this->prompt('verifier'), [
+        return self::tidy(strtr($this->prompt('verifier'), [
             '{{ scoped_edit_rules }}' => $this->prompt('scoped-edit'),
             '{{ voice }}' => trim($input->writer->voice) !== '' ? trim($input->writer->voice) : 'No voice guide has been written yet. Judge the voice by the rest of the page.',
             '{{ type_title }}' => $kind->title,
             '{{ type_guidance }}' => trim($kind->guidance) !== '' ? trim($kind->guidance) : trim($kind->description),
             '{{ reply_language }}' => self::languageName($input->replyLanguage),
-        ]);
+            ...$this->answerFormat('verifier', self::verifierSchema(), 'verdicts'),
+        ]));
+    }
+
+    /** The review reply's shape, for structured output (resources/schemas/reviewer-reply.json). */
+    public static function reviewerSchema(): OutputSchema
+    {
+        static $schema;
+
+        return $schema ??= OutputSchema::fromFile('review', dirname(__DIR__, 2).'/resources/schemas/reviewer-reply.json');
+    }
+
+    /** The verifier reply's shape, for structured output (resources/schemas/verifier-reply.json). */
+    public static function verifierSchema(): OutputSchema
+    {
+        static $schema;
+
+        return $schema ??= OutputSchema::fromFile('verdicts', dirname(__DIR__, 2).'/resources/schemas/verifier-reply.json');
+    }
+
+    /**
+     * Whether the model this agent's calls go to is held to a schema
+     * (structured output), so the prompt needn't ask for tags.
+     */
+    public function takesSchema(string $agent, OutputSchema $schema): bool
+    {
+        $provider = $this->provider();
+
+        return $provider instanceof TakesSchemas && $provider->takesSchema(new TextRequest($agent, '', '', schema: $schema));
+    }
+
+    /**
+     * How a prompt's "How you answer" opens and closes: bare JSON when the
+     * model is held to the schema, the JSON in tags when it is only asked.
+     *
+     * @return array<string, string>
+     */
+    private function answerFormat(string $agent, OutputSchema $schema, string $tag): array
+    {
+        $held = $this->configured() && $this->takesSchema($agent, $schema);
+
+        return [
+            '{{ answer_intro }}' => $held ? 'Your reply is JSON in the shape you are given, like this:' : 'Only this, with nothing before or after it:',
+            '{{ answer_open }}' => $held ? '' : "<{$tag}>",
+            '{{ answer_close }}' => $held ? '' : "</{$tag}>",
+        ];
+    }
+
+    /** Instructions with no run of blank lines left by an empty placeholder. */
+    private static function tidy(string $text): string
+    {
+        return trim((string) preg_replace("/\n{3,}/", "\n\n", $text));
+    }
+
+    /**
+     * One call whose reply is a list of items (SuggestionReader), sent with
+     * its schema for structured output. A reply that can't be read, and
+     * wasn't cut off, is asked for once more with what was wrong quoted;
+     * the second reply stands, read or not. Both calls' usage is counted.
+     *
+     * @param  array<int, Image>  $images
+     * @param  array<string, string>  $context  For the log.
+     * @return array{0: TextResponse, 1: array{items: list<array<string, mixed>>, truncated: bool, problem: ?string}}
+     *
+     * @throws ProviderException
+     */
+    private function askForItems(string $agent, string $prompt, SuggestionReader $reader, OutputSchema $schema, array $images, string $instructions, string $what, array $context): array
+    {
+        $response = $this->ask($agent, $prompt, images: $images, instructions: $instructions, schema: $schema);
+        $read = $reader->read($response->text);
+
+        if ($read['problem'] === null || $read['truncated'] || $response->truncated()) {
+            if ($read['problem'] !== null) {
+                $this->unreadable("{$what} ({$read['problem']})", $agent, $response->text, $context);
+            }
+
+            return [$response, $read];
+        }
+
+        $this->unreadable("{$what} ({$read['problem']}); asking again once", $agent, $response->text, $context);
+
+        $again = $this->ask($agent, $prompt."\n\nYour last answer to this couldn't be read: {$read['problem']}. Answer again, in full, exactly in the format asked.", images: $images, instructions: $instructions, schema: $schema);
+        $read = $reader->read($again->text);
+
+        if ($read['problem'] !== null) {
+            $this->unreadable("{$what} again ({$read['problem']})", $agent, $again->text, $context);
+        }
+
+        return [$again->withUsage($response->usage->plus($again->usage)), $read];
     }
 
     /**
@@ -1112,7 +1199,8 @@ final class Studio
      * effort. A reply that runs out of room is asked for once more with
      * twice the room, up to MAX_TOKENS_CEILING. If it is still cut off, the
      * WHOLE agents throw Truncated and the rest keep what came back. The
-     * response's usage counts every call made.
+     * response's usage counts every call made. With a schema, the provider
+     * holds the reply to it where it can (TextResponse::$structured).
      *
      * @param  array<int, Message|array<string, mixed>>  $history
      * @param  array<int, Image>  $images
@@ -1120,9 +1208,9 @@ final class Studio
      * @throws Truncated
      * @throws ProviderException
      */
-    public function ask(string $agent, string $prompt, array $history = [], array $images = [], ?string $instructions = null, ?int $timeout = null): TextResponse
+    public function ask(string $agent, string $prompt, array $history = [], array $images = [], ?string $instructions = null, ?int $timeout = null, ?OutputSchema $schema = null): TextResponse
     {
-        $request = new TextRequest($agent, $instructions ?? $this->prompt($agent), $prompt, self::messages($history), array_values($images), timeout: $timeout);
+        $request = new TextRequest($agent, $instructions ?? $this->prompt($agent), $prompt, self::messages($history), array_values($images), timeout: $timeout, schema: $schema);
         $provider = $this->provider();
         $response = $provider->text($request);
 
@@ -1142,7 +1230,7 @@ final class Studio
             $limit = $more;
         }
 
-        $response = new TextResponse($response->text, $response->stopReason, $usage, $response->provider, $response->model);
+        $response = $response->withUsage($usage);
 
         if (! $response->truncated()) {
             return $response;

@@ -9,6 +9,8 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\Image;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\ImageProvider;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\ImageRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\StopReason;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Structured\JsonReply;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\TakesSchemas;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextProvider;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextResponse;
@@ -41,8 +43,18 @@ use PHPUnit\Framework\Assert;
  *
  *     $providers->fake(FakeProvider::withoutKeys());
  *     $providers->fake()->unconfigured(text: false);   // a text key, but no image key
+ *
+ * Structured replies: the fake stands for a model held to a request's
+ * schema (TakesSchemas), so a reply to a request with one is decoded onto
+ * TextResponse::$structured, as a provider would. Queue the object itself,
+ * or have one made up from the schema; to stand for a model without
+ * structured output (the prompt-and-parse path), turn it off.
+ *
+ *     $fake->respondStructured('verifier', ['verdicts' => [['notes' => '…', 'id' => 's1', 'verdict' => 'keep', 'reason' => '…']]]);
+ *     $fake->respondFromSchema('verifier');   // SchemaFaker's data of the request's shape
+ *     $fake->withoutStructuredOutput();
  */
-class FakeProvider implements ImageProvider, TextProvider
+class FakeProvider implements ImageProvider, TakesSchemas, TextProvider
 {
     /** A 1x1 PNG, the image made unless told otherwise. */
     public const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
@@ -61,6 +73,8 @@ class FakeProvider implements ImageProvider, TextProvider
     private bool $textConfigured = true;
 
     private bool $imageConfigured = true;
+
+    private bool $structuredOutput = true;
 
     /**
      * A fake that stands for a site with no keys at all.
@@ -125,6 +139,43 @@ class FakeProvider implements ImageProvider, TextProvider
         $this->answers[$agent] = [...($this->answers[$agent] ?? []), ...array_values($answers)];
 
         return $this;
+    }
+
+    /**
+     * Queue structured replies for one agent: each object is sent back as
+     * its JSON, and as TextResponse::$structured when the request had a
+     * schema.
+     *
+     * @param  array<string, mixed>  ...$replies
+     */
+    public function respondStructured(string $agent, array ...$replies): static
+    {
+        return $this->respond($agent, ...array_map(fn (array $reply) => (string) json_encode($reply, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), array_values($replies)));
+    }
+
+    /**
+     * The agent's next call is answered with data made up from its
+     * request's schema (SchemaFaker); `{}` for a request without one.
+     */
+    public function respondFromSchema(string $agent): static
+    {
+        return $this->respond($agent, fn (TextRequest $request) => $request->schema !== null ? (string) json_encode(SchemaFaker::fake($request->schema)) : '{}');
+    }
+
+    /**
+     * Stand for a model without structured output: schemas aren't taken,
+     * and replies are text only, as the prompt-and-parse path reads them.
+     */
+    public function withoutStructuredOutput(bool $without = true): static
+    {
+        $this->structuredOutput = ! $without;
+
+        return $this;
+    }
+
+    public function takesSchema(TextRequest $request): bool
+    {
+        return $this->structuredOutput && $request->schema !== null;
     }
 
     /**
@@ -259,9 +310,13 @@ class FakeProvider implements ImageProvider, TextProvider
         $answer = count($queue) > 1 ? array_shift($this->answers[$request->agent]) : $queue[0];
         $text = $answer instanceof Closure ? $answer($request) : $answer;
 
-        return $text instanceof TextResponse
-            ? $text
-            : new TextResponse((string) $text, StopReason::End, new Usage(100, 50), 'fake', $request->model ?? 'fake');
+        if ($text instanceof TextResponse) {
+            return $text;
+        }
+
+        $structured = $this->takesSchema($request);
+
+        return new TextResponse((string) $text, StopReason::End, new Usage(100, 50), 'fake', $request->model ?? 'fake', $structured ? JsonReply::decode((string) $text) : null, $structured ? TextResponse::JSON_SCHEMA : null);
     }
 
     public function image(ImageRequest $request): Image

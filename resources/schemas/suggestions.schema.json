@@ -13,6 +13,7 @@
         "type": "object",
         "description": "A kept suggestion (with category), or a dropped candidate: only finding and drop. SuggestionReader also reads the older decline key as drop.",
         "properties": {
+          "notes": {"type": "string", "maxLength": 200},
           "finding": {"type": "string", "pattern": "^f[0-9]+$"},
           "drop": {"type": "string", "maxLength": 200},
           "category": {"enum": ["out-of-date", "voice", "clarity", "fact-to-check", "link", "accessibility", "seo", "duplicate"]},

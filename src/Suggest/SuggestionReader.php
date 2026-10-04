@@ -11,7 +11,13 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Suggest;
  * - a single object is a list of one, and a bare list is the list;
  * - a reply cut off part-way keeps every suggestion object that closed;
  * - the older `decline` key reads as `drop` (a candidate dropped in
- *   context).
+ *   context);
+ * - a key that is null (as a strict JSON mode sends what's left out)
+ *   reads as left out.
+ *
+ * With structured output (resources/schemas/reviewer-reply.json and
+ * verifier-reply.json) the reply is that JSON, bare; it is read the same
+ * way, so the two paths can't drift.
  *
  * Anything else is unreadable: read() gives no items and says why.
  *
@@ -81,7 +87,9 @@ final class SuggestionReader
 
         foreach ($list as $item) {
             if (is_array($item) && ! array_is_list($item)) {
-                $object = array_combine(array_map('strval', array_keys($item)), array_values($item));
+                // A strict JSON mode sends every key, null where there is
+                // nothing; null reads as left out.
+                $object = array_filter(array_combine(array_map('strval', array_keys($item)), array_values($item)), fn ($value) => $value !== null);
 
                 if (! isset($object['drop']) && is_string($object['decline'] ?? null)) {
                     $object['drop'] = $object['decline'];

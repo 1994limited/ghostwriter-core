@@ -111,11 +111,13 @@ final class ReviewLoggingTest extends TestCase
         $this->assertSame(EditReview::UNREADABLE, $review->error);
         $this->assertSame([], $review->all());
         $this->assertSame([
-            ['warning', "Ghostwriter: the review reply couldn't be read (the JSON did not parse)."],
+            ['warning', "Ghostwriter: the review reply couldn't be read (the JSON did not parse); asking again once."],
+            ['warning', "Ghostwriter: the review reply couldn't be read again (the JSON did not parse)."],
             ['warning', "Ghostwriter: a review failed: the reply couldn't be read (the JSON did not parse)."],
         ], $this->messages());
         $this->assertSame($reply, $this->logs[0]['context']['reply']);
-        $this->assertSame(['review' => $review->id, 'agent' => 'reviewer', 'calls' => 1, 'entry' => ReviewCase::input()->context->entry?->key()], $this->logs[1]['context']);
+        $this->assertCount(2, $this->fake->prompted('reviewer'), 'Asked once more, and no more.');
+        $this->assertSame(['review' => $review->id, 'agent' => 'reviewer', 'calls' => 1, 'entry' => ReviewCase::input()->context->entry?->key()], $this->logs[2]['context']);
     }
 
     public function test_the_editor_is_told_in_plain_words(): void

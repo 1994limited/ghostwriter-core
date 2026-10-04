@@ -91,3 +91,26 @@ With OpenRouter, every request goes through OpenRouter on its way to the model's
 - `Testing\MockHttpClient` covers the provider and the connection, as for the other providers. Core's tests never call OpenRouter.
 - `Testing\FakeOpenRouter` stands in for `ConnectsProvider` in an addon's route tests, and `Testing\InMemoryProviderKeys` stands in for the encrypted store.
 - `Providers::fake()` covers OpenRouter like any other provider.
+
+## Structured output
+
+A `TextRequest` may carry an `OutputSchema`: the JSON Schema object its reply must match. Each provider holds the model to it where it can, rewriting the schema into the subset it accepts (`Ai\Structured\Schemas`, deterministic, so the prompt cache still hits):
+
+| Provider | Models (`Models::structuredOutput()`) | Sent as | Schema |
+|---|---|---|---|
+| `anthropic` | Opus, Sonnet, Fable 4.5 and later, Mythos, Haiku 4.5 | `output_config.format` (`json_schema`), beside `output_config.effort` | `Schemas::anthropic()`: optional properties stay optional; lengths, patterns, bounds and `maxItems` folded into `description`; `minItems` 0 or 1 |
+| `anthropic` | Older Claude models | a `reply` tool with `tool_choice` set to it (`auto` plus a line in the prompt on models that refuse a forced choice); its input is the reply | `Schemas::anthropic()` |
+| `openai` | GPT-4o, GPT-4.1, GPT-5 and later, the o-series | `response_format` `json_schema`, `strict: true` | `Schemas::strict()`: every property required, optional ones nullable |
+| `gemini` | Gemini 2.0 and later | `generationConfig.responseMimeType` `application/json` and `responseJsonSchema` | `Schemas::gemini()` |
+| `openrouter` | The `anthropic/`, `openai/` and `google/` ids of the models above | `response_format` `json_schema`, `strict: true` | `Schemas::anthropic()` for Claude (strict's nullable unions would pass Claude's limits), `Schemas::strict()` for the rest |
+
+Every rewrite closes every object (`additionalProperties: false`). Claude allows 24 optional properties and 16 unions in a request; `tests/Ai/Structured/SchemasTest.php` keeps the review schemas within that.
+
+The reply's JSON is the response's `text` either way (a tool's input is encoded), and decoded onto `TextResponse::$structured`; `TextResponse::$structuredBy` says how it was sent (`json_schema`, `tool`, or null). A model with neither, or another maker's model on OpenRouter, gets the request as plain text, so the prompt must still describe the shape and the caller reads the text as before. A 400 that refuses the format (a gateway without it, a schema too complex to compile) is logged as a warning and the request goes once more without it. The log line "A model call finished." has `structured` and `parsed`, and for Claude `cache_read_tokens` and `cache_write_tokens`.
+
+`TakesSchemas::takesSchema($request)` (every provider here, and `FakeProvider`) says whether a request's schema would be sent; `Studio::takesSchema($agent, $schema)` asks the provider in use, so a prompt asks for tags only when nothing else holds the model to the shape.
+
+Write the schema's properties in the order the model should fill them in: models write in schema order. Ask for a short `notes` field first rather than "reasoning": Claude may decline a request whose schema asks for its step-by-step reasoning.
+
+In tests, `FakeProvider` stands for a model with structured output: `respondStructured($agent, $object)` queues a reply, `respondFromSchema($agent)` makes one up from the request's schema (`Testing\SchemaFaker`), and `withoutStructuredOutput()` stands for a model without it.
+
