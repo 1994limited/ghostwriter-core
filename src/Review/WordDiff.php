@@ -41,13 +41,13 @@ final class WordDiff
 
         while ($i < $n || $j < $m) {
             if ($i < $n && $j < $m && $a[$i] === $b[$j]) {
-                self::push($runs, '=', $a[$i]);
+                $runs = self::push($runs, '=', $a[$i]);
                 $i++;
                 $j++;
             } elseif ($j < $m && ($i >= $n || $lcs[$i][$j + 1] >= $lcs[$i + 1][$j])) {
-                self::push($runs, '+', $b[$j++]);
+                $runs = self::push($runs, '+', $b[$j++]);
             } else {
-                self::push($runs, '-', $a[$i++]);
+                $runs = self::push($runs, '-', $a[$i++]);
             }
         }
 
@@ -69,17 +69,16 @@ final class WordDiff
     /**
      * @param  list<array{0: '='|'-'|'+', 1: string}>  $runs
      * @param  '='|'-'|'+'  $op
+     * @return list<array{0: '='|'-'|'+', 1: string}>
      */
-    private static function push(array &$runs, string $op, string $token): void
+    private static function push(array $runs, string $op, string $token): array
     {
-        $last = array_key_last($runs);
+        $last = array_pop($runs);
 
-        if ($last !== null && $runs[$last][0] === $op) {
-            $runs[$last][1] .= $token;
-
-            return;
+        if ($last !== null && $last[0] === $op) {
+            return [...$runs, [$op, $last[1].$token]];
         }
 
-        $runs[] = [$op, $token];
+        return $last === null ? [[$op, $token]] : [...$runs, $last, [$op, $token]];
     }
 }
