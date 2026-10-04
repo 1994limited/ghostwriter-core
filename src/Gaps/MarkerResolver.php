@@ -45,9 +45,11 @@ final class MarkerResolver
     /** Where the draft keeps links chosen for fields it doesn't hold: hint => {link, url?}. */
     public const CHOSEN_LINKS = 'gw_links';
 
-    private const WHOLE_SENTINEL = '/\A\s*(?:https?:\/\/example\.com\/?)?#gw-link:([A-Za-z0-9._~%-]*)\s*\z/u';
+    /** A value that is only a sentinel: group 1 the hint as written, spaces and all. */
+    private const WHOLE_SENTINEL = '/\A\s*(?:https?:\/\/example\.com\/?)?#gw-link:([^\n]*?)\s*\z/u';
 
-    private const ANY_SENTINEL = '/(?:https?:\/\/example\.com\/?)?#gw-link:([A-Za-z0-9._~%-]*)/u';
+    /** A sentinel inside text, as Markers::SENTINEL_PATTERN finds it. */
+    private const ANY_SENTINEL = '/(?:https?:\/\/example\.com\/?)?#gw-link:([^\s"\'<>()]*(?:[ \t]+[^\s"\'<>()]+)*)/u';
 
     /**
      * The draft's data with a link chosen for a field it doesn't hold: by
@@ -113,7 +115,7 @@ final class MarkerResolver
             }
 
             if (preg_match(self::WHOLE_SENTINEL, $value, $match) === 1) {
-                $choice = $chosen[self::key('link', rawurldecode($match[1]))] ?? null;
+                $choice = $chosen[self::key('link', Markers::linkHintFrom($match[1]))] ?? null;
 
                 if ($choice !== null) {
                     $address = $choice['url'] ?? (is_string($choice['link'] ?? null) ? $choice['link'] : null);
@@ -124,7 +126,7 @@ final class MarkerResolver
             }
 
             $built[$key] = (string) preg_replace_callback(self::ANY_SENTINEL, function (array $match) use ($chosen) {
-                $choice = $chosen[self::key('link', rawurldecode($match[1]))] ?? null;
+                $choice = $chosen[self::key('link', Markers::linkHintFrom($match[1]))] ?? null;
                 $address = $choice['url'] ?? (is_string($choice['link'] ?? null) ? $choice['link'] : null);
 
                 return $address ?? $match[0];
@@ -238,7 +240,7 @@ final class MarkerResolver
 
         // A value that is only a sentinel: a link field's.
         if ($links === [] && preg_match(self::WHOLE_SENTINEL, $text, $match) === 1) {
-            return [['hint' => rawurldecode($match[1]), 'match' => $text, 'offset' => 0, 'whole' => true]];
+            return [['hint' => Markers::linkHintFrom($match[1]), 'match' => $text, 'offset' => 0, 'whole' => true]];
         }
 
         return $links;

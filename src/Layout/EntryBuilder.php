@@ -131,8 +131,8 @@ final class EntryBuilder
     {
         return match ($field->kind) {
             Kind::Text => is_scalar($value) ? trim(preg_replace('/\s+/u', ' ', Markers::normalise((string) $value)) ?? '') : null,
-            Kind::LongText => is_scalar($value) ? trim(Markers::normalise((string) $value)) : null,
-            Kind::RichText => is_scalar($value) ? $this->richText->fromMarkdown(trim(Markers::normalise((string) $value)), $field) : null,
+            Kind::LongText => is_scalar($value) ? trim(Markers::normaliseLinks(Markers::normalise((string) $value))) : null,
+            Kind::RichText => is_scalar($value) ? $this->richText->fromMarkdown(trim(Markers::normaliseLinks(Markers::normalise((string) $value))), $field) : null,
             Kind::Choice => $this->choice($value, $field),
             Kind::Choices => array_values(array_filter(array_map(fn ($v) => $this->choice($v, $field), (array) $value), fn ($v) => $v !== null)),
             Kind::Toggle => filter_var($value, FILTER_VALIDATE_BOOLEAN),

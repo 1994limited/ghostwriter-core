@@ -256,6 +256,43 @@ class GapFinderTest extends TestCase
         );
     }
 
+    /**
+     * A link to choose whose hint has a space, as each editor stores it.
+     *
+     * @return iterable<string, array{RichTextDialect, Field, mixed}>
+     */
+    public static function spacedLinkShapes(): iterable
+    {
+        $html = new HtmlDialect;
+        $bard = new BardDialect;
+        $rich = new Field('body', Kind::RichText, 'Body');
+        $bardField = new Field('body', Kind::RichText, 'Body', type: 'bard');
+        $markdown = new Field('body', Kind::LongText, 'Body', type: 'markdown');
+        $bardJson = fn (string $href) => [['type' => 'paragraph', 'content' => [
+            ['type' => 'text', 'text' => 'See '],
+            ['type' => 'text', 'marks' => [['type' => 'link', 'attrs' => ['href' => $href, 'rel' => null, 'target' => null, 'title' => null]]], 'text' => 'our winter structure'],
+            ['type' => 'text', 'text' => '.'],
+        ]]];
+
+        yield 'bard, as typed' => [$bard, $bardField, $bardJson('#gw-link:Winter structure')];
+        yield 'bard, encoded' => [$bard, $bardField, $bardJson('#gw-link:Winter%20structure')];
+        yield 'ckeditor html' => [$html, $rich, '<p>See <a href="#gw-link:Winter%20structure">our winter structure</a>.</p>'];
+        yield 'filament tiptap html' => [$html, $rich, '<p>See <a target="_blank" rel="noopener noreferrer nofollow" href="#gw-link:Winter structure">our winter structure</a>.</p>'];
+        yield 'markdown, as written' => [$html, $markdown, 'See [our winter structure](#gw-link:Winter structure).'];
+        yield 'markdown, angle brackets' => [$html, $markdown, 'See [our winter structure](<#gw-link:Winter structure>).'];
+        yield 'markdown, with a title' => [$html, $markdown, 'See [our winter structure](https://example.com/#gw-link:Winter structure "Winter").'];
+    }
+
+    #[DataProvider('spacedLinkShapes')]
+    public function test_a_link_whose_hint_has_a_space_is_found_in_each_shape(RichTextDialect $dialect, Field $field, mixed $value): void
+    {
+        $report = GapFinder::standard()->find(new GapContext(schema: new Schema([$field]), entry: new EntryData(['body' => $value]), richText: $dialect));
+        $gaps = $report->all();
+
+        $this->assertSame(['link|body|winter structure|0'], array_map(fn (Gap $gap) => $gap->id, $gaps));
+        $this->assertSame('Winter structure', $gaps[0]->hint);
+    }
+
     public function test_the_report_is_ready_for_the_front_end(): void
     {
         $array = GapFinder::standard()->find($this->context())->toArray();

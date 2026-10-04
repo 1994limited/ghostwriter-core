@@ -50,6 +50,48 @@ class MarkersTest extends TestCase
         $this->assertNull(Markers::linkHint('/contact'));
     }
 
+    public function test_a_link_hint_with_spaces_is_read_the_same_raw_bracketed_or_encoded(): void
+    {
+        foreach ([
+            '[our winter structure](#gw-link:Winter structure)',
+            '[our winter structure](<#gw-link:Winter structure>)',
+            '[our winter structure](#gw-link:Winter%20structure)',
+            '[our winter structure](https://example.com/#gw-link:Winter%20structure "A title")',
+            '[our winter structure]( #gw-link:Winter  structure )',
+        ] as $markdown) {
+            $links = Markers::links('See '.$markdown.'. And [us](#gw-link:contact-page) (soon).');
+
+            $this->assertSame(['Winter structure', 'contact-page'], array_column($links, 'hint'), $markdown);
+            $this->assertSame($markdown, $links[0]['match']);
+        }
+
+        foreach (['#gw-link:Winter structure', '#gw-link:Winter%20structure', 'https://example.com/#gw-link:Winter%20structure', '  #gw-link:Winter structure '] as $href) {
+            $this->assertTrue(Markers::isLinkSentinel($href), $href);
+            $this->assertSame('Winter structure', Markers::linkHint($href), $href);
+        }
+
+        // Inside text, a sentinel ends at a quote or a bracket.
+        $this->assertSame('Winter structure', Markers::linkHint('<a href="#gw-link:Winter structure">x</a>'));
+        $this->assertSame('über-uns', Markers::linkHint('#gw-link:über-uns'));
+        $this->assertSame('Winter structure', Markers::linkHintFrom(' Winter%20%20structure '));
+    }
+
+    public function test_a_link_hint_is_written_safely_keeping_its_words(): void
+    {
+        $this->assertSame('Winter-structure', Markers::safeLinkHint('Winter structure'));
+        $this->assertSame('Über-uns', Markers::safeLinkHint('Über%20uns'));
+        $this->assertSame('a-%28b%29', Markers::safeLinkHint('a (b)'));
+
+        $this->assertSame(
+            'See [our winter structure](#gw-link:Winter-structure), [this](https://example.com/#gw-link:Winter-structure "A title") and [us](#gw-link:contact-page).',
+            Markers::normaliseLinks('See [our winter structure](#gw-link:Winter structure), [this](<https://example.com/#gw-link:Winter%20structure> "A title") and [us](#gw-link:contact-page).'),
+        );
+        $this->assertSame('No links here.', Markers::normaliseLinks('No links here.'));
+
+        // The hint reads the same either way, so a chip still finds it.
+        $this->assertSame('Winter structure', Markers::linkHintFrom(str_replace('-', ' ', Markers::safeLinkHint('Winter structure'))));
+    }
+
     public function test_leftover_vocabulary_and_placeholder_looking_text_are_found_apart_from_asks(): void
     {
         $text = 'Some [[item]] text, [[ask: a price]], TBC, tbc, [insert date], [Add to basket](/basket), [...], ??? and Lorem Ipsum. TODO: XXXX';

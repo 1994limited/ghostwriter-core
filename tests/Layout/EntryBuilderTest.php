@@ -123,6 +123,26 @@ class EntryBuilderTest extends LayoutTestCase
         $this->assertSame('<p>A &lt;b&gt;tag&lt;/b&gt;</p>', $data['html']);
     }
 
+    public function test_a_link_to_choose_written_with_a_spaced_hint_is_stored_as_a_link(): void
+    {
+        $schema = new Schema([
+            new Field('body', Kind::RichText, type: 'bard'),
+            new Field('notes', Kind::RichText, type: 'markdown'),
+        ]);
+
+        $data = (new EntryBuilder(LayoutOptions::statamic(), new BardDialect))->build([
+            'body' => 'See [our winter structure](#gw-link:Winter structure).',
+            'notes' => 'See [our winter structure](#gw-link:Winter structure).',
+        ], $schema)->data;
+
+        $this->assertSame([['type' => 'paragraph', 'content' => [
+            ['type' => 'text', 'text' => 'See '],
+            ['type' => 'text', 'marks' => [['type' => 'link', 'attrs' => ['href' => '#gw-link:Winter-structure', 'rel' => null, 'target' => null, 'title' => null]]], 'text' => 'our winter structure'],
+            ['type' => 'text', 'text' => '.'],
+        ]]], $data['body']);
+        $this->assertSame('See [our winter structure](#gw-link:Winter-structure).', $data['notes']);
+    }
+
     public function test_values_are_read_as_their_kind(): void
     {
         $schema = new Schema([

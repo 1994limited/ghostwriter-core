@@ -8,11 +8,11 @@
         "flags": "giu"
     },
     "link": {
-        "source": "\\[([^\\[\\]\\n]*)\\]\\(\\s*<?(?:https?://example\\.com/?)?#gw-link:([^\\s)>]*)>?(?:\\s+\"[^\"\\n]*\")?\\s*\\)",
+        "source": "\\[([^\\[\\]\\n]*)\\]\\(\\s*<?(?:https?://example\\.com/?)?#gw-link:([^()<>\"\\n]*?)>?(?:\\s+\"[^\"\\n]*\")?\\s*\\)",
         "flags": "giu"
     },
     "sentinel": {
-        "source": "#gw-link:([A-Za-z0-9._~%-]*)",
+        "source": "#gw-link:([^\\s\"'<>()]*(?:[ \\t]+[^\\s\"'<>()]+)*)",
         "flags": "gu"
     },
     "leftover": {

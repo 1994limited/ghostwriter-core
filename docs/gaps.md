@@ -14,12 +14,16 @@ What an editor must finish before a page goes live, how core finds it, and how t
 
 The keywords `ask`, `check`, `from` and `gw-link` are never translated.
 
+A link's hint is read however the editor stored it: `#gw-link:Winter structure` (Bard, TipTap), `#gw-link:Winter%20structure` (CKEditor) and, in markdown, `(<#gw-link:Winter structure>)` all give the hint "Winter structure" (`Markers::linkHintFrom()`). What the writer drafts is stored with the hint safe for any address (`Markers::normaliseLinks()`: `#gw-link:Winter-structure`); chips read hyphens as spaces.
+
 **Showing them.** Printed as they are, the markers read as code. `resources/js/preview/markers.js` displays them as chips: an amber chip for an ask, a dotted underline for a count to check and a dashed underline for a link to choose, each with a tooltip. It works in the preview's frame (after the locator) and, without a DOM, in the CP's lists and under plain text inputs. It is display only, and the stored marker is never changed. See docs/preview.md, "Gap markers on the page".
 
 ```php
 Markers::asks($text);          // list<{hint, match, offset, occurrence}>
 Markers::checks($text);        // list<{hint, value, list, match, offset, occurrence}>; hint is the value
 Markers::links($markdown);     // list<{hint, words, match, offset, occurrence}>
+Markers::linkHint($href);      // a sentinel's hint, decoded ("Winter structure"), or null
+Markers::normaliseLinks($markdown); // each link to choose with its hint safe for an address (Winter-structure)
 Markers::has($text);           // any of the three
 Markers::normalise($text);     // lenient forms (and a model's near misses) written strictly
 Markers::resolveCheck($text, $match, $value, $occurrence = 0);   // the marker replaced by $value ('' removes it)

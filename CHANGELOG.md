@@ -4,6 +4,10 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
+### Fixed (links to choose with a space in the hint)
+
+- **A link to choose whose hint has a space is a gap again.** `[Winter structure](#gw-link:Winter structure)`, as Bard and TipTap store the href and the writer sometimes drafts it, and the angle-bracket form `(<#gw-link:Winter structure>)`, were not matched by `Markers::LINK_PATTERN`, so "Finish this page" never listed them; `SENTINEL_PATTERN` (and `MarkerResolver`'s) stopped at the space too. Every reader now takes the hint raw, bracketed or percent-encoded (`Winter%20structure`) and decodes it the same way (`Markers::linkHintFrom()`). `resources/gaps/patterns.json` and `markers.js` have the new patterns. What the writer drafts is stored with a safe hint (`#gw-link:Winter-structure`, `Markers::normaliseLinks()` in `EntryBuilder`), keeping its words and case.
+
 ### Added (what a layout changes)
 
 - **`SessionLayouts::changes($session, $schema)`** says, for each layout on offer, what it changes against "As written": `summary`, one to three plain phrases built from the structural diff ("Closing line as a quote", "Lists as paragraphs", "Lead-ins as subheadings", "Quote moved up", "Call to action added"); `places`, where on the page it changed, as the preview's block map counts blocks and sections, for the panel to scroll to and outline when the person switches layout; and `units`. No model; works on stored layouts. `LayoutDiff::summary()` and `places()` give the same for any two plans. See docs/layouts.md.
