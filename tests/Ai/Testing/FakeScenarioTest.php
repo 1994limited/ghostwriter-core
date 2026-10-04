@@ -105,6 +105,26 @@ final class FakeScenarioTest extends TestCase
         $this->assertSame(['title' => 'Winter care', 'answers' => ['goal' => 'Book a visit.', 'when' => 'Every winter.', 'tone' => 'warm'], 'examples' => ['7', '8']], $response->structured);
     }
 
+    public function test_requests_are_written_down_when_asked(): void
+    {
+        mkdir($this->dir.'/.requests');
+
+        try {
+            FakeScenario::load($this->dir, 'site/write#rec', $this->next())->text(new TextRequest('writer', 'Be brief.', 'Write it.'));
+            FakeScenario::load($this->dir, 'site/write#rec', $this->next())->text(new TextRequest('layout-planner', '', 'Plan it.'));
+
+            $lines = array_map(fn ($line) => json_decode($line, true), file($this->dir.'/.requests/site--write#rec.jsonl', FILE_IGNORE_NEW_LINES) ?: []);
+
+            $this->assertSame(['writer', 'layout-planner'], array_column($lines, 'agent'));
+            $this->assertSame('Write it.', $lines[0]['prompt']);
+            $this->assertSame(0, $lines[0]['reply']);
+            $this->assertNull($lines[1]['reply']);
+        } finally {
+            @unlink($this->dir.'/.requests/site--write#rec.jsonl');
+            @rmdir($this->dir.'/.requests');
+        }
+    }
+
     public function test_structured_replies_failures_and_the_fallback(): void
     {
         $fake = FakeScenario::load($this->dir, 'site/write', $this->next());
