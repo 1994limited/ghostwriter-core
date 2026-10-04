@@ -220,8 +220,9 @@ Every call whose reply is data carries the reply's `OutputSchema`, so a provider
 | `brief-writer`, `brief-filler` | `Studio::briefSchema($kind, $withTitle)` | every answer required, `""` for nothing; keys from `Studio::briefKeys()`, mapped back to handles |
 | `reworder` | `resources/schemas/reworder-reply.json` | two versions |
 | `gap-filler` | `resources/schemas/gap-filler-reply.json` | `result` |
+| `layout-planner` | `Arrange\PlanSchema::for($schema, $count)` | generic, every property required (no optional properties or unions), only the parts the site's fields need and blocks only as deep as they nest (at most three; Claude refuses a grammar that compiles too large); `PlanSchema::toRaw()` turns a plan back into the YAML's shape for `PlanReader` and `PlanValidator` |
 
-The prompts mark their reply format with `{{# tagged }}…{{/ tagged }}` and `{{# structured }}…{{/ structured }}`; `Studio::prompt($name, $structured)` keeps the right part, and `Studio::takesSchema($agent, $schema)` says which. The tagged rendering is what the addons always sent. Prompts stay the same for every call of a job, so cached instructions still hit.
+The prompts mark their reply format with `{{# tagged }}…{{/ tagged }}` and `{{# structured }}…{{/ structured }}`; `Studio::prompt($name, $structured)` keeps the right part, and `Studio::takesSchema($agent, $schema)` says which. The tagged rendering is what the addons always sent. A layout planner reply that was read but holds no usable plan isn't asked for again; one cut off keeps the plans that closed. Prompts stay the same for every call of a job, so cached instructions still hit.
 
 Not moved, on purpose: the `writer` (a long markdown draft in YAML: in JSON it costs escaping and tokens, and a cut-off reply would lose the whole draft where the tags keep what came), the voice analyst and editor and the imagery analyst (prose documents), `photo-query` (a few words), and `type-analyst`, whose kinds nest (a schema can't recurse).
 

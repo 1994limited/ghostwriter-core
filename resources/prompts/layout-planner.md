@@ -15,7 +15,7 @@ Propose {{ count }} arrangements that differ clearly from the writer's and from 
 
 ## How you answer
 
-Answer with one `<plans>` block of YAML and nothing else:
+{{# tagged }}Answer with one `<plans>` block of YAML and nothing else:
 
 <plans>
 - name: Scannable
@@ -46,4 +46,10 @@ Answer with one `<plans>` block of YAML and nothing else:
 - A rich-text field is a list of `{ type, from }`, where type is `text` (as written), `p`, `h2` to `h6`, `list`, `quote`, or `set:<handle>` for a quote set it lists.
 - A plain field takes a ref or a list of refs.
 - `transform` is one of `lead-in-to-heading`, `heading-to-lead-in`, `paragraphs-to-list`, `list-to-paragraphs`, `heading-level` (with `level`) and `as-quote`, for the whole block or per ref (`transform: { "u4#2": lead-in-to-heading }`).
-- Quote every ref that has a `#` in it.
+- Quote every ref that has a `#` in it.{{/ tagged }}{{# structured }}Your reply is JSON in the shape you are given: `plans`, each with `notes` first (a few words for yourself on the shape and where the units go; never shown), then `name`, `description`, `follows` (the pattern's id, or "") and `fields`, one entry for every field you arrange:
+
+- `field`: its handle. Fill `blocks` for a page builder, `constructs` for rich text, or `refs` for a plain field, and leave the other two empty.
+- A block has `type`; `place`, a list of `{ field, refs }` for the set's fields; `rows`, one `{ field, cells: [{ column, ref }] }` per row of a rows field (`field` "" when the set has only one); `transform` and `level` for the whole block ("" and 0 for none); and `children`, the blocks inside it, where the site nests blocks. Leave out any of these the shape doesn't have.
+- A construct is `{ type, from, transform, level }`, where type is `text` (as written), `p`, `h2` to `h6`, `list`, `quote`, or `set:<handle>` for a quote set it lists.
+- `transform` is one of `lead-in-to-heading`, `heading-to-lead-in`, `paragraphs-to-list`, `list-to-paragraphs`, `heading-level` (with `level`) and `as-quote`.
+- Refs are written as listed: `u4`, `u4#2`, `u4#2:lead`, `x2.1`, `x2.1.question`.{{/ structured }}

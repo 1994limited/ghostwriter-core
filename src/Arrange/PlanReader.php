@@ -41,6 +41,9 @@ final class PlanReader
 
     public const DESCRIPTION_LENGTH = 120;
 
+    /** The problems that mean the reply couldn't be read at all (rather than read, with no usable plan). */
+    public const UNREADABLE = ['there was no <plans> block', 'the YAML did not parse', 'it was not a list of plans', 'there were no plans'];
+
     /** Why the last read() found nothing, for the log; empty when it found plans. */
     public string $problem = '';
 
@@ -73,6 +76,19 @@ final class PlanReader
             return [];
         }
 
+        return $this->readList($data, $schema);
+    }
+
+    /**
+     * Plans already decoded: the YAML's list, or structured output's plans
+     * turned back into its shape (PlanSchema::toRaw()).
+     *
+     * @param  array<mixed>  $data
+     * @return list<Plan>
+     */
+    public function readList(array $data, Schema $schema): array
+    {
+        $this->problem = '';
         $plans = [];
 
         foreach ($data as $raw) {

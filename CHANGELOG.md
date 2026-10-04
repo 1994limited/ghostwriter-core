@@ -4,6 +4,22 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
+### Changed (structured output for the layout planner)
+
+- **The layout planner uses structured output.** `Arrange\PlanSchema::for($schema, $count)` describes the plans for one site's fields. The shape is generic, so it stays small however many blocks the site has:
+  - each plan is `{notes, name, description, follows, fields: [{field, blocks, constructs, refs}]}`, with a short `notes` first;
+  - a block is `{type, place: [{field, refs}], rows: [{field, cells: [{column, ref}]}], transform, level, children}`;
+  - every property is required, with `""`, `0` and `[]` for nothing, so there are no optional properties or unions for Claude's limits (24 and 16);
+  - only what the site's fields need is in it: `rows` where a block has a rows field, `constructs` where there is rich text, `refs` where there is a plain field, and `children` only as deep as the site's builders nest, at most three, because a schema can't recurse;
+  - why: Claude refused a three-deep schema for a flat page builder ("The compiled grammar is too large"). Sized to the site, the gw-test-statamic pages schema is 1.9 KB and the nested Northfold fixture 3.8 KB, and Claude compiles both. A transform is for a whole block; the YAML's per-ref transforms aren't offered (and are still read if sent);
+  - block types, construct types, transforms and field handles are enums of the site's own.
+- **How the reply is read.** `PlanSchema::toRaw()` turns each structured plan back into the mapping `PlanReader` reads from YAML (`PlanReader::readList()`), so `PlanValidator`, the arranger and extras are unchanged.
+  - A structured reply that was cut off keeps the plans that closed.
+  - A model without structured output is asked for `<plans>` YAML, as before (prompt markers `{{# tagged }}` and `{{# structured }}`).
+- **Asking again.** A planner reply that can't be read (no plans block, YAML or JSON that doesn't parse) is asked for once more; one that was read but holds no usable plan is not, as before. `PlanReader::UNREADABLE` lists the problems that count as unreadable.
+- **A reply asked for again without its format is still read as JSON.** When a provider refuses the format and the request goes again without it, the model still writes the JSON the structured prompt asked for. It is decoded and read as structured, bare or in the prompt's tag (`JsonReply::decode()` now takes `<plans>{…}</plans>`).
+- `FakeProvider` decodes a queued `TextResponse` onto `structured` for a request with a schema, as a provider would.
+
 ### Changed (structured output for more Studio calls)
 
 - **The kind finder, the planner, the brief writer and filler, the reworder and the gap filler use structured output.** Each call carries its reply's schema; where the model is held to it (docs/providers.md#structured-output) the reply is read from `TextResponse::$structured`, and elsewhere from the tags and YAML as before. See docs/studio.md#structured-output.

@@ -9,6 +9,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\Image;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Message;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\OutputSchema;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Structured\JsonReply;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TakesSchemas;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextProvider;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
@@ -20,6 +21,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Arrange\Extras\ExtraSources;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Extras\ExtrasReader;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Plan;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\PlanReader;
+use NineteenNinetyFour\Ghostwriter\Core\Arrange\PlanSchema;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Stock\ModelInputGuard;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\GapRefused;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Markers;
@@ -843,7 +845,7 @@ final class Studio
      */
     private function askStructured(string $agent, string $prompt, OutputSchema $schema, Closure $read, string $what, array $context = [], array $images = [], ?string $instructions = null, array $history = []): array
     {
-        $response = $this->ask($agent, $prompt, $history, $images, $instructions, schema: $schema);
+        $response = self::decoded($this->ask($agent, $prompt, $history, $images, $instructions, schema: $schema));
         [$value, $problem, $logged] = $read($response) + [null, null, null];
 
         if ($problem === null) {
@@ -858,7 +860,7 @@ final class Studio
 
         $this->unreadable("{$what} (".($logged ?? $problem).'); asking again once', $agent, $response->text, $context);
 
-        $again = $this->ask($agent, $prompt."\n\nYour last answer to this couldn't be read: {$problem}. Answer again, in full, exactly in the format asked.", $history, $images, $instructions, schema: $schema);
+        $again = self::decoded($this->ask($agent, $prompt."\n\nYour last answer to this couldn't be read: {$problem}. Answer again, in full, exactly in the format asked.", $history, $images, $instructions, schema: $schema));
         [$value, $problem, $logged] = $read($again) + [null, null, null];
 
         if ($problem !== null) {
@@ -866,6 +868,20 @@ final class Studio
         }
 
         return [$again->withUsage($response->usage->plus($again->usage)), $value, $problem];
+    }
+
+    /**
+     * A reply that wasn't held to its schema (a provider refused the format
+     * and was asked again without it) but is JSON anyway, as the structured
+     * prompt asked: decoded, so it is read as one held to it would be.
+     */
+    private static function decoded(TextResponse $response): TextResponse
+    {
+        if ($response->structured !== null || ($data = JsonReply::decode($response->text)) === null) {
+            return $response;
+        }
+
+        return new TextResponse($response->text, $response->stopReason, $response->usage, $response->provider, $response->model, $data, $response->structuredBy);
     }
 
     /** A schema core ships, from resources/schemas. */
@@ -1276,8 +1292,10 @@ final class Studio
      * layout planner, which sees summaries of the units and extras, the
      * blocks it may use and the site's patterns, never the voice guide or
      * examples. The plans are unvalidated (Arrange\PlanValidator decides),
-     * numbered p1, p2… An unreadable reply gives none, with a warning; a
-     * cut-off one keeps the plans already complete.
+     * numbered p1, p2… The reply is held to PlanSchema where the model can
+     * be, and read from the `<plans>` YAML elsewhere. A reply with no
+     * usable plans is asked for once more; still none gives none, with a
+     * warning. A cut-off one keeps the plans already complete.
      *
      * @return Result<list<Plan>>
      *
@@ -1285,23 +1303,42 @@ final class Studio
      */
     public function planLayouts(LayoutBrief $brief): Result
     {
-        $instructions = strtr($this->prompt('layout-planner'), ['{{ count }}' => (string) $brief->count]);
-        $response = $this->ask('layout-planner', $brief->prompt(), instructions: $instructions);
-        $block = preg_match('/<plans>(.*?)(?:<\/plans>|$)/s', $response->text, $m) === 1 ? $m[1] : null;
-
-        if ($block !== null && $response->truncated()) {
-            // Keep the plans that are whole: drop the one the cut-off ended in.
-            $block = (string) preg_replace('/\n- [^\n]*(?:\n(?!- ).*)*\z/u', '', rtrim($block));
-        }
-
+        $schema = PlanSchema::for($brief->schema, $brief->count);
+        $instructions = strtr($this->prompt('layout-planner', $this->takesSchema('layout-planner', $schema)), ['{{ count }}' => (string) $brief->count]);
         $reader = new PlanReader;
-        $plans = array_slice($reader->read($block, $brief->schema), 0, max(0, $brief->count));
 
-        if ($plans === []) {
+        [$response, $plans] = $this->askStructured('layout-planner', $brief->prompt(), $schema, function (TextResponse $response) use ($brief, $reader): array {
+            if ($response->structured !== null || ($response->structuredBy !== null && ! str_contains($response->text, '<plans>'))) {
+                // JSON; cut off, the plans that closed.
+                $list = is_array($response->structured['plans'] ?? null) ? $response->structured['plans'] : (new SuggestionReader('plans'))->read($response->text)['items'];
+                $plans = $reader->readList(array_map(fn (array $plan) => PlanSchema::toRaw($plan, $brief->schema), array_values(array_filter($list, 'is_array'))), $brief->schema);
+
+                if ($list === [] && ! is_array($response->structured['plans'] ?? null)) {
+                    $reader->problem = 'there were no plans';
+                }
+            } else {
+                $block = preg_match('/<plans>(.*?)(?:<\/plans>|$)/s', $response->text, $m) === 1 ? $m[1] : null;
+
+                if ($block !== null && $response->truncated()) {
+                    // Keep the plans that are whole: drop the one the cut-off ended in.
+                    $block = (string) preg_replace('/\n- [^\n]*(?:\n(?!- ).*)*\z/u', '', rtrim($block));
+                }
+
+                $plans = $reader->read($block, $brief->schema);
+            }
+
+            // Read but holding no usable plan is an answer, not a slip: only
+            // a reply that can't be read is asked for again.
+            return $plans === [] && in_array($reader->problem, PlanReader::UNREADABLE, true) ? [[], $reader->problem] : [$plans, null];
+        }, "the layout planner's reply had no usable plans", instructions: $instructions);
+
+        if ($plans === [] && $reader->problem !== '' && ! in_array($reader->problem, PlanReader::UNREADABLE, true)) {
             $this->unreadable("the layout planner's reply had no usable plans ({$reader->problem})", 'layout-planner', $response->text);
         }
 
-        return new Result($plans, $response->usage);
+        $plans = array_values(array_filter(is_array($plans) ? $plans : [], fn ($plan) => $plan instanceof Plan));
+
+        return new Result(array_slice($plans, 0, max(0, $brief->count)), $response->usage);
     }
 
     /**

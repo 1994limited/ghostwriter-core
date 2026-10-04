@@ -25,6 +25,11 @@ final class JsonReply
             $data = json_decode($m[1], true);
         }
 
+        // JSON in the tag a tagged prompt asks for: <plans>{…}</plans>.
+        if (! is_array($data) && preg_match('/\A<([a-z_-]+)>\s*(\{.*\})\s*<\/\1>\z/s', $text, $m) === 1) {
+            $data = json_decode($m[2], true);
+        }
+
         return is_array($data) && ! array_is_list($data) ? $data : null;
     }
 }

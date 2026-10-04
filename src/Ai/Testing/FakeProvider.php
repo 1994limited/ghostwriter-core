@@ -310,11 +310,14 @@ class FakeProvider implements ImageProvider, TakesSchemas, TextProvider
         $answer = count($queue) > 1 ? array_shift($this->answers[$request->agent]) : $queue[0];
         $text = $answer instanceof Closure ? $answer($request) : $answer;
 
-        if ($text instanceof TextResponse) {
-            return $text;
-        }
-
         $structured = $this->takesSchema($request);
+
+        if ($text instanceof TextResponse) {
+            // As a provider would: a reply to a schema is decoded onto it.
+            return $structured && $text->structuredBy === null
+                ? new TextResponse($text->text, $text->stopReason, $text->usage, $text->provider, $text->model, JsonReply::decode($text->text), TextResponse::JSON_SCHEMA)
+                : $text;
+        }
 
         return new TextResponse((string) $text, StopReason::End, new Usage(100, 50), 'fake', $request->model ?? 'fake', $structured ? JsonReply::decode((string) $text) : null, $structured ? TextResponse::JSON_SCHEMA : null);
     }
