@@ -28,10 +28,111 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Gaps;
  * and a link's hint with its hyphens as spaces, as the chips show it. The
  * $occurrence is which of the markers with that kind and hint the chip
  * was, counting through every text in order.
+ *
+ * **Links in fields the draft doesn't hold.** A link field (a button's
+ * link) is never written by the writer: the house style puts the sentinel
+ * there when the page is built, by the field's label. A chip for one finds
+ * nothing in the draft, so the choice is kept in the draft under
+ * `gw_links` (chooseLink(), by hint), and the addon puts it in wherever
+ * that sentinel turns up in the built values (withChosenLinks()), under
+ * any layout. Nothing reads `gw_links` but this: the builders only take
+ * the schema's fields.
  */
 final class MarkerResolver
 {
     public const KINDS = ['ask', 'check', 'link'];
+
+    /** Where the draft keeps links chosen for fields it doesn't hold: hint => {link, url?}. */
+    public const CHOSEN_LINKS = 'gw_links';
+
+    private const WHOLE_SENTINEL = '/\A\s*(?:https?:\/\/example\.com\/?)?#gw-link:([A-Za-z0-9._~%-]*)\s*\z/u';
+
+    private const ANY_SENTINEL = '/(?:https?:\/\/example\.com\/?)?#gw-link:([A-Za-z0-9._~%-]*)/u';
+
+    /**
+     * The draft's data with a link chosen for a field it doesn't hold: by
+     * the chip's hint, the reference a link field takes (`entry::abc`) and
+     * the address words and rich text take.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public static function chooseLink(array $data, string $hint, mixed $link, ?string $url = null): array
+    {
+        $chosen = is_array($data[self::CHOSEN_LINKS] ?? null) ? $data[self::CHOSEN_LINKS] : [];
+        $chosen[self::key('link', $hint)] = array_filter(['link' => $link, 'url' => $url], fn ($value) => $value !== null && $value !== '');
+        $data[self::CHOSEN_LINKS] = $chosen;
+
+        return $data;
+    }
+
+    /**
+     * The links a draft has chosen, by normalised hint.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, array{link?: mixed, url?: string}>
+     */
+    public static function chosenLinks(array $data): array
+    {
+        $chosen = [];
+
+        foreach (is_array($data[self::CHOSEN_LINKS] ?? null) ? $data[self::CHOSEN_LINKS] : [] as $hint => $choice) {
+            if (is_array($choice) && (isset($choice['link']) || isset($choice['url']))) {
+                $chosen[self::key('link', (string) $hint)] = $choice;
+            }
+        }
+
+        return $chosen;
+    }
+
+    /**
+     * Built values with each chosen link put in where its sentinel is: a
+     * whole value takes the reference (or, with $references false, the
+     * address); an `href` and a sentinel inside text take the address.
+     * Sentinels with no choice are left as they are.
+     *
+     * @param  array<int|string, mixed>  $built
+     * @param  array<string, array{link?: mixed, url?: string}>  $chosen  From chosenLinks().
+     * @return array<int|string, mixed>
+     */
+    public static function withChosenLinks(array $built, array $chosen, bool $references = true): array
+    {
+        if ($chosen === []) {
+            return $built;
+        }
+
+        foreach ($built as $key => $value) {
+            if (is_array($value)) {
+                $built[$key] = self::withChosenLinks($value, $chosen, $references);
+
+                continue;
+            }
+
+            if (! is_string($value) || ! str_contains($value, Markers::LINK_PREFIX)) {
+                continue;
+            }
+
+            if (preg_match(self::WHOLE_SENTINEL, $value, $match) === 1) {
+                $choice = $chosen[self::key('link', rawurldecode($match[1]))] ?? null;
+
+                if ($choice !== null) {
+                    $address = $choice['url'] ?? (is_string($choice['link'] ?? null) ? $choice['link'] : null);
+                    $built[$key] = $key === 'href' || ! $references ? ($address ?? $value) : ($choice['link'] ?? $address ?? $value);
+                }
+
+                continue;
+            }
+
+            $built[$key] = (string) preg_replace_callback(self::ANY_SENTINEL, function (array $match) use ($chosen) {
+                $choice = $chosen[self::key('link', rawurldecode($match[1]))] ?? null;
+                $address = $choice['url'] ?? (is_string($choice['link'] ?? null) ? $choice['link'] : null);
+
+                return $address ?? $match[0];
+            }, $value);
+        }
+
+        return $built;
+    }
 
     /**
      * Every string in some nested data, depth first, with its path.
@@ -136,7 +237,7 @@ final class MarkerResolver
         $links = Markers::links($text);
 
         // A value that is only a sentinel: a link field's.
-        if ($links === [] && preg_match('/\A\s*(?:https?:\/\/example\.com\/?)?#gw-link:([A-Za-z0-9._~%-]*)\s*\z/u', $text, $match) === 1) {
+        if ($links === [] && preg_match(self::WHOLE_SENTINEL, $text, $match) === 1) {
             return [['hint' => rawurldecode($match[1]), 'match' => $text, 'offset' => 0, 'whole' => true]];
         }
 
