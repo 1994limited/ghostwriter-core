@@ -90,6 +90,7 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ### Fixed
 - Suggest edits' `Reconciler` no longer marks a suggestion Done when its new words were in the old ones already ("Winter care visits" in "New for 2024: winter care visits", or a fact's version without, "team", in "team of 6"): such words count only once the old words have gone, unless they hold them.
+- Suggest edits' `Reconciler` marks an Out of date rewrite Done when it is the old sentence less its dated words ("Two open days a year at the studio garden…" for "New for 2023: two open days a year…"): the new sentence was found as the old quote by a fuzzy match, so the old words never seemed gone. A fuzzy match holding the new words no longer counts as the old words.
 
 ## 1.9.0 - 2026-10-04
 
