@@ -3,7 +3,6 @@
 namespace NineteenNinetyFour\Ghostwriter\Core\Tests\Gaps;
 
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\GapContext;
-use NineteenNinetyFour\Ghostwriter\Core\Gaps\GapKind;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Message;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\OnPublish;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\PublishReadiness;
@@ -39,15 +38,28 @@ class PublishReadinessTest extends TestCase
         $this->assertSame('gaps.publish.field.ask:adult ticket price gaps.publish.field.ask:child ticket price', $readiness->byField(fn (Message $m) => $m->key.':'.($m->params['hint'] ?? ''))['intro'], 'The addon translates with its own system.');
     }
 
-    public function test_required_fields_are_left_to_the_cms_and_counted_in_the_report(): void
+    public function test_required_fields_are_left_to_the_cms_and_not_counted(): void
     {
         $readiness = PublishReadiness::standard()->check($this->context(['intro' => '', 'blocks' => []]));
 
         $this->assertTrue($readiness->ready());
         $this->assertFalse($readiness->blocked());
         $this->assertSame('Ready to publish.', $readiness->message()->english());
-        $this->assertCount(1, $readiness->report()->ofKind(GapKind::Required));
+        $this->assertSame([], $readiness->report()->all(), 'The CMS\'s own validation reports the empty required Intro on save.');
         $this->assertSame([], $readiness->byField());
+    }
+
+    public function test_an_image_the_page_needs_prompts_but_never_blocks(): void
+    {
+        $readiness = PublishReadiness::standard()->check($this->context([
+            'intro' => 'A roof garden above a café, with beds of herbs for the kitchen and a few tables among them.',
+            'blocks' => [['type' => 'hero', 'picture' => [], 'button' => '']],
+        ], pictureRequired: true));
+
+        $this->assertTrue($readiness->ready(), 'The CMS says so on save; Ghostwriter only prompts.');
+        $this->assertSame(['image-empty|blocks/0/picture||0'], array_map(fn ($gap) => $gap->id, $readiness->report()->all()));
+        $this->assertSame(1, $readiness->report()->count());
+        $this->assertCount(1, $readiness->report()->prompting());
     }
 
     public function test_warn_mode_lets_it_through_with_one_warning(): void
@@ -84,13 +96,13 @@ class PublishReadinessTest extends TestCase
     /**
      * @param  array<string, mixed>  $values
      */
-    private function context(array $values = []): GapContext
+    private function context(array $values = [], bool $pictureRequired = false): GapContext
     {
         return new GapContext(
             schema: new Schema([
                 new Field('intro', Kind::RichText, 'Intro', required: true),
                 new Field('blocks', Kind::Blocks, 'Blocks', sets: ['hero' => new Set('Hero', '', [
-                    new Field('picture', Kind::Reference, 'Picture', files: true, meta: ['images' => true]),
+                    new Field('picture', Kind::Reference, 'Picture', required: $pictureRequired, files: true, meta: ['images' => true]),
                     new Field('button', Kind::RichText, 'Button'),
                 ])]),
             ]),

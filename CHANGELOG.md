@@ -4,6 +4,17 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
+### Changed (which empty fields Finish this page raises)
+
+- **Plain required fields left empty are no longer gaps.** The CMS's own validation reports them on save. `Detectors\RequiredFields` is gone from `GapFinder::standard()`; its `blank()` and `writeFixes()` are on `ExpectedFields`. A link field that is only required isn't a `link-empty` gap either. Ghostwriter's own markers always are gaps.
+- **An empty image the page looks like it needs is a prompt** (`Severity::Prompt`, the default for `GapKind::ImageEmpty`). It is counted, brings the guide out (`Gap::prompts()`, `GapReport::prompting()`, `toArray()['prompting']`) and never blocks. It looks needed when it is required, when it is the template's prominent image (the render profile's `h1` block, or a hero-like name when there are too few published entries to go by), or when at least 70% of the newest published siblings fill it (`EmptyImages::SHARE`, over at least `SIBLINGS_KNOWN` entries). `meta.why` and the messages `gaps.image-empty.{required,prominent,siblings}` say why. An optional image few siblings use is no gap.
+- **A new, untouched entry isn't prompted** (`GapContext::engaged()`): only after a draft is applied or once it has words outside its title.
+
+### Added (which empty fields Finish this page raises)
+
+- **`Layout\FillRates`**: fill rates alone over a group's newest 20 published entries (`FillRates::pattern()`), for addons to keep per group and refresh on save. `PatternFinder` uses it.
+- **`GapContext::$group`** (what editors call the group) and **`GapContext::$profile`** (the group's render profile).
+
 ### Added (SEO layer: headings)
 
 - **Every draft's headings fit the page template and the field's editor.** `Seo\SeoPass` runs on the writer's draft before units are cut (①, in `SessionLayouts::afterWriter()` and `afterEdit()`) and on every plan when it is built (②, in `SessionLayouts::draftData()`). `Seo\HeadingFixer`: the body starts one level below the template's H1, levels never skip, empty headings go, bold lines posing as headings become headings, and a heading deeper than the editor can show becomes a bold lead-in. Words never change; it is idempotent. No model call. See docs/seo.md.

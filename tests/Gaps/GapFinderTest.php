@@ -169,16 +169,15 @@ class GapFinderTest extends TestCase
         $this->assertSame([], GapFinder::standard()->find($context($values))->ofKind(GapKind::AskValue));
     }
 
-    public function test_an_empty_required_field_is_not_reported_twice(): void
+    public function test_an_empty_required_field_is_left_to_the_cms_unless_ghostwriter_asked_for_it(): void
     {
         $schema = new Schema([new Field('price', Kind::Number, 'Price', required: true), new Field('intro', Kind::Text, 'Intro', required: true)]);
         $context = new GapContext(schema: $schema, entry: new EntryData(['intro' => '']), session: new SessionGaps([['kind' => 'ask-value', 'path' => 'price', 'hint' => 'price']]));
 
         $gaps = GapFinder::standard()->find($context)->all();
 
-        $this->assertSame(['ask-value|price|price|0', 'required|intro||0'], array_map(fn (Gap $gap) => $gap->id, $gaps));
+        $this->assertSame(['ask-value|price|price|0'], array_map(fn (Gap $gap) => $gap->id, $gaps), 'The empty required Intro is the CMS\'s to report.');
         $this->assertSame(Severity::Blocks, $gaps[0]->severity, 'A fact for a required field blocks.');
-        $this->assertSame([FixAction::WriteForMe, FixAction::Focus], array_map(fn ($fix) => $fix->action, $gaps[1]->fixes));
     }
 
     public function test_ids_stay_the_same_when_blocks_are_reordered(): void
@@ -317,6 +316,10 @@ class GapFinderTest extends TestCase
 
         $this->assertArrayHasKey('fix.add-link', Message::strings());
         $this->assertArrayHasKey('link-field', Message::strings());
+
+        foreach (['required', 'prominent', 'siblings'] as $why) {
+            $this->assertArrayHasKey('image-empty.'.$why, Message::strings());
+        }
         $this->assertSame('gaps.nope', (new Message('gaps.nope'))->english());
     }
 

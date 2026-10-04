@@ -108,9 +108,7 @@ final class PatternFinder
     }
 
     /**
-     * How often each field holds something: on the entry, keyed by handle,
-     * and on blocks, keyed "blockType.handle", at any depth. It is how an
-     * image that every page has is told from a background few pages use.
+     * How often each field holds something (FillRates).
      *
      * @param  array<int, array<string, mixed>>  $items
      * @param  array<int, Field>  $fields
@@ -118,48 +116,7 @@ final class PatternFinder
      */
     private function fillRates(array $items, array $fields): array
     {
-        $counts = [];
-        $totals = [];
-
-        $walk = function (array $items, array $fields, string $prefix) use (&$walk, &$counts, &$totals): void {
-            foreach ($items as $item) {
-                if (! is_array($item) || ($item['enabled'] ?? true) === false) {
-                    continue;
-                }
-
-                foreach ($fields as $field) {
-                    $key = $prefix.$field->handle;
-                    $value = $item[$field->handle] ?? null;
-
-                    $totals[$key] = ($totals[$key] ?? 0) + 1;
-
-                    if ($value !== null && $value !== '' && $value !== []) {
-                        $counts[$key] = ($counts[$key] ?? 0) + 1;
-                    }
-
-                    if ($field->isBuilder() && is_array($value)) {
-                        foreach ($value as $block) {
-                            $type = is_array($block) && is_scalar($block['type'] ?? null) ? (string) $block['type'] : '';
-                            $set = $field->set($type);
-
-                            if ($set !== null && is_array($block)) {
-                                $walk([$block], $set->fields, $type.'.');
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        $walk($items, $fields, '');
-
-        $rates = [];
-
-        foreach ($totals as $key => $total) {
-            $rates[$key] = round(($counts[$key] ?? 0) / $total, 2);
-        }
-
-        return $rates;
+        return FillRates::of($items, $fields);
     }
 
     /**

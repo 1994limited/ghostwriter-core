@@ -14,7 +14,6 @@ use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\LinkMarkers;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\MissingAlt;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\PlaceholderImages;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\PlaceholderText;
-use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\RequiredFields;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\SeoLength;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\UnlicensedStock;
 
@@ -31,6 +30,11 @@ use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\UnlicensedStock;
  * only with `$withModel`, which only a button that says so may pass. A
  * field that is merely empty isn't reported again where a more specific
  * gap (a fact asked for, an image to choose) already names it.
+ *
+ * A plain field the CMS requires (text, a date, a select) is not a gap
+ * when it is empty: the CMS's own validation says so on save. Ghostwriter's
+ * own markers always are, and so is an image the page looks like it needs
+ * (EmptyImages).
  */
 final class GapFinder
 {
@@ -58,7 +62,6 @@ final class GapFinder
             new PlaceholderImages,
             new EmptyImages,
             new UnlicensedStock,
-            new RequiredFields,
             new ExpectedFields,
             new LeftoverTokens,
             new PlaceholderText,

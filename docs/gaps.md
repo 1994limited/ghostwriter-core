@@ -120,3 +120,22 @@ A count to check blocks publishing (or warns, in warn mode) until it is resolved
 ## Strings
 
 Core's English source strings are in `resources/lang/en/gaps.php`, by key without the `gaps.` prefix (`Message::english()` reads them; each addon copies them into its own format). For counts: `check`, `check-changed`, `check-gone`, `check-count`, `speech.check` ("Check me"), `fix.confirm` ("Looks right"), `fix.change` ("Change it"), `fix.use-count` ("Use “:value”"), `publish.item.check`, `publish.field.check`, and for the extras list `extras.counted.{brief,answer,conversation,draft,entry}` ("Counted from your answer: “:list”"), `extras.needs-review` ("Needs review") and `extras.needs-answer`.
+
+## Empty fields
+
+Which empty fields "Finish this page" raises and counts:
+
+- **A plain field the CMS requires** (text, a date, a select, a link) is not a gap when it is empty. The CMS's own validation says so on save. Ghostwriter's own markers in any field always are gaps: `[[ask:]]`, `[[check:]]`, `#gw-link:`, placeholders, a stock preview not licensed.
+- **An image the page looks like it needs** (`Detectors\EmptyImages`, `GapKind::ImageEmpty`) is a **prompt** (`Severity::Prompt`). It counts in the header badge and the menu row (`Gap::counts()`). It brings the guide out like a gap that blocks (`Gap::prompts()`, `GapReport::prompting()`, `toArray()['prompting']`). It never blocks; where the field is required, the CMS enforces that. Its `meta.why` and message say why it looks needed:
+
+| `why` | When | Message |
+| --- | --- | --- |
+| `required` | the CMS requires it | `gaps.image-empty.required`: "Hero image is required. Add one?" |
+| `prominent` | it sits in the block type the template prints the page's `h1` from (`GapContext::$profile`, a profile a render has shown) | `gaps.image-empty.prominent`: "Hero image is the page's main image, and it's empty. Add one?" |
+| `siblings` | at least `EmptyImages::SHARE` (70%) of the group's newest published entries fill it, counted over at least `SIBLINGS_KNOWN` (3) of them | `gaps.image-empty.siblings`: "Hero image is empty, but most Journal entries have one. Add one?" (`GapContext::$group`; without it, `gaps.image-empty`) |
+| `prominent` | too few published entries to go by, and a top-level image named for it ("Hero image", "Banner", "Cover", "Featured image", "Main photo") | as above |
+| `draft` | the draft left it for a person | `gaps.image-empty` |
+
+  An optional image that few siblings use is no gap, whatever its name.
+- **Nothing prompts on a new, untouched entry** (`GapContext::engaged()`): only once a draft from Ghostwriter was applied (the session kept a gap list) or the entry has `GapContext::ENGAGED_WORDS` (12) words outside its title.
+- **Fill rates.** `Layout\FillRates::pattern($schema, $newestPublished)` counts them over the group's newest `FillRates::SIBLINGS` (20) published entries, for `GapContext::$pattern`. Addons keep the result per group and count again when an entry in the group is saved. Prose fields (`ExpectedFields`, a suggestion) and link fields (`EmptyLinks`) use the same rates at `Placeholders::EXPECTED` (50%).

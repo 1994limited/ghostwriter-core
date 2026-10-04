@@ -11,10 +11,10 @@ use NineteenNinetyFour\Ghostwriter\Core\Gaps\GapKind;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Walk;
 
 /**
- * A link field with nothing in it that should have something: required,
- * filled on most entries like this, or left for a person by the draft
- * (Statamic's `entries` fields can't be stood in for, so they are found
- * here).
+ * A link field with nothing in it that should have something: filled on
+ * most entries like this, or left for a person by the draft (Statamic's
+ * `entries` fields can't be stood in for, so they are found here). One
+ * that is only required is left to the CMS's own validation.
  */
 final class EmptyLinks implements Detector
 {

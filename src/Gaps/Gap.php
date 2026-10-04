@@ -54,10 +54,19 @@ final class Gap
         return $this->severity === Severity::Blocks;
     }
 
-    /** Counted in the pill: it blocks, or the CMS requires it. */
+    /** Counted in the pill: it blocks, it prompts, or the CMS requires it. */
     public function counts(): bool
     {
         return $this->severity !== Severity::Suggestion;
+    }
+
+    /**
+     * Brings the guide out on its own (a check on load, a draft applied):
+     * it blocks, or it prompts (an image the page looks like it needs).
+     */
+    public function prompts(): bool
+    {
+        return $this->severity === Severity::Blocks || $this->severity === Severity::Prompt;
     }
 
     /**
@@ -76,7 +85,7 @@ final class Gap
             $params['excerpt'] = $this->excerpt;
         }
 
-        foreach (['words', 'library', 'list', 'newCount', 'newValue'] as $key) {
+        foreach (['words', 'library', 'list', 'newCount', 'newValue', 'group'] as $key) {
             if (is_scalar($this->meta[$key] ?? null)) {
                 $params[$key] = $this->meta[$key];
             }
