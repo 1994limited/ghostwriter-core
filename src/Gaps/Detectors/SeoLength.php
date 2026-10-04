@@ -13,8 +13,10 @@ use NineteenNinetyFour\Ghostwriter\Core\Gaps\GapKind;
 /**
  * An SEO title or description over its limit (SeoField::$limit: the
  * field's own, or 60 and 160), wherever the addon's SeoFields finds it.
- * Values inherited from a template (no text) aren't checked. A suggestion:
- * never counted, never blocking.
+ * Values from a template or switched off (no text) aren't checked; an
+ * inherited one is (the page prints it), with its source in the meta so
+ * the fix gives the page its own. A suggestion: never counted, never
+ * blocking.
  */
 final class SeoLength implements Detector
 {
@@ -45,6 +47,7 @@ final class SeoLength implements Detector
                 'length' => $field->length(),
                 'writable' => $field->writable,
                 'inheritsFrom' => $field->inheritsFrom,
+                'source' => $field->source->value,
             ]);
         }
     }

@@ -4,6 +4,17 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
+### Added (SEO layer: inherited SEO values, noindex and the site name)
+
+- **`Gaps\SeoSource`, `SeoField::$source`:** where the text a page prints comes from: `Custom`, `Field` (another field's text), `Default` (a section's or site's fixed text), `Template` (Antlers or Twig core can't evaluate) or `Disabled`. `SeoField::inherited()`, `isEmpty()` and `checkable()`. The constructor's new last argument defaults from the others, so existing calls are unchanged.
+- **`SeoFields::noindex()`** (the robots setting, never the rendered tag) and **`SeoFields::titleFormat()`**, a `Gaps\TitleFormat` (site name, separator, position; `compose()`, `added()`). `PlainSeoFields` reads a `noindex`/`no_index`/`seo_noindex` toggle and has no site name. Every implementation adds both.
+- **`EntryData::$group` and `::$site`**, and `withValues()`: which section's and site's defaults an SEO addon applies to the entry.
+
+### Changed (SEO layer: inherited SEO values)
+
+- `SeoFields::in()` reports a switched-off value as `SeoSource::Disabled` (no text, not writable) instead of leaving it out; `SeoFieldsContract` allows either, and gains the `section` and `noindex` states and `seoTitle()`.
+- **Suggest edits and Content to revisit leave an inherited SEO description that fits alone** (decision 11): an "expected" gap on an SEO field the page fills all the same (a fallback field, a section's default, a template, switched off) is neither an `seo-empty` finding nor an empty field in the revisit list, and the validator drops a new SEO value over an inherited one that fits (`inherited`). An empty or over-long inherited value is still found; `seo-length` and `seo-empty` findings carry `source`.
+
 ### Changed (which empty fields Finish this page raises)
 
 - **Plain required fields left empty are no longer gaps.** The CMS's own validation reports them on save. `Detectors\RequiredFields` is gone from `GapFinder::standard()`; its `blank()` and `writeFixes()` are on `ExpectedFields`. A link field that is only required isn't a `link-empty` gap either. Ghostwriter's own markers always are gaps.
