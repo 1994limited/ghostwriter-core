@@ -18,6 +18,7 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
   - a one-sentence intro.
 
   A question answered "skipped" is never asked again: the writer writes around it or marks it `[[ask: …]]`. The never-invent rules are unchanged.
+- A hint describes the answer wanted and is never a sample answer: no names, figures or dates. A first real call had written "For example "Years 3 and 4, about sixty"". One question never asks for two things.
 - Older messages, without `asked`, are plain text as before.
 ### Added (the brief chooses what to model it on)
 
