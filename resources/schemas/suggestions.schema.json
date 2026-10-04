@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/1994limited/ghostwriter-core/resources/schemas/suggestions.schema.json",
+  "title": "Ghostwriter review reply",
+  "description": "The JSON in the reviewer's <suggestions> block. SuggestionReader reads it leniently; this is the contract the prompt asks for, checked against every fixture reply by a test.",
+  "type": "object",
+  "required": ["suggestions"],
+  "properties": {
+    "suggestions": {
+      "type": "array",
+      "maxItems": 40,
+      "items": {
+        "type": "object",
+        "required": ["category"],
+        "properties": {
+          "finding": {"type": "string", "pattern": "^f[0-9]+$"},
+          "decline": {"type": "string", "maxLength": 200},
+          "category": {"enum": ["out-of-date", "voice", "clarity", "fact-to-check", "link", "accessibility", "seo", "duplicate"]},
+          "unit": {"type": "string", "pattern": "^[ui][0-9]+$"},
+          "quote": {"type": "string", "maxLength": 300},
+          "occurrence": {"type": "integer", "minimum": 0},
+          "reason": {"type": "string", "maxLength": 400},
+          "source": {
+            "type": "object",
+            "required": ["kind"],
+            "properties": {
+              "kind": {"enum": ["voice-guide", "kind", "house", "finding", "site-entry", "image", "general"]},
+              "heading": {"type": "string"},
+              "entry": {"type": "string", "pattern": "^e[0-9]+$"}
+            }
+          },
+          "replacement": {"type": "string", "maxLength": 600},
+          "alternatives": {"type": "array", "maxItems": 2, "items": {"type": "string", "maxLength": 600}},
+          "fact": {
+            "type": "object",
+            "required": ["ask", "template"],
+            "properties": {
+              "ask": {"type": "string", "maxLength": 80},
+              "template": {"type": "string", "pattern": "\\{answer\\}"},
+              "without": {"type": ["string", "null"]},
+              "answer": {"enum": ["number", "date", "money", "text"]}
+            }
+          },
+          "link": {"type": "object", "properties": {"entry": {"type": "string", "pattern": "^e[0-9]+$"}}}
+        }
+      }
+    }
+  }
+}

@@ -23,6 +23,13 @@ use NineteenNinetyFour\Ghostwriter\Core\Gaps\Markers;
 use NineteenNinetyFour\Ghostwriter\Core\Prompts\PromptLibrary;
 use NineteenNinetyFour\Ghostwriter\Core\Review\RevisionReply;
 use NineteenNinetyFour\Ghostwriter\Core\Review\RevisionRequest;
+use NineteenNinetyFour\Ghostwriter\Core\Suggest\AnchorScope;
+use NineteenNinetyFour\Ghostwriter\Core\Suggest\Phrases;
+use NineteenNinetyFour\Ghostwriter\Core\Suggest\ReviewInput;
+use NineteenNinetyFour\Ghostwriter\Core\Suggest\ReviewPrompt;
+use NineteenNinetyFour\Ghostwriter\Core\Suggest\RewordRequest;
+use NineteenNinetyFour\Ghostwriter\Core\Suggest\SuggestionReader;
+use NineteenNinetyFour\Ghostwriter\Core\Suggest\SuggestionReply;
 use NineteenNinetyFour\Ghostwriter\Core\Text\LenientYaml;
 use NineteenNinetyFour\Ghostwriter\Core\Text\Slug;
 use NineteenNinetyFour\Ghostwriter\Core\Text\TaggedResponse;
@@ -622,6 +629,142 @@ final class Studio
         $words = mb_strtolower(trim((string) preg_replace('/[^\p{L}\p{N} -]+/u', ' ', $response->text)));
 
         return new Result($words !== '' && str_word_count($words) <= self::PHOTO_QUERY_WORDS ? $words : $title, $response->usage);
+    }
+
+    /**
+     * Suggest edits: the review call. One `reviewer` call per batch of a
+     * long page (ReviewInput::calls(), said in the confirm before it
+     * runs), merged into one reply. Each call sees its units, the free
+     * findings in them to write fixes for, the site digest, what was
+     * dismissed, and up to four thumbnails for images missing alt text,
+     * each through ModelInputGuard (a refused image isn't attached, and
+     * its finding asks the editor).
+     *
+     * The reply is read, not validated: SuggestionValidator decides what
+     * is kept, and drops anything that adds a fact. A reply that can't be
+     * read gives no suggestions, with a warning; one cut off keeps the
+     * suggestions that closed.
+     *
+     * @return Result<SuggestionReply>
+     *
+     * @throws ProviderException
+     */
+    public function suggestEdits(ReviewInput $input): Result
+    {
+        $instructions = $this->reviewerInstructions($input);
+        $reader = new SuggestionReader;
+        $usage = new Usage;
+        $items = [];
+        $problems = [];
+        $attached = [];
+        $truncated = 0;
+
+        foreach ($input->batches() as $batch) {
+            $images = [];
+            $ids = [];
+
+            foreach ($batch->images as $finding) {
+                $image = $input->images[$finding->id] ?? null;
+
+                if ($image === null || count($images) >= ReviewInput::IMAGES_PER_CALL || $finding->anchor->scope !== AnchorScope::Asset) {
+                    continue;
+                }
+
+                if ($this->guard->allowsImage($image, $finding->anchor->asset, $finding->anchor->asset?->filename())) {
+                    $images[] = $image;
+                    $ids[] = $finding->id;
+                }
+            }
+
+            $response = $this->ask('reviewer', ReviewPrompt::render($input, $batch, $ids), images: $images, instructions: $instructions);
+            $usage = $usage->plus($response->usage);
+            $read = $reader->read($response->text);
+            $attached = [...$attached, ...$ids];
+
+            if ($read['problem'] !== null) {
+                $problems[] = $read['problem'];
+                $this->unreadable("the review reply couldn't be read ({$read['problem']})", 'reviewer', $response->text, ['part' => ($batch->index + 1).' of '.$batch->total]);
+            }
+
+            if ($read['truncated'] || $response->truncated()) {
+                $truncated++;
+            }
+
+            foreach ($read['items'] as $item) {
+                $items[] = ['batch' => $batch->index, 'item' => $item];
+            }
+        }
+
+        return new Result(new SuggestionReply($items, $input->calls(), $truncated, $problems, $attached), $usage);
+    }
+
+    /**
+     * The reviewer's instructions: the shared scoped-edit rules, the voice
+     * guide and the kind, as the writer reads them. The same for every
+     * call of a review, so a provider can cache them.
+     */
+    public function reviewerInstructions(ReviewInput $input): string
+    {
+        $kind = $input->writer->kind;
+        $claims = $input->context->options->claims
+            ? 'You may flag a claim only the editor can confirm ("award-winning", "the only", "the largest") as a `fact-to-check`, never with a value.'
+            : 'Don\'t question claims ("award-winning", "the largest"): this site has turned claim checks off. A `fact-to-check` comes only from the findings.';
+
+        return strtr($this->prompt('reviewer'), [
+            '{{ scoped_edit_rules }}' => $this->prompt('scoped-edit'),
+            '{{ voice }}' => trim($input->writer->voice) !== '' ? trim($input->writer->voice) : 'No voice guide has been written yet. Make no Voice suggestions.',
+            '{{ type_title }}' => $kind->title,
+            '{{ type_guidance }}' => trim($kind->guidance) !== '' ? trim($kind->guidance) : trim($kind->description),
+            '{{ type_checklist }}' => $kind->checklist !== [] ? '- '.implode("\n- ", $kind->checklist) : '- It reads like the site\'s other pages.',
+            '{{ cap }}' => (string) $input->cap,
+            '{{ claims }}' => $claims,
+            '{{ reply_language }}' => self::languageName($input->replyLanguage),
+            '{{ part }}' => $input->calls() > 1 ? "- This page is long, so it is reviewed in parts. Review only the units shown; the others are reviewed separately.\n" : '',
+        ]);
+    }
+
+    /**
+     * "Write another": two more versions of a suggestion's words, from one
+     * small `reworder` call. The versions are unvalidated: EditReviews
+     * keeps only those SuggestionValidator::acceptsVersion() passes.
+     *
+     * @return Result<list<string>>
+     *
+     * @throws ProviderException
+     */
+    public function reword(RewordRequest $request): Result
+    {
+        $instructions = strtr($this->prompt('reworder'), [
+            '{{ scoped_edit_rules }}' => $this->prompt('scoped-edit'),
+            '{{ voice }}' => trim($request->voice) !== '' ? trim($request->voice) : 'No voice guide has been written yet. Write plainly.',
+        ]);
+        $response = $this->ask('reworder', $request->prompt(), instructions: $instructions);
+        preg_match_all('/<version>(.*?)(?:<\/version>|$)/s', $response->text, $matches);
+        $shown = array_map(fn (string $version) => mb_strtolower(trim($version)), $request->shown);
+        $versions = [];
+
+        foreach ($matches[1] as $version) {
+            $version = trim($version, " \t\n\r\0\x0B\"'“”");
+
+            if ($version !== '' && ! in_array(mb_strtolower($version), $shown, true) && ! in_array($version, $versions, true)) {
+                $versions[] = $version;
+            }
+        }
+
+        if ($versions === []) {
+            $this->unreadable('the reworder gave no new version', 'reworder', $response->text);
+        }
+
+        return new Result(array_slice($versions, 0, 2), $response->usage);
+    }
+
+    /** A language's name in English, for the model: "en_GB" is "English". */
+    private static function languageName(string $locale): string
+    {
+        $names = ['en' => 'English', 'de' => 'German', 'fr' => 'French', 'nl' => 'Dutch', 'es' => 'Spanish', 'it' => 'Italian', 'pt' => 'Portuguese', 'cy' => 'Welsh', 'da' => 'Danish', 'sv' => 'Swedish', 'nb' => 'Norwegian', 'pl' => 'Polish'];
+        $language = Phrases::language($locale);
+
+        return $names[$language] ?? $locale;
     }
 
     /**

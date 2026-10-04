@@ -98,9 +98,11 @@ class CatalogueTest extends TestCase
         $this->assertSame(Effort::Low, Agents::effort('photo-picker'));
         $this->assertSame([2000, Effort::Low], [Agents::maxTokens('photo-query'), Agents::effort('photo-query')]);
         $this->assertNull(Agents::effort('writer'));
+        $this->assertSame([8000, Effort::Medium], [Agents::maxTokens('reviewer'), Agents::effort('reviewer')]);
+        $this->assertSame([1500, Effort::Low], [Agents::maxTokens('reworder'), Agents::effort('reworder')]);
 
         foreach (PromptLibrary::NAMES as $name) {
-            if (! in_array($name, ['image', 'writer-extras'], true)) {
+            if (! in_array($name, ['image', 'writer-extras', 'scoped-edit'], true)) {
                 $this->assertArrayHasKey($name, Agents::MAX_TOKENS, "{$name} has no token limit.");
             }
         }
