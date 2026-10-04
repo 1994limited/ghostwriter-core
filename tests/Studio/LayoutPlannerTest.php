@@ -242,6 +242,22 @@ final class LayoutPlannerTest extends StudioTestCase
         $this->assertSame(['w'], array_map(fn (Plan $plan) => $plan->id, $layouts->plans($session)->all()));
     }
 
+    public function test_each_layout_says_what_it_changes_against_the_writers(): void
+    {
+        $this->fake->respond('writer', self::reply($this->draftReply()));
+        $this->fake->respond('layout-planner', self::reply(self::PLANS));
+        [$session, $layouts] = $this->firstDraft();
+        $this->fake->reset();
+
+        $changes = $layouts->changes($session, Northfold::blocks());
+
+        $this->assertSame(['p1'], array_keys($changes));
+        $this->assertSame(['Stats added', 'Text split into 2 blocks', 'Section added'], $changes['p1']['summary']);
+        $this->assertSame(['field' => 'page_builder', 'block' => 1, 'section' => null], $changes['p1']['places'][0]);
+        $this->assertContains('u7', $changes['p1']['units']);
+        $this->fake->assertNothingSent();
+    }
+
     public function test_a_layout_that_looks_like_the_writers_is_not_offered(): void
     {
         $this->fake->respond('writer', self::reply($this->draftReply()));

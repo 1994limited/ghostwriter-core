@@ -10,6 +10,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Domain\Sessions\Session;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\FieldPath;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\BuiltEntry;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\Layouts;
+use NineteenNinetyFour\Ghostwriter\Core\Schema\Schema;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\Conversation;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\LayoutBrief;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\Studio;
@@ -226,6 +227,48 @@ final class SessionLayouts
     public function planned(): ?Validated
     {
         return $this->planned;
+    }
+
+    /**
+     * What each layout changes against the writer's, for the panel: a few
+     * plain phrases to show beside its card ("Closing line as a quote"),
+     * and where on the page it changed, to point at when the person
+     * switches to it (LayoutDiff::places(), by the preview's blocks and
+     * sections), with the units whose words moved or changed shape. By
+     * plan id; none for the writer's or a stale one. No model; works on
+     * layouts stored before it existed.
+     *
+     * @return array<string, array{summary: list<string>, places: list<array{field: string, block: int|null, section: int|null}>, units: list<string>}>
+     */
+    public function changes(Session $session, Schema $schema): array
+    {
+        $draft = self::draft($session->draft);
+        $plans = $this->plans($session);
+        $writer = $plans->writer();
+
+        if ($draft === null || $writer === null || count($plans) < 2) {
+            return [];
+        }
+
+        try {
+            $units = Units::fromDraft($draft, $schema, $this->layouts->richText)->restore($session->units);
+            $changes = [];
+
+            foreach ($plans->all() as $plan) {
+                if ($plan->origin === PlanOrigin::Writer || $plan->stale) {
+                    continue;
+                }
+
+                $diff = LayoutDiff::between($writer, $plan, $writer, $units, $session->extras, $schema);
+                $changes[$plan->id] = ['summary' => $diff->summary(), 'places' => $diff->places(), 'units' => $diff->changedUnits()];
+            }
+
+            return $changes;
+        } catch (Throwable $exception) {
+            $this->logger->warning("Ghostwriter: what the layouts change could not be worked out: {$exception->getMessage()}");
+
+            return [];
+        }
     }
 
     /** The session's extras, for the Text tab. */

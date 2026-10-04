@@ -1,0 +1,241 @@
+{
+ "note": "A Statamic Pages entry (hero, text, image, quote, text, call to action), refreshed after the gate: \"Quote up front\" moves the quote under the hero and joins the two text blocks. Noticeably different.",
+ "draft": "title: About\npage_builder:\n  -\n    type: hero\n    heading: 'A small studio with muddy boots'\n    subheading: 'Northfold was started in 2014 by two garden designers who wanted to spend less time in meetings and more time outside.'\n    image: pages/hero-studio.jpg\n    button_text: 'Meet the team'\n  -\n    type: text\n    text: |-\n      ## Who we are\n\n      We're a team of five: three designers, a project manager and a horticulturist who keeps the rest of us honest. We work from an old dairy outside Hexham, with a trial garden out the back where we test plants before they go into anyone else's garden.\n\n      We've designed more than two hundred gardens across Northumberland, Durham, Cumbria and Yorkshire, from back yards in Newcastle to walled gardens and country estates.\n  -\n    type: image\n    image: pages/team.jpg\n    caption: 'The studio at Low Fold Farm.'\n  -\n    type: quote\n    quote: \"A garden should look as though it has always been there, even on the day it's finished.\"\n    attribution: 'Ellen Marsh, founder'\n  -\n    type: text\n    text: |-\n      ## What we care about\n\n      - Plants that suit the soil and the climate, so they thrive without fuss\n      - Materials that weather well and come from nearby where we can manage it\n      - Gardens that work for wildlife as well as for people\n      - Being straight with clients about cost, time and what a garden will need from them\n  -\n    type: cta\n    heading: 'Want to work with us?'\n    text: 'We take on around twenty new gardens a year. Get in touch early if you have a season in mind.'\n    link_text: 'Contact the studio'",
+ "extras": [],
+ "plans": [
+  {
+   "id": "w",
+   "origin": "writer",
+   "name": "As written",
+   "description": "The writer’s own layout",
+   "fields": {
+    "page_builder": [
+     {
+      "type": "hero",
+      "placements": [
+       {
+        "field": "heading",
+        "from": [
+         "u2"
+        ]
+       },
+       {
+        "field": "subheading",
+        "from": [
+         "u3"
+        ]
+       },
+       {
+        "field": "image",
+        "from": [
+         "u4"
+        ]
+       },
+       {
+        "field": "button_text",
+        "from": [
+         "u5"
+        ]
+       }
+      ],
+      "origin": 0
+     },
+     {
+      "type": "text",
+      "placements": [
+       {
+        "field": "text",
+        "from": [
+         "u6"
+        ]
+       }
+      ],
+      "origin": 1
+     },
+     {
+      "type": "image",
+      "placements": [
+       {
+        "field": "image",
+        "from": [
+         "u7"
+        ]
+       },
+       {
+        "field": "caption",
+        "from": [
+         "u8"
+        ]
+       }
+      ],
+      "origin": 2
+     },
+     {
+      "type": "quote",
+      "placements": [
+       {
+        "field": "quote",
+        "from": [
+         "u9"
+        ]
+       },
+       {
+        "field": "attribution",
+        "from": [
+         "u10"
+        ]
+       }
+      ],
+      "origin": 3
+     },
+     {
+      "type": "text",
+      "placements": [
+       {
+        "field": "text",
+        "from": [
+         "u11"
+        ]
+       }
+      ],
+      "origin": 4
+     },
+     {
+      "type": "cta",
+      "placements": [
+       {
+        "field": "heading",
+        "from": [
+         "u12"
+        ]
+       },
+       {
+        "field": "text",
+        "from": [
+         "u13"
+        ]
+       },
+       {
+        "field": "link_text",
+        "from": [
+         "u14"
+        ]
+       }
+      ],
+      "origin": 5
+     }
+    ]
+   },
+   "suggested": true
+  },
+  {
+   "id": "p1",
+   "origin": "model",
+   "name": "Quote up front",
+   "description": "Hero, then the quote, one combined text section, the studio image, and the call to action.",
+   "fields": {
+    "page_builder": [
+     {
+      "type": "hero",
+      "placements": [
+       {
+        "field": "heading",
+        "from": [
+         "u2"
+        ]
+       },
+       {
+        "field": "subheading",
+        "from": [
+         "u3"
+        ]
+       },
+       {
+        "field": "image",
+        "from": [
+         "u4"
+        ]
+       },
+       {
+        "field": "button_text",
+        "from": [
+         "u5"
+        ]
+       }
+      ]
+     },
+     {
+      "type": "quote",
+      "placements": [
+       {
+        "field": "quote",
+        "from": [
+         "u9"
+        ]
+       },
+       {
+        "field": "attribution",
+        "from": [
+         "u10"
+        ]
+       }
+      ]
+     },
+     {
+      "type": "text",
+      "placements": [
+       {
+        "field": "text",
+        "from": [
+         "u6",
+         "u11"
+        ]
+       }
+      ]
+     },
+     {
+      "type": "image",
+      "placements": [
+       {
+        "field": "image",
+        "from": [
+         "u7"
+        ]
+       },
+       {
+        "field": "caption",
+        "from": [
+         "u8"
+        ]
+       }
+      ]
+     },
+     {
+      "type": "cta",
+      "placements": [
+       {
+        "field": "heading",
+        "from": [
+         "u12"
+        ]
+       },
+       {
+        "field": "text",
+        "from": [
+         "u13"
+        ]
+       },
+       {
+        "field": "link_text",
+        "from": [
+         "u14"
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "follows": "p-2"
+  }
+ ]
+}

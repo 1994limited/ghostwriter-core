@@ -4,6 +4,11 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
+### Added (what a layout changes)
+
+- **`SessionLayouts::changes($session, $schema)`** says, for each layout on offer, what it changes against "As written": `summary`, one to three plain phrases built from the structural diff ("Closing line as a quote", "Lists as paragraphs", "Lead-ins as subheadings", "Quote moved up", "Call to action added"); `places`, where on the page it changed, as the preview's block map counts blocks and sections, for the panel to scroll to and outline when the person switches layout; and `units`. No model; works on stored layouts. `LayoutDiff::summary()` and `places()` give the same for any two plans. See docs/layouts.md.
+- The diff now compares words without markdown or punctuation, so a lead-in's heading is matched to its paragraph.
+
 ### Changed (only noticeably different layouts are offered)
 
 - **A layout that looks like the writer's, or like another on offer, is not offered.** A journal post's alternatives that set one closing line as a quote, or turned two lists into paragraphs, looked the same as "As written" to the person choosing. After `PlanValidator`, `SessionLayouts` now runs `Arrange\LayoutGate` on the planner's plans, which compares each with the writer's and with the ones already kept (`Arrange\LayoutDiff`, a structural diff of what a reader sees) and keeps it only when a page builder's blocks changed, a quarter of the page changed, or three or more places changed adding up to 15%. Of two near-copies the Suggested one stays. When none is left, the piece simply has the writer's layout. Dropped plans are logged at info level, with numbers and no page text. See docs/layouts.md#only-noticeably-different-layouts-layoutgate.
