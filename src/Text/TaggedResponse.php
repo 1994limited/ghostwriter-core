@@ -8,7 +8,8 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Text;
  * because a long markdown document survives them untouched, on any provider.
  *
  * The writer may also add an `<images>` block of image requests and an
- * `<extras>` block (Arrange\Extras\ExtrasReader), which are kept apart from
+ * `<extras>` block (Arrange\Extras\ExtrasReader), and, when it asks before
+ * drafting, a `<questions>` block (Studio\Asks), which are kept apart from
  * the reply.
  */
 class TaggedResponse
@@ -20,6 +21,7 @@ class TaggedResponse
         public readonly int $outputTokens = 0,
         public readonly ?string $images = null,
         public readonly ?string $extras = null,
+        public readonly ?string $questions = null,
     ) {}
 
     /**
@@ -33,10 +35,10 @@ class TaggedResponse
         // A model that ignores the format still said something; show it
         // rather than lose it.
         if ($reply === null) {
-            $reply = trim(Pcre::replace('/<('.$documentTag.'|images|extras)>.*?(<\/\1>|\z)/s', '', $text));
+            $reply = trim(Pcre::replace('/<('.$documentTag.'|images|extras|questions)>.*?(<\/\1>|\z)/s', '', $text));
         }
 
-        return new self($reply, $document, $inputTokens, $outputTokens, self::block($text, 'images'), self::block($text, 'extras'));
+        return new self($reply, $document, $inputTokens, $outputTokens, self::block($text, 'images'), self::block($text, 'extras'), self::block($text, 'questions'));
     }
 
     private static function block(string $text, string $tag): ?string

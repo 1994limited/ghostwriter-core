@@ -49,6 +49,7 @@
         "inputTokens": 100,
         "outputTokens": 50,
         "images": null,
-        "extras": null
+        "extras": null,
+        "questions": null
     }
 }
