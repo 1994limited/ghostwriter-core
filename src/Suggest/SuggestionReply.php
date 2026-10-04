@@ -22,10 +22,13 @@ final class SuggestionReply
         public readonly array $attached = [],
     ) {}
 
-    /** Whether every call's reply failed to read. */
+    /**
+     * Whether every call's reply failed to read. Never true without a
+     * problem to say why: a reply with no calls in it hasn't been read.
+     */
     public function unreadable(): bool
     {
-        return $this->items === [] && count($this->problems) >= $this->calls;
+        return $this->items === [] && $this->problems !== [] && count($this->problems) >= $this->calls;
     }
 
     /**
