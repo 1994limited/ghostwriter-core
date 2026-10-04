@@ -2,6 +2,7 @@
 
 namespace NineteenNinetyFour\Ghostwriter\Core\Ai\Providers;
 
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Agents;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\BadResponse;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\Refused;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Http\Transport;
@@ -15,6 +16,10 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\Usage;
 
 /**
  * Claude, over the Messages API.
+ *
+ * Prompt caching: the instructions of the agents in Agents::CACHED are
+ * sent as a system block marked `cache_control` (ephemeral), so a review's
+ * calls after the first read them from the cache.
  *
  * Server-side fallbacks: for models with refusal classifiers
  * (Models::takesFallbacks), a request a classifier declines is run again on
@@ -83,7 +88,9 @@ class Anthropic extends HttpProvider implements TextProvider
         $body = [
             'model' => $model,
             'max_tokens' => $request->resolvedMaxTokens(),
-            'system' => $request->instructions,
+            'system' => Agents::cachesInstructions($request->agent)
+                ? [['type' => 'text', 'text' => $request->instructions, 'cache_control' => ['type' => 'ephemeral']]]
+                : $request->instructions,
             'messages' => [
                 ...array_map(fn (Message $message) => ['role' => $message->role, 'content' => $message->content], $request->history),
                 ['role' => 'user', 'content' => $content],

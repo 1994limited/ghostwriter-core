@@ -23,7 +23,7 @@ final class RevisitScannerTest extends TestCase
         $row = (new RevisitScanner)->scan(new EntrySnapshot(Northfold::ref(), 'Services', '/cp/services', $context), new DateTimeImmutable(Northfold::NOW));
 
         $this->assertSame(['broken-link', 'past-year', 'stated-count', 'missing-alt', 'seo-length', 'age'], array_map(fn (RevisitReason $r) => $r->kind->value, $row->reasons));
-        $this->assertSame('“New for 2024”', $row->reasons[1]->message()->english());
+        $this->assertSame('“New for 2024”', $row->reasons[1]->message()->english(), 'The chip shows the dated words, not the whole sentence the finding is anchored on.');
         $this->assertSame('1 broken link', $row->reasons[0]->message()->english());
         $this->assertSame('no alt text', $row->reasons[3]->message()->english());
         $this->assertSame('2 years old', $row->reasons[5]->message()->english());
@@ -45,6 +45,15 @@ final class RevisitScannerTest extends TestCase
         $this->assertSame(ReasonKind::Age, $plain->reasons[1]->kind);
         $this->assertSame(34, $plain->score);
         $this->assertSame(9, $dated->score, 'A quarter weight in a dated group.');
+    }
+
+    public function test_the_chip_quotes_the_phrase_in_the_middle_of_a_sentence(): void
+    {
+        $ref = new EntryRef('pages', 'prices', 'default');
+        $row = (new RevisitScanner)->scan(Fixtures::snapshot($ref, 'Prices', '2024-03-14', 'Our prices, as of 2023, start at £450.'), new DateTimeImmutable(Fixtures::NOW));
+
+        $this->assertSame('as of 2023', $row->reasons[0]->quote);
+        $this->assertSame(ReasonKind::PastYear, $row->reasons[0]->kind);
     }
 
     public function test_rescoring_with_nothing_changed_equals_a_full_scan(): void

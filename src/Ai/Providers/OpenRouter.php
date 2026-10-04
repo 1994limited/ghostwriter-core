@@ -98,7 +98,9 @@ class OpenRouter extends HttpProvider implements ImageProvider, TextProvider
             'model' => $model,
             'max_tokens' => $request->resolvedMaxTokens(),
             'messages' => [
-                ['role' => 'system', 'content' => $request->instructions],
+                ['role' => 'system', 'content' => Agents::cachesInstructions($request->agent) && str_starts_with($model, 'anthropic/')
+                    ? [['type' => 'text', 'text' => $request->instructions, 'cache_control' => ['type' => 'ephemeral']]]
+                    : $request->instructions],
                 ...array_map(fn (Message $message) => ['role' => $message->role, 'content' => $message->content], $request->history),
                 ['role' => 'user', 'content' => $content],
             ],

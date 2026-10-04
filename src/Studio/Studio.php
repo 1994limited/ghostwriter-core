@@ -28,8 +28,10 @@ use NineteenNinetyFour\Ghostwriter\Core\Suggest\Phrases;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\ReviewInput;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\ReviewPrompt;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\RewordRequest;
+use NineteenNinetyFour\Ghostwriter\Core\Suggest\Suggestion;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\SuggestionReader;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\SuggestionReply;
+use NineteenNinetyFour\Ghostwriter\Core\Suggest\VerifyPrompt;
 use NineteenNinetyFour\Ghostwriter\Core\Text\LenientYaml;
 use NineteenNinetyFour\Ghostwriter\Core\Text\Slug;
 use NineteenNinetyFour\Ghostwriter\Core\Text\TaggedResponse;
@@ -634,11 +636,12 @@ final class Studio
     /**
      * Suggest edits: the review call. One `reviewer` call per batch of a
      * long page (ReviewInput::calls(), said in the confirm before it
-     * runs), merged into one reply. Each call sees its units, the free
-     * findings in them to write fixes for, the site digest, what was
-     * dismissed, and up to four thumbnails for images missing alt text,
-     * each through ModelInputGuard (a refused image isn't attached, and
-     * its finding asks the editor).
+     * runs), merged into one reply. Each call sees its units, every free
+     * finding in them as a candidate to keep (with its fix) or drop in
+     * context, the site digest, what was dismissed or checked fine, and up
+     * to four thumbnails for images missing alt text, each through
+     * ModelInputGuard (a refused image isn't attached, and a kept finding
+     * asks the editor to describe it).
      *
      * The reply is read, not validated: SuggestionValidator decides what
      * is kept, and drops anything that adds a fact. A reply that can't be
@@ -720,6 +723,82 @@ final class Studio
             '{{ claims }}' => $claims,
             '{{ reply_language }}' => self::languageName($input->replyLanguage),
             '{{ part }}' => $input->calls() > 1 ? "- This page is long, so it is reviewed in parts. Review only the units shown; the others are reviewed separately.\n" : '',
+        ]);
+    }
+
+    /**
+     * Suggest edits, the second pass: one `verifier` call per part of the
+     * review that kept anything, after SuggestionValidator. Each call gets
+     * the part's kept suggestions, numbered s1, s2… across the review
+     * (VerifyPrompt), each with its whole paragraph, the heading it sits
+     * under and the site entry it cites; the voice guide and the kind are
+     * in the instructions. The reply (`<verdicts>`) is read, not applied:
+     * SuggestionValidator::verify() does that, checking every fix again.
+     *
+     * A part whose reply can't be read gives no verdicts, with a warning
+     * (its suggestions stay as the reviewer wrote them).
+     *
+     * @param  list<Suggestion>  $suggestions  ValidatedReview::$suggestions, in order.
+     * @return Result<SuggestionReply> Items are `{id, verdict, reason, replacement?, alternatives?}`; `calls` is how many calls were made.
+     *
+     * @throws ProviderException
+     */
+    public function verifyEdits(ReviewInput $input, array $suggestions): Result
+    {
+        $instructions = $this->verifierInstructions($input);
+        $reader = new SuggestionReader('verdicts');
+        $usage = new Usage;
+        $items = [];
+        $problems = [];
+        $truncated = 0;
+        $calls = 0;
+        $byBatch = [];
+
+        foreach (array_values($suggestions) as $i => $suggestion) {
+            $byBatch[$input->batchFor($suggestion->anchor)]['s'.($i + 1)] = $suggestion;
+        }
+
+        foreach ($input->batches() as $batch) {
+            if (($byBatch[$batch->index] ?? []) === []) {
+                continue;
+            }
+
+            $response = $this->ask('verifier', VerifyPrompt::render($input, $batch, $byBatch[$batch->index]), instructions: $instructions);
+            $usage = $usage->plus($response->usage);
+            $read = $reader->read($response->text);
+            $calls++;
+
+            if ($read['problem'] !== null) {
+                $problems[] = $read['problem'];
+                $this->unreadable("the verifier's reply couldn't be read ({$read['problem']})", 'verifier', $response->text, ['part' => ($batch->index + 1).' of '.$batch->total]);
+            }
+
+            if ($read['truncated'] || $response->truncated()) {
+                $truncated++;
+            }
+
+            foreach ($read['items'] as $item) {
+                $items[] = ['batch' => $batch->index, 'item' => $item];
+            }
+        }
+
+        return new Result(new SuggestionReply($items, $calls, $truncated, $problems), $usage);
+    }
+
+    /**
+     * The verifier's instructions: the shared scoped-edit rules, the voice
+     * guide and the kind. The same for every call of a review.
+     */
+    public function verifierInstructions(ReviewInput $input): string
+    {
+        $kind = $input->writer->kind;
+
+        return strtr($this->prompt('verifier'), [
+            '{{ scoped_edit_rules }}' => $this->prompt('scoped-edit'),
+            '{{ voice }}' => trim($input->writer->voice) !== '' ? trim($input->writer->voice) : 'No voice guide has been written yet. Judge the voice by the rest of the page.',
+            '{{ type_title }}' => $kind->title,
+            '{{ type_guidance }}' => trim($kind->guidance) !== '' ? trim($kind->guidance) : trim($kind->description),
+            '{{ reply_language }}' => self::languageName($input->replyLanguage),
         ]);
     }
 

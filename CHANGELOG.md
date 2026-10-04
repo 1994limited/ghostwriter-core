@@ -16,6 +16,28 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 - `Session::$review` (and its `review` key), `Review`, `Thread`, `Note`, `NoteKind`, `ThreadStatus`, `SessionReview` and its add, edit, delete, reply, repin and version checks, `beforeData()`, and the re-anchoring in `SessionLayouts::afterEdit()` (a pin follows its unit ids, which `UnitMatcher` carries; one whose words are gone shows Detached).
 
+### Changed (Suggest edits)
+
+- **Suggest edits: no suggestion reaches the editor without the model judging it in context.** See docs/suggest-edits.md.
+  - **Every free finding is a candidate.** `ReviewInput::numbered()` now numbers every finding (the long-sentence hint and a link field to a deleted page included). The prompt's `<findings>` is now `<candidates>`: each line has its unit, the heading it sits under, its quote, the check's message, the dated words for an Out of date one, and what to write if it is kept.
+  - **Keep or drop.** The reviewer answers every candidate: a kept suggestion (`"finding": "f3"` and the fix) or `{"finding": "f3", "drop": "<reason>"}`. Any category may be dropped. `SuggestionReader` reads the older `decline` key as `drop`. The schema has `drop` in place of `decline`, and `category` is no longer required (a drop has none).
+  - **No free fallback in a review.** A candidate the model didn't answer is not shown (`unanswered`); one it dropped is not shown and is stored as checked. When the review call fails, the review is Failed with no suggestions. `Finding::toSuggestion()` stays for `EditReviews::preview()`, which is unchanged. Free checks only find and explain; they never write replacement text.
+  - **Out of date findings are anchored on their sentence** (`PastYears`, `RelativeTime`): the quote is the whole sentence (a heading line is its own), one finding a sentence, with the dated words in `meta['phrase']` (as written) and `meta['phraseOffset']` (where they start in the quote). The message's `:quote` is the phrase, and so is the revisit chip. Finding ids for these change accordingly. Closing dates and stated counts stay on the phrase.
+  - Out of date fixes rewrite the whole sentence, with alternatives that are meaningfully different, one of them the sentence without the dated words ("Winter care visits", never "Every year: winter care visits").
+  - `EditReview::decide(Confirmed)` ("It's still right") is allowed for Out of date as well as Fact to check.
+  - **The `reviewer` runs on the writing tier at effort `high`** (16000 tokens). `reworder` moves from the quick tier to the writing tier, at effort `medium` (4000 tokens).
+
+### Added (Suggest edits)
+
+- **The verifier: a second pass.** After validation, `Studio::verifyEdits(ReviewInput, list<Suggestion>): Result<SuggestionReply>` makes one `verifier` call per part that kept anything (new prompt `resources/prompts/verifier.md`, writing tier, effort `high`, 12000 tokens; `Suggest\VerifyPrompt`). Each kept suggestion is shown with its whole paragraph, its heading, why it was made and the site entry it cites; the reply is `<verdicts>` with `{"id": "s1", "verdict": "keep" | "fix" | "drop", "reason", "replacement"?, "alternatives"?}`. `SuggestionValidator::verify()` applies it: a fix passes every check again; a drop goes into `checked` (`by: 'verifier'`). If the verifier fails, the validated suggestions stand and a warning is logged. `Studio::verifierInstructions()`. `EditReviews::run()` does reviewer, validation, then verifier.
+- `ReviewInput::modelCalls()`: the most model calls a review makes (a reviewer and a verifier call per part). `calls()` is still the number of parts, for the confirm. `EditReview::$calls` and `$usage` count both agents.
+- **Checked candidates.** `ValidatedReview::$checked` and `EditReview::$checked`: `list<{id, passage, reason, by}>`, what the reviewer (`by: 'reviewer'`) or the verifier (`by: 'verifier'`) dropped in context, logged at debug level with the reason only. `EditReviews::quieted()` turns each into a `Quiet` of the new state `Quiet::CHECKED`, for 12 months or until its passage changes, so the same words aren't a candidate next time; the prompt's `<dismissed>` lists them as "checked fine". `ValidatedReview::$verified` and `EditReview::$verified` (suggestion id ⇒ `keep` or `fix`), and `EditReview::$verifyError`.
+- **`Anchor\SentenceFit`**: a deterministic check that a replacement leaves whole sentences (a capital where a sentence starts, the same end punctuation, no word doubled at a join, nothing empty mid-sentence except a Duplicate). The validator runs it on every replacement and alternative, after the model, and in `acceptsVersion()`.
+- `SuggestionValidator::DROPS` gains `unanswered`, `fit` and `verifier`.
+- `CheckText::sentenceRange()`, `sentenceAnchor()` and `headingBefore()`. `ReviewInput::batchFor(Anchor)`. `SuggestionReader` takes the list's name (`new SuggestionReader('verdicts')`).
+- **Prompt caching** for `reviewer`, `verifier` and `reworder` (`Agents::CACHED`, `Agents::cachesInstructions()`): Anthropic gets their instructions as a system block with `cache_control` (ephemeral), and so does Claude through OpenRouter.
+- A kept candidate with nothing to write stays as a suggestion with no replacement only for a link field, a broken link (the link is the fix) and an image whose picture wasn't attached ("Describe the image yourself").
+
 ## 1.9.0 - 2026-10-04
 
 ### Added

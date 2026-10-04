@@ -31,8 +31,9 @@ final class Agents
         'photo-query' => 2000,
         'photo-scout' => 2000,
         'gap-filler' => 1500,
-        'reviewer' => 8000,
-        'reworder' => 1500,
+        'reviewer' => 16000,
+        'verifier' => 12000,
+        'reworder' => 4000,
     ];
 
     /** Agents with an effort of their own; the rest leave it to the provider. */
@@ -44,8 +45,9 @@ final class Agents
         'gap-filler' => 'low',
         'layout-planner' => 'low',
         'reviser' => 'medium',
-        'reviewer' => 'medium',
-        'reworder' => 'low',
+        'reviewer' => 'high',
+        'verifier' => 'high',
+        'reworder' => 'medium',
     ];
 
     /** The tier of the agents that write, read and plan: the default. */
@@ -65,8 +67,20 @@ final class Agents
         'photo-query' => self::QUICK,
         'photo-scout' => self::QUICK,
         'gap-filler' => self::QUICK,
-        'reworder' => self::QUICK,
     ];
+
+    /**
+     * Agents whose instructions are long and the same from call to call
+     * (the review's rules and the voice guide), marked for the provider's
+     * prompt cache where it has one (Anthropic, and Claude through
+     * OpenRouter). Below the provider's minimum size, nothing is cached.
+     */
+    public const CACHED = ['reviewer', 'verifier', 'reworder'];
+
+    public static function cachesInstructions(string $agent): bool
+    {
+        return in_array($agent, self::CACHED, true);
+    }
 
     public static function tier(string $agent): string
     {

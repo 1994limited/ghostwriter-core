@@ -68,6 +68,18 @@ class OpenRouterTest extends ProviderTestCase
         $this->assertSame(['type' => 'image_url', 'image_url' => ['url' => 'data:image/png;base64,'.self::PNG]], $body['messages'][3]['content'][1]);
     }
 
+    public function test_claude_through_openrouter_caches_the_reviews_instructions(): void
+    {
+        $this->http->queueJson($this->answer());
+        $this->http->queueJson($this->answer());
+
+        $this->openrouter()->text($this->request(agent: 'verifier'));
+        $this->openrouter(model: 'openai/gpt-5.5')->text($this->request(agent: 'verifier'));
+
+        $this->assertSame([['type' => 'text', 'text' => 'Be brief.', 'cache_control' => ['type' => 'ephemeral']]], $this->http->body(0)['messages'][0]['content']);
+        $this->assertSame('Be brief.', $this->http->body(1)['messages'][0]['content'], 'Other providers cache on their own.');
+    }
+
     public function test_each_tier_has_its_default_and_choices_win_in_order(): void
     {
         for ($i = 0; $i < 6; $i++) {

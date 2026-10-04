@@ -5,6 +5,7 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Suggest;
 use NineteenNinetyFour\Ghostwriter\Core\Anchor\NormalisedText;
 use NineteenNinetyFour\Ghostwriter\Core\Anchor\QuoteFinder;
 use NineteenNinetyFour\Ghostwriter\Core\Anchor\ScopedEditCheck;
+use NineteenNinetyFour\Ghostwriter\Core\Anchor\SentenceFit;
 use NineteenNinetyFour\Ghostwriter\Core\Anchor\SourceCheck;
 use NineteenNinetyFour\Ghostwriter\Core\Anchor\TextQuote;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Unit;
@@ -23,12 +24,21 @@ use NineteenNinetyFour\Ghostwriter\Core\Gaps\Walk;
  *   which is re-quoted to the real text), or it crosses a paragraph. A
  *   whole-value suggestion only for a short field (≤ SHORT_FIELD
  *   characters) or an SEO field.
- * - `finding`: a finding named twice, or declined when it may not be
- *   (only Duplicate and Clarity can be). A suggestion naming a finding
- *   takes the finding's anchor and category, whatever it says.
+ * - `finding`: a candidate answered twice, or one that doesn't exist. A
+ *   suggestion naming a candidate takes the finding's anchor and
+ *   category, whatever it says.
+ * - `declined`: a candidate the model dropped in context (any category
+ *   may be). It isn't shown; it goes in ValidatedReview::$checked with
+ *   the model's reason.
+ * - `unanswered`: a candidate the model neither kept nor dropped. It
+ *   isn't shown, and isn't checked: it is a candidate again next time.
  * - `scope`, `size`, `markers`, `link`, `facts`: ScopedEditCheck on the
  *   replacement and each alternative (an alternative that fails is
- *   dropped alone). Every figure, quotation and name must be on the page
+ *   dropped alone).
+ * - `fit`: Anchor\SentenceFit on the replacement and each alternative,
+ *   after the checks above: the field still reads as whole sentences (a
+ *   capital where a sentence starts, the same end punctuation, no word
+ *   doubled at a join, nothing empty mid-sentence). Every figure, quotation and name must be on the page
  *   or in the cited site entry (SourceCheck). Clarity may shrink to 20%,
  *   Duplicate to nothing; an SEO value must fit its limit.
  * - `facts` too: a Fact to check whose template isn't the quote with
@@ -43,15 +53,19 @@ use NineteenNinetyFour\Ghostwriter\Core\Gaps\Walk;
  * - `cap`: over the cap (per call, and PER_UNIT in a unit), by rank then
  *   page order; `page-share`: the model's own suggestions would change
  *   more than PAGE_SHARE of the page's words.
+ * - `verifier`: dropped by the second pass (verify()).
  *
  * A source the model claims that can't be shown (a voice guide heading
  * that isn't one, an entry it wasn't shown) becomes `general`, and the
- * reason is kept. Findings the model didn't fix stay as their free
- * suggestion (Finding::toSuggestion()).
+ * reason is kept. Nothing reaches the editor that the model didn't judge:
+ * there is no free fallback for a candidate it left. A kept candidate
+ * with nothing to write is kept with no replacement only where the words
+ * can't be the fix: a link field, a broken link (the link is the fix) and
+ * an image whose picture wasn't attached ("Describe the image yourself").
  */
 final class SuggestionValidator
 {
-    public const DROPS = ['unreadable', 'anchor', 'finding', 'declined', 'scope', 'size', 'markers', 'link', 'facts', 'claims', 'voice', 'dismissed', 'overlap', 'cap', 'page-share'];
+    public const DROPS = ['unreadable', 'anchor', 'finding', 'declined', 'unanswered', 'scope', 'size', 'markers', 'link', 'facts', 'fit', 'claims', 'voice', 'dismissed', 'overlap', 'cap', 'page-share', 'verifier'];
 
     public const SHORT_FIELD = 120;
 
@@ -83,8 +97,8 @@ final class SuggestionValidator
 
         $numbered = $input->numbered();
         $batches = $input->batches();
-        $fixed = [];
-        $declined = [];
+        $answered = [];
+        $checked = [];
         /** @var list<array{suggestion: Suggestion, at: int, length: int, own: bool, order: int}> $kept */
         $kept = [];
 
@@ -92,26 +106,27 @@ final class SuggestionValidator
             $batch = $batches[$batchIndex] ?? null;
             $number = is_string($item['finding'] ?? null) ? $item['finding'] : null;
             $finding = $number !== null ? ($numbered[$number] ?? null) : null;
+            $item['drop'] ??= $item['decline'] ?? null;
 
-            if ($batch === null || ($number !== null && $finding === null)) {
+            if ($batch === null || ($number !== null && $finding === null) || ($finding === null && isset($item['drop']))) {
                 $drop($batch === null ? 'unreadable' : 'finding');
 
                 continue;
             }
 
-            if ($finding !== null && (isset($fixed[$finding->id]) || isset($declined[$finding->id]))) {
+            if ($finding !== null && isset($answered[$finding->id])) {
                 $drop('finding');
 
                 continue;
             }
 
-            if ($finding !== null && is_string($item['decline'] ?? null)) {
-                if (in_array($finding->category, [Category::Duplicate, Category::Clarity], true)) {
-                    $declined[$finding->id] = true;
-                    $drop('declined');
-                } else {
-                    $drop('finding');
-                }
+            if ($finding !== null) {
+                $answered[$finding->id] = true;
+            }
+
+            if ($finding !== null && isset($item['drop'])) {
+                $checked[] = ['id' => $finding->id, 'passage' => $finding->anchor->passage, 'reason' => is_string($item['drop']) ? trim(mb_substr($item['drop'], 0, 200)) : '', 'by' => 'reviewer'];
+                $drop('declined');
 
                 continue;
             }
@@ -130,24 +145,13 @@ final class SuggestionValidator
                 continue;
             }
 
-            if ($finding !== null) {
-                $fixed[$finding->id] = true;
-            }
-
             $kept[] = $result + ['own' => $finding === null, 'order' => $order];
         }
 
-        // Findings the model left: their free form, unless declined.
-        foreach ($input->findings as $finding) {
-            if (isset($fixed[$finding->id]) || isset($declined[$finding->id])) {
-                continue;
-            }
-
-            $free = $finding->toSuggestion();
-
-            if ($free !== null) {
-                [$at, $length] = $this->where($free->anchor, $input);
-                $kept[] = ['suggestion' => $free, 'at' => $at, 'length' => $length, 'own' => false, 'order' => PHP_INT_MAX];
+        // Candidates the model left: not shown, and a candidate again next time.
+        foreach ($numbered as $finding) {
+            if (! isset($answered[$finding->id])) {
+                $drop('unanswered');
             }
         }
 
@@ -155,7 +159,100 @@ final class SuggestionValidator
         $kept = $this->applyCaps($kept, $input, $drop);
         $kept = $this->applyPageShare($kept, $input, $drop);
 
-        return new ValidatedReview($this->inFormOrder($kept, $input), $dropped);
+        return new ValidatedReview($this->inFormOrder($kept, $input), $dropped, $checked);
+    }
+
+    /**
+     * The verifier's second pass over the kept suggestions (numbered s1,
+     * s2… in their order, as Studio::verifyEdits() sent them): `keep`,
+     * `fix` (a corrected replacement, and alternatives if it gives any,
+     * each checked again as the first were, `fit` included) or `drop`
+     * (into `checked`, by the verifier). A suggestion it didn't answer is
+     * kept as it was; so is a `fix` of one with no words to fix. A fix
+     * that fails a check drops the suggestion, counted by the reason.
+     */
+    public function verify(ValidatedReview $review, SuggestionReply $verdicts, ReviewInput $input): ValidatedReview
+    {
+        $numbered = [];
+
+        foreach ($review->suggestions as $i => $suggestion) {
+            $numbered['s'.($i + 1)] = $suggestion;
+        }
+
+        $answers = [];
+
+        foreach ($verdicts->items as ['item' => $item]) {
+            $id = is_string($item['id'] ?? null) ? $item['id'] : '';
+
+            if (isset($numbered[$id]) && ! isset($answers[$id])) {
+                $answers[$id] = $item;
+            }
+        }
+
+        $dropped = $review->dropped;
+        $checked = $review->checked;
+        $verified = [];
+        $kept = [];
+
+        foreach ($numbered as $number => $suggestion) {
+            $answer = $answers[$number] ?? null;
+            $verdict = is_string($answer['verdict'] ?? null) ? strtolower(trim($answer['verdict'])) : null;
+
+            if ($answer === null || ! in_array($verdict, ['keep', 'fix', 'drop'], true)) {
+                $kept[] = $suggestion;
+
+                continue;
+            }
+
+            if ($verdict === 'drop') {
+                $checked[] = ['id' => $suggestion->id, 'passage' => $suggestion->anchor->passage, 'reason' => is_string($answer['reason'] ?? null) ? trim(mb_substr($answer['reason'], 0, 200)) : '', 'by' => 'verifier'];
+                $dropped['verifier'] = ($dropped['verifier'] ?? 0) + 1;
+
+                continue;
+            }
+
+            $text = is_string($answer['replacement'] ?? null) && trim($answer['replacement']) !== '' ? trim($answer['replacement']) : null;
+
+            if ($verdict === 'keep' || $text === null || $suggestion->replacement === null || $suggestion->fact !== null) {
+                $verified[$suggestion->id] = 'keep';
+                $kept[] = $suggestion;
+
+                continue;
+            }
+
+            $tokens = VerifyPrompt::tokens($input, $input->batches()[$input->batchFor($suggestion->anchor)] ?? $input->batches()[0]);
+            $restore = fn (string $value) => ReviewPrompt::restoreLinks(trim($value), $tokens, $input->digest);
+            $cited = $suggestion->reason->entry !== null ? $this->digestIdOf($suggestion->reason->entry, $input) : null;
+            $quote = $suggestion->anchor->quote->exact ?? '';
+            $asset = $suggestion->anchor->scope === AnchorScope::Asset;
+            $check = fn (string $value) => $asset ? null : $this->checkText($suggestion->category, $suggestion->anchor, $quote, $value, $input, $cited);
+            $replacement = $restore($text);
+            $replacement = $replacement !== null && $asset ? self::alt($replacement) : $replacement;
+            $problem = $replacement === null ? 'link' : $check($replacement);
+
+            if ($problem !== null || $replacement === null) {
+                $dropped[$problem ?? 'link'] = ($dropped[$problem ?? 'link'] ?? 0) + 1;
+
+                continue;
+            }
+
+            $alternatives = [];
+            $given = is_array($answer['alternatives'] ?? null) ? $answer['alternatives'] : $suggestion->alternatives;
+
+            foreach ($given as $alternative) {
+                $alternative = is_string($alternative) && trim($alternative) !== '' ? $restore($alternative) : null;
+                $alternative = $alternative !== null && $asset ? self::alt($alternative) : $alternative;
+
+                if ($alternative !== null && $alternative !== $replacement && ! in_array($alternative, $alternatives, true) && $check($alternative) === null) {
+                    $alternatives[] = $alternative;
+                }
+            }
+
+            $verified[$suggestion->id] = 'fix';
+            $kept[] = new Suggestion($suggestion->id, $suggestion->category, $suggestion->anchor, $suggestion->reason, $replacement, array_slice($alternatives, 0, Suggestion::ALTERNATIVES), $suggestion->fact, $suggestion->link, $suggestion->finding, $suggestion->free, $suggestion->state);
+        }
+
+        return new ValidatedReview($kept, $dropped, $checked, $verified);
     }
 
     /**
@@ -247,14 +344,16 @@ final class SuggestionValidator
 
             $replacement = null;
         } elseif ($anchor->scope === AnchorScope::Asset) {
-            if ($replacement === null) {
+            if ($replacement === null && ($finding === null || in_array($finding->id, $reply->attached, true))) {
                 return 'scope';
             }
 
-            $replacement = self::alt($replacement);
+            // Kept with no picture to look at: "Describe the image yourself".
+            $replacement = $replacement !== null ? self::alt($replacement) : null;
             $alternatives = array_values(array_map(fn (string $text) => self::alt($text), array_filter(array_map(fn ($text) => is_string($text) ? $restore($text) : null, is_array($item['alternatives'] ?? null) ? $item['alternatives'] : []))));
         } else {
-            if ($replacement === null && $link === null) {
+            // A kept candidate whose fix isn't words (a link field, a broken link) may come with none.
+            if ($replacement === null && $link === null && ! ($finding !== null && ($finding->needs === Needs::Nothing || $finding->category === Category::Link))) {
                 return 'scope';
             }
 
@@ -313,7 +412,39 @@ final class SuggestionValidator
             return 'size';
         }
 
-        return null;
+        return $this->fits($category, $anchor, $replacement, $input) ? null : 'fit';
+    }
+
+    /**
+     * Whether a replacement reads as whole sentences where it goes
+     * (Anchor\SentenceFit), in its block of the field's text.
+     */
+    private function fits(Category $category, Anchor $anchor, string $replacement, ReviewInput $input): bool
+    {
+        $text = $input->context->textAt($anchor->path->toString());
+
+        if ($text === null || $anchor->scope === AnchorScope::Asset) {
+            return true;
+        }
+
+        if ($anchor->scope === AnchorScope::Field) {
+            return SentenceFit::fits($text->plain, 0, mb_strlen($text->plain), $replacement, $category === Category::Duplicate);
+        }
+
+        [$at, $length] = $this->where($anchor, $input);
+        $block = $text->blockAt($at);
+
+        if ($length === 0) {
+            return true;
+        }
+
+        if ($block === null) {
+            return SentenceFit::fits($text->plain, $at, $length, $replacement, $category === Category::Duplicate);
+        }
+
+        [$start] = $text->blocks[$block];
+
+        return SentenceFit::fits($text->block($block), $at - $start, $length, $replacement, $category === Category::Duplicate);
     }
 
     /**

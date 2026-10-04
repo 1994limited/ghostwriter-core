@@ -35,6 +35,17 @@ final class ValidatorTest extends TestCase
         return (new SuggestionValidator)->validate(new SuggestionReply(array_map(fn (array $item) => ['batch' => 0, 'item' => $item], $items)), $input);
     }
 
+    /**
+     * What was dropped, leaving out the candidates the fixture didn't
+     * answer (most tests answer only one).
+     *
+     * @return array<string, int>
+     */
+    private static function droppedOf(ValidatedReview $review): array
+    {
+        return array_diff_key($review->dropped, ['unanswered' => true]);
+    }
+
     /** The model's own suggestions kept, by category. @return list<Suggestion> */
     private static function own(ValidatedReview $review): array
     {
@@ -61,7 +72,8 @@ final class ValidatorTest extends TestCase
         yield 'facts: a template that changes two spans' => [['category' => 'fact-to-check', 'unit' => 'u4', 'quote' => 'our team of 6 designers', 'reason' => 'Check.', 'source' => ['kind' => 'general'], 'fact' => ['ask' => 'Designers', 'template' => 'our {answer} of 6 people']], 'facts'];
         yield 'unreadable: an unknown category' => [['category' => 'tone'] + self::VOICE, 'unreadable'];
         yield 'finding: a finding that does not exist' => [['finding' => 'f42'] + self::VOICE, 'finding'];
-        yield 'finding: declining a date' => [['finding' => 'f1', 'category' => 'out-of-date', 'decline' => 'It is fine.'], 'finding'];
+        yield 'finding: a drop that names no candidate' => [['drop' => 'It is fine.'], 'finding'];
+        yield 'fit: a sentence that loses its capital' => [['replacement' => 'we design gardens and help them grow'] + self::VOICE, 'fit'];
     }
 
     /**
@@ -74,14 +86,14 @@ final class ValidatorTest extends TestCase
 
         if ($dropped === null) {
             $this->assertCount(1, self::own($review));
-            $this->assertSame([], $review->dropped);
+            $this->assertSame([], self::droppedOf($review));
 
             return;
         }
 
         $this->assertSame([], self::own($review), 'Dropped.');
-        $this->assertSame([$dropped => 1], $review->dropped);
-        $this->assertCount(5, $review->suggestions, 'The free findings still stand.');
+        $this->assertSame([$dropped => 1], self::droppedOf($review));
+        $this->assertSame([], $review->suggestions, 'No free fallback: a candidate the model left is not shown.');
     }
 
     public function test_a_fuzzy_quote_is_requoted_to_the_real_text(): void
@@ -93,35 +105,81 @@ final class ValidatorTest extends TestCase
 
     public function test_a_finding_takes_its_own_anchor_and_category(): void
     {
-        $review = $this->validate([['finding' => 'f1', 'category' => 'voice', 'unit' => 'u3', 'quote' => 'bespoke', 'reason' => 'Old.', 'source' => ['kind' => 'finding'], 'replacement' => 'Every winter']]);
+        $review = $this->validate([['finding' => 'f1', 'category' => 'voice', 'unit' => 'u3', 'quote' => 'bespoke', 'reason' => 'Old.', 'source' => ['kind' => 'finding'], 'replacement' => 'Winter care visits']]);
         $fix = $review->suggestions[0];
 
         $this->assertSame(Category::OutOfDate, $fix->category);
-        $this->assertSame('New for 2024', $fix->anchor->quote?->exact);
+        $this->assertSame('New for 2024: winter care visits', $fix->anchor->quote?->exact, 'The whole sentence.');
         $this->assertFalse($fix->free);
     }
 
     public function test_a_finding_named_twice_keeps_the_first(): void
     {
         $fix = ['finding' => 'f1', 'category' => 'out-of-date', 'reason' => 'Old.', 'source' => ['kind' => 'finding']];
-        $review = $this->validate([$fix + ['replacement' => 'Every winter'], $fix + ['replacement' => 'Each winter']]);
+        $review = $this->validate([$fix + ['replacement' => 'Winter care visits'], $fix + ['replacement' => 'Our winter care visits']]);
 
-        $this->assertSame('Every winter', $review->suggestions[0]->replacement);
-        $this->assertSame(['finding' => 1], $review->dropped);
+        $this->assertSame('Winter care visits', $review->suggestions[0]->replacement);
+        $this->assertSame(['finding' => 1], self::droppedOf($review));
     }
 
-    public function test_a_clarity_hint_may_be_declined(): void
+    public function test_any_candidate_may_be_dropped_in_context_and_is_stored_as_checked(): void
     {
-        $review = $this->validate([['finding' => 'f3', 'category' => 'clarity', 'decline' => 'It reads fine.']]);
+        $review = $this->validate([
+            ['finding' => 'f1', 'drop' => 'The page is about 2024 on purpose.'],
+            ['finding' => 'f3', 'decline' => 'It reads fine.'],
+        ]);
+        $input = ReviewCase::input();
+        $numbered = $input->numbered();
 
-        $this->assertSame(['declined' => 1], $review->dropped);
-        $this->assertNotContains('clarity', array_map(fn (Suggestion $s) => $s->category->value, $review->suggestions));
+        $this->assertSame(['declined' => 2, 'unanswered' => 4], $review->dropped);
+        $this->assertSame([], $review->suggestions, 'Nothing dropped is shown.');
+        $this->assertSame([
+            ['id' => $numbered['f1']->id, 'passage' => $numbered['f1']->anchor->passage, 'reason' => 'The page is about 2024 on purpose.', 'by' => 'reviewer'],
+            ['id' => $numbered['f3']->id, 'passage' => $numbered['f3']->anchor->passage, 'reason' => 'It reads fine.', 'by' => 'reviewer'],
+        ], $review->checked, 'The older decline key reads as drop.');
+    }
+
+    public function test_unanswered_candidates_are_not_shown_and_not_checked(): void
+    {
+        $review = $this->validate([self::VOICE]);
+
+        $this->assertSame(['unanswered' => 6], $review->dropped);
+        $this->assertSame([], $review->checked);
+        $this->assertSame(['voice'], array_map(fn (Suggestion $s) => $s->category->value, $review->suggestions));
+    }
+
+    public function test_an_image_kept_without_its_picture_has_no_words(): void
+    {
+        $input = ReviewCase::input(withImage: false);
+        $kept = (new SuggestionValidator)->validate(new SuggestionReply([['batch' => 0, 'item' => ['finding' => 'f5', 'category' => 'accessibility', 'unit' => 'i1', 'reason' => 'It needs alt text.', 'source' => ['kind' => 'finding']]]]), $input);
+
+        $this->assertCount(1, $kept->suggestions);
+        $this->assertSame(Category::Accessibility, $kept->suggestions[0]->category);
+        $this->assertNull($kept->suggestions[0]->replacement, 'Describe the image yourself.');
+
+        $attached = (new SuggestionValidator)->validate(new SuggestionReply([['batch' => 0, 'item' => ['finding' => 'f5', 'category' => 'accessibility', 'unit' => 'i1', 'reason' => 'x', 'source' => ['kind' => 'finding']]]], attached: [$input->numbered()['f5']->id]), $input);
+        $this->assertSame(['scope' => 1], self::droppedOf($attached), 'With the picture attached, it must be described.');
+    }
+
+    public function test_the_fit_check_after_the_model(): void
+    {
+        $long = 'In terms of the actual process involved, what typically happens is that we will first of all come out and visit the garden in person, after which we will then go away and produce a concept.';
+        $f3 = ['finding' => 'f3', 'category' => 'clarity', 'unit' => 'u4', 'quote' => $long, 'reason' => 'Long.', 'source' => ['kind' => 'general']];
+        $own = ['category' => 'clarity', 'unit' => 'u4', 'reason' => 'Wordy.', 'source' => ['kind' => 'general']];
+
+        $this->assertSame(['fit' => 1], self::droppedOf($this->validate([$f3 + ['replacement' => 'First we visit the garden, then we draw a concept']])), 'It lost its full stop.');
+        $this->assertSame(['fit' => 1], self::droppedOf($this->validate([$own + ['quote' => 'come out and visit the garden in person', 'replacement' => 'all visit the garden']])), 'A doubled word at the join: "of all all".');
+        $this->assertSame(['fit' => 1], self::droppedOf($this->validate([$own + ['quote' => 'come out and visit the garden in person', 'replacement' => 'visit the garden.']])), 'Ends the sentence early.');
+        $this->assertSame([], self::droppedOf($this->validate([$own + ['quote' => 'come out and visit the garden in person', 'replacement' => 'visit the garden']])), 'Lower case in the middle of a sentence is right.');
+
+        $review = $this->validate([['finding' => 'f1', 'category' => 'out-of-date', 'reason' => 'Old.', 'source' => ['kind' => 'finding'], 'replacement' => 'Winter care visits', 'alternatives' => ['Every year: winter care visits.', 'winter care visits', 'Our winter care visits']]]);
+        $this->assertSame(['Every year: winter care visits.', 'Our winter care visits'], $review->suggestions[0]->alternatives, 'Only the one without its capital is dropped, alone.');
     }
 
     public function test_a_fact_to_check_never_keeps_a_replacement_and_its_without_adds_nothing(): void
     {
         $review = $this->validate([['finding' => 'f2', 'category' => 'fact-to-check', 'reason' => 'Check.', 'source' => ['kind' => 'finding'], 'replacement' => 'team of 8', 'fact' => ['ask' => 'Designers', 'template' => 'team of {answer}', 'without' => 'team of eight', 'answer' => 'number']]]);
-        $fact = $review->suggestions[1];
+        $fact = $review->suggestions[0];
 
         $this->assertNull($fact->replacement);
         $this->assertNull($fact->fact?->without, 'A version without that adds a figure is left out.');
@@ -139,7 +197,7 @@ final class ValidatorTest extends TestCase
         $off = ReviewCase::input(Northfold::context(options: new SuggestOptions(claims: false)));
         $review = $this->validate([$claim], $off);
         $this->assertSame([], self::own($review));
-        $this->assertSame(['claims' => 1], $review->dropped);
+        $this->assertSame(['claims' => 1], self::droppedOf($review));
         $this->assertStringContainsString('turned claim checks off', ReviewCase::studio(new FakeProvider)->reviewerInstructions($off));
     }
 
@@ -155,7 +213,7 @@ final class ValidatorTest extends TestCase
     {
         $review = $this->validate([self::VOICE], ReviewCase::input(voice: ''));
 
-        $this->assertSame(['voice' => 1], $review->dropped);
+        $this->assertSame(['voice' => 1], self::droppedOf($review));
     }
 
     public function test_what_was_dismissed_is_not_suggested_again(): void
@@ -164,20 +222,21 @@ final class ValidatorTest extends TestCase
         $quieted = new Quieted([Quiet::of($first->id, $first->anchor, new DateTimeImmutable(Northfold::NOW))]);
         $input = ReviewCase::input(Northfold::context(quieted: $quieted));
 
-        $this->assertSame(['dismissed' => 1], $this->validate([self::VOICE], $input)->dropped);
+        $this->assertSame(['dismissed' => 1], self::droppedOf($this->validate([self::VOICE], $input)));
         $this->assertStringContainsString("<dismissed>\nvoice u3 \"we leverage our expertise to deliver bespoke garden solutions\"\n</dismissed>", ReviewPrompt::render($input, $input->batches()[0]));
     }
 
     public function test_overlaps_a_finding_beats_the_models_own_and_rank_decides_the_rest(): void
     {
         $review = $this->validate([
+            ['finding' => 'f1', 'category' => 'out-of-date', 'reason' => 'Old.', 'source' => ['kind' => 'finding'], 'replacement' => 'Winter care visits'],
             ['category' => 'clarity', 'unit' => 'u2', 'quote' => 'New for 2024: winter care visits', 'reason' => 'Wordy.', 'source' => ['kind' => 'general'], 'replacement' => 'Winter care visits'],
             ['category' => 'voice', 'unit' => 'u3', 'quote' => 'deliver bespoke garden solutions', 'reason' => 'Jargon.', 'source' => ['kind' => 'voice-guide', 'heading' => 'What this voice never does'], 'replacement' => 'design gardens'],
             ['category' => 'clarity', 'unit' => 'u3', 'quote' => 'We leverage our expertise', 'reason' => 'Wordy.', 'source' => ['kind' => 'general'], 'replacement' => 'We use what we know'],
             ['category' => 'clarity', 'unit' => 'u3', 'quote' => 'bespoke garden', 'reason' => 'Wordy.', 'source' => ['kind' => 'general'], 'replacement' => 'made-to-measure garden'],
         ]);
 
-        $this->assertSame(['overlap' => 2], $review->dropped, 'The eyebrow loses to its finding; the voice suggestion loses to the clarity one inside it (Clarity ranks before Voice).');
+        $this->assertSame(['overlap' => 2], self::droppedOf($review), 'The eyebrow loses to its finding; the voice suggestion loses to the clarity one inside it (Clarity ranks before Voice).');
         $this->assertSame(['We leverage our expertise', 'bespoke garden'], array_map(fn (Suggestion $s) => $s->anchor->quote?->exact, self::own($review)));
     }
 
@@ -186,7 +245,7 @@ final class ValidatorTest extends TestCase
         $words = ['We leverage', 'our expertise', 'to deliver', 'bespoke garden solutions'];
         $items = array_map(fn (string $quote) => ['category' => 'clarity', 'unit' => 'u3', 'quote' => $quote, 'reason' => 'Wordy.', 'source' => ['kind' => 'general'], 'replacement' => $quote], $words);
 
-        $this->assertSame(['cap' => 1], $this->validate($items)->dropped);
+        $this->assertSame(['cap' => 1], self::droppedOf($this->validate($items)));
     }
 
     public function test_alternatives_that_add_a_fact_are_dropped_alone(): void
@@ -199,7 +258,7 @@ final class ValidatorTest extends TestCase
     public function test_alt_text_is_clipped_and_loses_image_of(): void
     {
         $review = $this->validate([['finding' => 'f5', 'category' => 'accessibility', 'unit' => 'i1', 'reason' => 'x', 'source' => ['kind' => 'image'], 'replacement' => 'A picture of '.str_repeat('stone and gravel ', 12)]]);
-        $alt = $review->suggestions[3]->replacement ?? '';
+        $alt = $review->suggestions[0]->replacement ?? '';
 
         $this->assertStringStartsWith('Stone and gravel', $alt);
         $this->assertLessThanOrEqual(SuggestionValidator::ALT_LIMIT, mb_strlen($alt));
@@ -209,6 +268,6 @@ final class ValidatorTest extends TestCase
     {
         $review = $this->validate([['finding' => 'f6', 'category' => 'seo', 'unit' => 'u6', 'reason' => 'x', 'source' => ['kind' => 'finding'], 'replacement' => Northfold::SEO]]);
 
-        $this->assertSame(['size' => 1], $review->dropped);
+        $this->assertSame(['size' => 1], self::droppedOf($review));
     }
 }

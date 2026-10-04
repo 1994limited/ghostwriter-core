@@ -108,7 +108,8 @@ final class RevisitScanner
         }
 
         $reasons = [];
-        $quote = fn (string $kind) => isset($byKind[$kind][0]) ? $byKind[$kind][0]->anchor->quote?->exact : null;
+        // The chip quotes the words found: an Out of date finding's phrase, not its whole sentence.
+        $quote = fn (string $kind) => isset($byKind[$kind][0]) ? (is_string($byKind[$kind][0]->meta['phrase'] ?? null) ? $byKind[$kind][0]->meta['phrase'] : $byKind[$kind][0]->anchor->quote?->exact) : null;
         $count = fn (string ...$kinds) => array_sum(array_map(fn (string $kind) => count($byKind[$kind] ?? []), $kinds));
 
         if ($leftovers > 0) {
