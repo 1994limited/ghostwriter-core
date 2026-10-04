@@ -29,7 +29,7 @@ final class FakeScenarioTest extends TestCase
         file_put_contents($this->dir.'/site/write.json', (string) json_encode([
             'agents' => [
                 'writer' => [['textFile' => 'drafts/one.txt'], ['text' => ['<reply>Again.</reply>', '<draft>title: x</draft>']]],
-                'brief-filler' => [['schema' => true, 'merge' => ['title' => 'Winter care', 'examples' => '$all']]],
+                'brief-filler' => [['schema' => true, 'merge' => ['title' => 'Winter care', 'answers' => ['*' => 'Every winter.', 'goal' => 'Book a visit.'], 'examples' => '$all']]],
                 'reviewer' => [['structured' => ['suggestions' => []]]],
                 'verifier' => [['fail' => 'Overloaded.']],
             ],
@@ -95,14 +95,14 @@ final class FakeScenarioTest extends TestCase
             'type' => 'object',
             'properties' => [
                 'title' => ['type' => 'string'],
-                'answers' => ['type' => 'object', 'properties' => ['goal' => ['type' => 'string']]],
+                'answers' => ['type' => 'object', 'properties' => ['goal' => ['type' => 'string'], 'when' => ['type' => 'string'], 'tone' => ['type' => 'string', 'enum' => ['warm', 'plain']]]],
                 'examples' => ['type' => 'array', 'maxItems' => 2, 'items' => ['type' => 'string', 'enum' => ['7', '8', '9']]],
             ],
         ]);
 
         $response = FakeScenario::load($this->dir, 'site/write', $this->next())->text(new TextRequest('brief-filler', '', '', schema: $schema));
 
-        $this->assertSame(['title' => 'Winter care', 'answers' => ['goal' => 'text'], 'examples' => ['7', '8']], $response->structured);
+        $this->assertSame(['title' => 'Winter care', 'answers' => ['goal' => 'Book a visit.', 'when' => 'Every winter.', 'tone' => 'warm'], 'examples' => ['7', '8']], $response->structured);
     }
 
     public function test_structured_replies_failures_and_the_fallback(): void

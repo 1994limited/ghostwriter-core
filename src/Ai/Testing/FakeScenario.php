@@ -45,7 +45,8 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
  * - `schema`: made up from the request's schema (SchemaFaker), with
  *   `merge` laid over it; in `merge`, `"$all"` for a list of set values
  *   gives every value the schema allows (up to its maxItems), `"$first"`
- *   the first;
+ *   the first, and a `"*"` key stands for every property of that object
+ *   it doesn't name (except those with set values);
  * - `fail`: the call throws a ProviderException with this message.
  *
  * Any reply may wait `delay` milliseconds first (at most 10000), so a test
@@ -235,6 +236,19 @@ final class FakeScenario
         }
 
         $properties = is_array($node['properties'] ?? null) ? $node['properties'] : [];
+
+        // "*" stands for every property not named, apart from those with set values.
+        if (array_key_exists('*', $over)) {
+            foreach ($properties as $key => $property) {
+                $property = is_array($property) ? self::resolve($property, $root) : [];
+
+                if (! array_key_exists((string) $key, $over) && ! isset($property['enum']) && ! isset($property['const'])) {
+                    $over[(string) $key] = $over['*'];
+                }
+            }
+
+            unset($over['*']);
+        }
 
         foreach ($over as $key => $value) {
             $data[$key] = self::merge($data[$key] ?? null, $value, is_array($properties[$key] ?? null) ? $properties[$key] : [], $root);
