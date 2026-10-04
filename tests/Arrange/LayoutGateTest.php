@@ -99,6 +99,38 @@ final class LayoutGateTest extends TestCase
         $this->assertTrue(LayoutDiff::between($plans[0], $spelled, $plans[0], $units, $extras, $schema)->none());
     }
 
+    public function test_each_layout_says_what_it_changes_and_where(): void
+    {
+        [$plans, $units, $extras, $schema] = self::fixture('journal-near-copies', Northfold::richText());
+        $quoted = LayoutDiff::between($plans[0], $plans[1], $plans[0], $units, $extras, $schema);
+        $prose = LayoutDiff::between($plans[0], $plans[2], $plans[0], $units, $extras, $schema);
+
+        $this->assertSame(['Closing line as a quote'], $quoted->summary());
+        $this->assertSame([['field' => 'body', 'block' => null, 'section' => 5]], $quoted->places());
+        $this->assertSame(['Lists as paragraphs'], $prose->summary());
+        $this->assertSame([['field' => 'body', 'block' => null, 'section' => 3], ['field' => 'body', 'block' => null, 'section' => 4]], $prose->places());
+
+        [$plans, $units, $extras, $schema] = self::fixture('pages-builder', self::craftPages());
+        $split = LayoutDiff::between($plans[0], $plans[1], $plans[0], $units, $extras, $schema);
+        $cta = LayoutDiff::between($plans[0], $plans[2], $plans[0], $units, $extras, $schema);
+
+        $this->assertSame(['Text split into 3 blocks', 'A section moved down'], $split->summary());
+        $this->assertSame([['field' => 'pageBuilder', 'block' => 2, 'section' => null], ['field' => 'pageBuilder', 'block' => 4, 'section' => null]], $split->places());
+        $this->assertSame(['Call to action added'], $cta->summary());
+        $this->assertSame([['field' => 'pageBuilder', 'block' => 1, 'section' => null]], $cta->places());
+
+        [$plans, $units, $extras, $schema] = self::fixture('statamic-pages', self::statamicPages());
+        $quote = LayoutDiff::between($plans[0], $plans[1], $plans[0], $units, $extras, $schema);
+
+        $this->assertSame(['Quote moved up', 'Text blocks joined', 'A section moved up'], $quote->summary());
+        $this->assertSame([['field' => 'page_builder', 'block' => 1, 'section' => null], ['field' => 'page_builder', 'block' => 2, 'section' => 1]], $quote->places());
+        $this->assertTrue(LayoutGate::noticeable($quote));
+
+        [$plans, $units, $extras, $schema] = self::fixture('journal-checklists', self::craftJournal());
+        $this->assertSame(['Paragraphs as lists'], LayoutDiff::between($plans[0], $plans[1], $plans[0], $units, $extras, $schema)->summary());
+        $this->assertSame([], LayoutDiff::between($plans[0], $plans[0], $plans[0], $units, $extras, $schema)->summary());
+    }
+
     /**
      * The fixture's plans, still valid for its draft.
      *
@@ -128,6 +160,21 @@ final class LayoutGateTest extends TestCase
                 'text' => new Set('Text', '', [new Field('text', Kind::RichText, 'Text')]),
                 'quoteBlock' => new Set('Quote', '', [new Field('quote', Kind::LongText, 'Quote'), new Field('attribution', Kind::Text, 'Attribution')]),
                 'cta' => new Set('Call to action', '', [new Field('heading', Kind::Text, 'Heading'), new Field('ctaText', Kind::Text, 'Text')]),
+            ]),
+        ]);
+    }
+
+    /** The Statamic test site's Pages blueprint. */
+    private static function statamicPages(): Schema
+    {
+        return new Schema([
+            new Field('title', Kind::Text, 'Title', required: true),
+            new Field('page_builder', Kind::Blocks, 'Page builder', sets: [
+                'hero' => new Set('Hero', '', [new Field('heading', Kind::Text, 'Heading'), new Field('subheading', Kind::LongText, 'Subheading'), new Field('image', Kind::Reference, 'Image', files: true), new Field('button_text', Kind::Text, 'Button text')]),
+                'text' => new Set('Text', '', [new Field('text', Kind::RichText, 'Text', type: 'bard')]),
+                'image' => new Set('Image', '', [new Field('image', Kind::Reference, 'Image', files: true), new Field('caption', Kind::Text, 'Caption')]),
+                'quote' => new Set('Quote', '', [new Field('quote', Kind::LongText, 'Quote'), new Field('attribution', Kind::Text, 'Attribution')]),
+                'cta' => new Set('Call to action', '', [new Field('heading', Kind::Text, 'Heading'), new Field('text', Kind::LongText, 'Text'), new Field('link_text', Kind::Text, 'Link text')]),
             ]),
         ]);
     }

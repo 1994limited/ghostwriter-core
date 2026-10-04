@@ -45,6 +45,14 @@ $built = $layouts->builder()->build($data, $schema, $pattern, $defaults);   // t
 
 The session's `draft` stays the writer's text; a layout is applied by arranging it. With the writer's layout chosen, `draftData()` is the draft itself, so apply is exactly what it was.
 
+**What each layout changes** (beside its card, and to point at when the person switches to it): `$sessionLayouts->changes($session, $schema)` gives, by plan id (none for the writer's or a stale one):
+
+- `summary`: one to three plain phrases, top of the page first: "Closing line as a quote", "Lists as paragraphs", "Lead-ins as subheadings", "Quote moved up", "Text split into 3 blocks", "Call to action added". "Laid out differently" when the change has no plainer name.
+- `places`: where it changed, as the preview maps a page (`Preview\BlockMap`): `{field, block, section}`, where `block` is the position of a top-level block of that page builder (null for a field that isn't one: match the map's field entry by its `type`), and `section` the nth section of rich text in it, counted as `MarkdownSections` splits the value (null for the whole block or field). Point at the block (or field) when its map has no sections.
+- `units`: the units whose words moved or changed shape.
+
+No model; it works on layouts stored before it existed.
+
 **Read and change the extras** (the Text tab): `$sessionLayouts->extras($session)` gives `Extras`; `editExtra($session, 'x1.2', $text, ?$parts, ?$site)` and `deleteExtra($session, 'x1.2', $site)`. Deleting an extra a layout uses re-arranges that layout without it.
 
 **Cost.** First draft: the writer (with extras) plus the planner, two calls. A later turn: the writer only. Refresh layouts: one planner call. Choosing, applying, editing or deleting extras, and every check: no call.
@@ -209,6 +217,8 @@ $diff->regions;          // separate places on the page that changed (a moved se
 $diff->blockEdits;       // page builders: blocks added, dropped or of another set (edit distance over set types)
 $diff->added; $diff->removed;   // what changed, as the reader sees it: {key, kind, weight, units, field}
 $diff->changedUnits();   // the units whose words are shaped or placed differently in $b
+$diff->summary();        // one to three plain phrases ("Closing line as a quote")
+$diff->places();         // where $b changed: {field, block, section}, as the preview maps a page
 
 $gate = (new LayoutGate)->filter(list<Plan> $plans, $units, $extras, $schema, ?string $prefer);
 // ['kept' => list<Plan> (the writer's first, in order), 'dropped' => [planId => why]]
