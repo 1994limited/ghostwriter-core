@@ -2,9 +2,13 @@
 
 namespace NineteenNinetyFour\Ghostwriter\Core\Tests\Domain;
 
+use NineteenNinetyFour\Ghostwriter\Core\Anchor\TextQuote;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Units;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Format;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Sessions\Session;
+use NineteenNinetyFour\Ghostwriter\Core\Domain\Viewer;
+use NineteenNinetyFour\Ghostwriter\Core\Review\Review;
+use NineteenNinetyFour\Ghostwriter\Core\Review\Scope;
 use NineteenNinetyFour\Ghostwriter\Core\Tests\Arrange\UnitsTest;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -76,5 +80,25 @@ final class SessionUnitsTest extends TestCase
 
         $back->plan = null;
         $this->assertNull($back->toArray()['plan']);
+    }
+
+    #[DataProvider('formats')]
+    public function test_the_comments_round_trip_and_are_left_out_until_there_are_some(Format $format): void
+    {
+        $session = Session::start($format, 'page', ['brief' => 'Winter care']);
+
+        $this->assertArrayNotHasKey('review', $session->toArray());
+
+        $review = new Review;
+        $review->add(Scope::text('u8', new TextQuote('mixed borders')), 'Which ones?', new Viewer(1));
+        $session->review = $review->toArray();
+        $stored = $session->toArray();
+        $back = Session::fromArray($stored, $format);
+
+        $this->assertSame($session->review, $back->review);
+        $this->assertSame($stored, $back->toArray());
+
+        $back->review = [];
+        $this->assertArrayHasKey('review', $back->toArray());
     }
 }
