@@ -20,6 +20,10 @@ You are shown the page, cut into units (`u1`, `u2`…), and the site's pages it 
 
 Rarely, the page clearly needs a link to something that isn't on the list: "book a visit" with no booking page shown. Then you may give one link with an empty `target` and, in `hint`, a few hyphenated words saying where it should go (`booking-page`). The editor chooses it later. At most one, and only when the page plainly needs it; never instead of a page on the list that fits.
 
+## The writer's links to choose
+
+The writer sometimes leaves a link whose page only the editor knows, written `[book a winter visit](#gw-link:booking-page)` and listed under "Links the writer left for the editor to choose" as `m1`, `m2`…. Never link those words yourself, and don't count them among the links you add. Instead, for each one, give in `markers` the page on the list the editor most likely means: "get in touch" or "book a visit" is usually the contact page; "our planting guide" is the guide, when the list has one. The editor is offered your choice first and decides; nothing is linked for them. When no page on the list is plainly what the words ask for, leave `target` empty: a wrong suggestion costs the editor more than none.
+
 ## The site's voice
 
 What the page is meant to sound like, so you can tell natural words from forced ones:
@@ -28,14 +32,17 @@ What the page is meant to sound like, so you can tell natural words from forced 
 
 ## How you answer
 
-Start with `notes`: one or two sentences for yourself on what the page is about, who reads it, and which of the site's pages are genuinely related. Then the links, best first. For each: the `unit`, the words in `exact`, the `prefix` (usually empty), the `target` (`e3`), the `hint` (empty unless the target is), and in `why` one short sentence, in the language you are told, on why a reader would want that page there. {{ answer_intro }}
+Start with `notes`: one or two sentences for yourself on what the page is about, who reads it, and which of the site's pages are genuinely related. Then the links, best first. For each: the `unit`, the words in `exact`, the `prefix` (usually empty), the `target` (`e3`), the `hint` (empty unless the target is), and in `why` one short sentence, in the language you are told, on why a reader would want that page there. Then `markers`: one item for each of the writer's links to choose, with the `marker` (`m1`), the `target` (`e7`, or empty) and a short `why`. {{ answer_intro }}
 
 {{ answer_open }}
 {"notes": "A service page about winter visits, for owners of established gardens. e4 (Planting plans) and e7 (Contact us) are close; the journal posts are about other seasons.",
  "links": [
   {"unit": "u3", "exact": "planting plan we drew for you", "prefix": "", "target": "e4", "hint": "", "why": "The sentence talks about following a planting plan; that page offers them."},
   {"unit": "u9", "exact": "tell us about your garden", "prefix": "", "target": "e7", "hint": "", "why": "An invitation to get in touch; the contact page is where that happens."}
+ ],
+ "markers": [
+  {"marker": "m1", "target": "e7", "why": "\"Book a winter visit\" asks the reader to get in touch; visits are booked through the contact page."}
  ]}
 {{ answer_close }}
 
-When nothing fits, give `"links": []` and say why in `notes`.
+When nothing fits, give `"links": []` and say why in `notes`. When the writer left no links to choose, give `"markers": []`.

@@ -286,6 +286,62 @@ final class LinkCandidates
     }
 
     /**
+     * The row of a site a link points at (Suggest\LinkLookup::linkRow()),
+     * or null: a reference matches the row's link (`statamic://entry::abc`
+     * and `entry::abc` alike; `{entry:12@1:url||…}` and `{entry:12}`
+     * alike); an address matches the row's address by its path, and an
+     * absolute one only a row whose address is on the same host, so a link
+     * to another site's `/contact` never matches this site's Contact page.
+     *
+     * @param  iterable<IndexRow>  $rows
+     */
+    public static function rowFor(iterable $rows, string $href, int|string|null $site = null): ?IndexRow
+    {
+        $key = self::linkKey($href);
+
+        if ($key === null) {
+            return null;
+        }
+
+        $address = str_starts_with($key, 'path:');
+        $host = self::host($href);
+
+        foreach ($rows as $row) {
+            if ((string) ($row->entry->site ?? '') !== (string) ($site ?? '')) {
+                continue;
+            }
+
+            if (! $address) {
+                if (self::linkKey($row->link) === $key) {
+                    return $row;
+                }
+
+                continue;
+            }
+
+            $path = $row->path();
+
+            if ($path !== null && 'path:'.rtrim(strtolower($path), '/') === $key && ($host === null || $host === self::host((string) $row->url))) {
+                return $row;
+            }
+        }
+
+        return null;
+    }
+
+    /** The host of an absolute address, without `www.`; null for anything else. */
+    private static function host(string $href): ?string
+    {
+        if (preg_match('#^https?://#i', trim($href)) !== 1) {
+            return null;
+        }
+
+        $host = parse_url(trim($href), PHP_URL_HOST);
+
+        return is_string($host) && $host !== '' ? (string) preg_replace('/^www\./', '', strtolower($host)) : null;
+    }
+
+    /**
      * @return list<string>
      */
     private static function stopWords(?string $locale): array

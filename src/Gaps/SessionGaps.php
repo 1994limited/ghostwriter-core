@@ -21,7 +21,9 @@ use NineteenNinetyFour\Ghostwriter\Core\Seo\SeoState;
  *
  * It also carries the links the SEO pass added to the session's draft
  * (Seo\SeoState::$links), so Finish this page can ask the editor to check
- * them (Detectors\AddedLinks).
+ * them (Detectors\AddedLinks), and the pages it suggested for the writer's
+ * own links to choose (Seo\SeoState::$suggested), so their steps offer the
+ * suggestion first (Detectors\LinkMarkers).
  */
 final class SessionGaps
 {
@@ -37,13 +39,19 @@ final class SessionGaps
     /** @var list<array{unit: string, words: string, href: string, title: string, type: string, url: ?string, why: string}> The links the SEO pass added. */
     public readonly array $links;
 
+    /** @var list<array{hint: string, words: string, id: string, title: string, type: string, url: ?string, href: string, why: string}> The pages suggested for the writer's links to choose. */
+    public readonly array $suggested;
+
     /**
      * @param  array<int, mixed>  $entries
      * @param  array<int, mixed>  $links  Seo\SeoState::$links.
+     * @param  array<int, mixed>  $suggested  Seo\SeoState::$suggested.
      */
-    public function __construct(array $entries = [], array $links = [])
+    public function __construct(array $entries = [], array $links = [], array $suggested = [])
     {
-        $this->links = SeoState::fromArray(['links' => $links])->links;
+        $seo = SeoState::fromArray(['links' => $links, 'suggested' => $suggested]);
+        $this->links = $seo->links;
+        $this->suggested = $seo->suggested;
 
         $clean = [];
 
@@ -66,7 +74,9 @@ final class SessionGaps
 
     public static function fromSession(Session $session): self
     {
-        return new self($session->gaps, SeoState::of($session)->links);
+        $seo = SeoState::of($session);
+
+        return new self($session->gaps, $seo->links, $seo->suggested);
     }
 
     /**
@@ -164,9 +174,20 @@ final class SessionGaps
         return $gap;
     }
 
+    /**
+     * The page suggested for a writer's link to choose, by the gap's hint
+     * (and words, where two share a hint); null when none was.
+     *
+     * @return array{hint: string, words: string, id: string, title: string, type: string, url: ?string, href: string, why: string}|null
+     */
+    public function suggestion(?string $hint, string $words = ''): ?array
+    {
+        return $this->suggested === [] ? null : (new SeoState(suggested: $this->suggested))->suggestion($hint, $words);
+    }
+
     public function isEmpty(): bool
     {
-        return $this->entries === [] && $this->links === [];
+        return $this->entries === [] && $this->links === [] && $this->suggested === [];
     }
 
     /**

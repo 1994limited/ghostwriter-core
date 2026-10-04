@@ -102,6 +102,37 @@ class GapFinderTest extends TestCase
         $this->assertSame('The “Talk to us about Capacitor” link in Text: Copy doesn\'t go anywhere yet.', $inline->message()->english());
     }
 
+    public function test_the_page_the_seo_pass_suggested_for_a_writers_link_comes_first_once(): void
+    {
+        $targets = new MemoryLinkTargets(['c' => ['title' => 'Contact', 'slug' => 'contact-page', 'url' => '/contact'], 'b' => ['title' => 'Blog']]);
+        $suggested = ['hint' => 'contact-page', 'words' => 'Talk to us about Capacitor', 'id' => 'c', 'title' => 'Contact us', 'type' => 'Pages', 'url' => '/contact', 'href' => 'statamic://entry::c', 'why' => 'A call to get in touch.'];
+        [, $inline] = GapFinder::standard()->find($this->context(targets: $targets, session: new SessionGaps(suggested: [$suggested])))->ofKind(GapKind::LinkToChoose);
+
+        $this->assertSame([FixAction::Link, FixAction::ChooseEntry, FixAction::RemoveLink], array_map(fn ($fix) => $fix->action, $inline->fixes), 'The title match is the same page: offered once.');
+        $this->assertSame('statamic://entry::c', $inline->fixes[0]->value);
+        $this->assertTrue($inline->fixes[0]->primary);
+        $this->assertSame('Link to Contact us', $inline->fixes[0]->label->english());
+        $this->assertSame([['value' => 'statamic://entry::c', 'title' => 'Contact us', 'url' => '/contact']], $inline->meta['candidates']);
+        $this->assertSame(['id' => 'c', 'title' => 'Contact us', 'href' => 'statamic://entry::c', 'url' => '/contact', 'type' => 'Pages', 'why' => 'A call to get in touch.'], $inline->meta['suggested']);
+
+        // Another page suggested: it comes first, the title match after it.
+        $about = ['id' => 'a', 'title' => 'About the studio', 'url' => '/about', 'href' => 'statamic://entry::a'] + $suggested;
+        [, $inline] = GapFinder::standard()->find($this->context(targets: $targets, session: new SessionGaps(suggested: [$about])))->ofKind(GapKind::LinkToChoose);
+
+        $this->assertSame(['Link to About the studio', 'Link to Contact', 'Choose an entry', 'Remove the link'], array_map(fn ($fix) => $fix->label->english(), $inline->fixes));
+        $this->assertSame([true, false, false, false], array_map(fn ($fix) => $fix->primary, $inline->fixes));
+
+        // No entries to choose from (Filament): the suggestion, then an address to type.
+        [, $inline] = GapFinder::standard()->find($this->context(session: new SessionGaps(suggested: [['href' => 'https://northfold.test/contact', 'url' => 'https://northfold.test/contact'] + $suggested])))->ofKind(GapKind::LinkToChoose);
+
+        $this->assertSame(['Link to Contact us', 'gaps.fix.add-link', 'Remove the link'], array_map(fn ($fix) => $fix->label->key === 'gaps.fix.add-link' ? $fix->label->key : $fix->label->english(), $inline->fixes));
+        $this->assertSame([true, false, false], array_map(fn ($fix) => $fix->primary, $inline->fixes));
+
+        // A link field the house style left is never given one.
+        [$field] = GapFinder::standard()->find($this->context(targets: $targets, session: new SessionGaps(suggested: [['hint' => 'button-link'] + $suggested])))->ofKind(GapKind::LinkToChoose);
+        $this->assertArrayNotHasKey('suggested', $field->meta);
+    }
+
     public function test_the_legacy_example_com_link_counts_while_1_x_lasts(): void
     {
         $context = $this->context(fn (array $values) => array_replace_recursive($values, ['page_builder' => [1 => ['button_link' => LinkDialect::PLACEHOLDER_URL, 'button_text' => LinkDialect::PLACEHOLDER_TEXT]]]));
@@ -347,7 +378,7 @@ class GapFinderTest extends TestCase
     /**
      * @param  (callable(array<string, mixed>): array<string, mixed>)|null  $change
      */
-    private function context(?callable $change = null, ?MemoryLinkTargets $targets = null, ?StockImages $stock = null): GapContext
+    private function context(?callable $change = null, ?MemoryLinkTargets $targets = null, ?StockImages $stock = null, SessionGaps $session = new SessionGaps): GapContext
     {
         $values = [
             'title' => 'Capacitor App Development Based in the UK',
@@ -372,6 +403,7 @@ class GapFinderTest extends TestCase
             targets: $targets,
             stock: $stock,
             pattern: new Pattern(filled: ['summary' => 0.9, 'featured_image' => 1.0, 'related' => 0.8, 'hero.eyebrow' => 1.0]),
+            session: $session,
         );
     }
 }
