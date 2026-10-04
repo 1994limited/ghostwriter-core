@@ -19,7 +19,8 @@ use NineteenNinetyFour\Ghostwriter\Core\Suggest\Phrases;
  *   "prune") against each row's title (3 a stem), slug (2) and summary (1);
  * - a floor: a row needs a shared stem in its title or slug, or two in its
  *   summary; a key page below it is still offered, after every row above
- *   it, as the page a reader may want next ("tell us about your garden");
+ *   it and outside its group's cap, as the page a reader may want next
+ *   ("tell us about your garden");
  * - ties are broken by a key page (+1), the draft's own group (+1) and a
  *   term or category (−1), then the newer page;
  * - at most LIMIT (25), at most PER_GROUP (4) from one group and LISTINGS
@@ -222,12 +223,15 @@ final class LinkCandidates
         $perGroup = [];
         $listings = 0;
 
-        foreach ($scored as [, , , $row]) {
-            if (($perGroup[$row->entry->group] ?? 0) >= self::PER_GROUP || ($row->kind->isListing() && $listings >= self::LISTINGS)) {
+        foreach ($scored as [$relevance, , , $row]) {
+            // A key page offered for being one (below the floor) isn't held back by its group's cap.
+            $asKey = $relevance === 0 && $row->key;
+
+            if ((! $asKey && ($perGroup[$row->entry->group] ?? 0) >= self::PER_GROUP) || ($row->kind->isListing() && $listings >= self::LISTINGS)) {
                 continue;
             }
 
-            $perGroup[$row->entry->group] = ($perGroup[$row->entry->group] ?? 0) + 1;
+            $perGroup[$row->entry->group] = ($perGroup[$row->entry->group] ?? 0) + ($asKey ? 0 : 1);
             $listings += $row->kind->isListing() ? 1 : 0;
             $picked[] = $row->digest();
 
