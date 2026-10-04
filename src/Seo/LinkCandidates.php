@@ -18,7 +18,9 @@ use NineteenNinetyFour\Ghostwriter\Core\Suggest\Phrases;
  *   are matched by stem (the first five letters, so "pruning" meets
  *   "prune") against each row's title (3 a stem), slug (2) and summary (1);
  * - a floor: a row needs a shared stem in its title or slug, or two in its
- *   summary;
+ *   summary; a key page below it is still offered, after every row above
+ *   it and outside its group's cap, as the page a reader may want next
+ *   ("tell us about your garden");
  * - ties are broken by a key page (+1), the draft's own group (+1) and a
  *   term or category (−1), then the newer page;
  * - at most LIMIT (25), at most PER_GROUP (4) from one group and LISTINGS
@@ -203,6 +205,13 @@ final class LinkCandidates
 
             $score = self::score($row, $draft, $group);
 
+            // A key page (Contact, Services, About) is what readers most
+            // often want next, whatever the page is about: offered below
+            // every page that shares words with the draft.
+            if ($score === null && $row->key && ! $row->kind->isListing()) {
+                $score = [0, 1];
+            }
+
             if ($score !== null) {
                 $scored[] = [$score[0], $score[1], $row->updated, $row];
             }
@@ -214,12 +223,15 @@ final class LinkCandidates
         $perGroup = [];
         $listings = 0;
 
-        foreach ($scored as [, , , $row]) {
-            if (($perGroup[$row->entry->group] ?? 0) >= self::PER_GROUP || ($row->kind->isListing() && $listings >= self::LISTINGS)) {
+        foreach ($scored as [$relevance, , , $row]) {
+            // A key page offered for being one (below the floor) isn't held back by its group's cap.
+            $asKey = $relevance === 0 && $row->key;
+
+            if ((! $asKey && ($perGroup[$row->entry->group] ?? 0) >= self::PER_GROUP) || ($row->kind->isListing() && $listings >= self::LISTINGS)) {
                 continue;
             }
 
-            $perGroup[$row->entry->group] = ($perGroup[$row->entry->group] ?? 0) + 1;
+            $perGroup[$row->entry->group] = ($perGroup[$row->entry->group] ?? 0) + ($asKey ? 0 : 1);
             $listings += $row->kind->isListing() ? 1 : 0;
             $picked[] = $row->digest();
 

@@ -65,6 +65,22 @@ final class LinkCandidatesTest extends TestCase
         $this->assertSame(['key', 'newer', 'plain', 'term'], $this->ids(LinkCandidates::rank($tied, self::DRAFT, 'journal', 'default')));
     }
 
+    public function test_a_key_page_below_the_floor_is_offered_after_the_pages_above_it(): void
+    {
+        $rows = [
+            $this->row('contact', 'Contact', '/contact', 'The kettle is on most weekdays.', key: true),
+            $this->row('careers', 'Careers', '/careers', 'We hire rarely.'),
+            $this->row('plain', 'Pruning apple trees', '/plain'),
+            $this->row('category', 'Garden tools', '/tools', kind: RowKind::Category, key: true),
+        ];
+
+        $this->assertSame(['plain', 'contact'], $this->ids(LinkCandidates::rank($rows, self::DRAFT, 'journal', 'default')), 'Not a page that is merely unrelated, nor a listing.');
+
+        // Four pages of the group about pruning fill its cap; Contact is still offered.
+        $full = [...$rows, ...array_map(fn (int $i) => $this->row("p{$i}", "Pruning {$i}", "/p{$i}"), range(1, 4))];
+        $this->assertSame(['plain', 'p1', 'p2', 'p3', 'contact'], $this->ids(LinkCandidates::rank($full, self::DRAFT, 'journal', 'default')));
+    }
+
     public function test_at_most_four_from_a_group_two_listings_and_the_limit(): void
     {
         $rows = [];

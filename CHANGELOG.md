@@ -17,6 +17,7 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ### Fixed
 
+- **Key pages are link candidates whatever the draft is about** (`LinkCandidates::rank()`): Contact, Services, About (a navigation tree's pages, the top of a structure) below the floor are offered after every page that shares words with the draft, outside their group's cap of four, so "tell us about your garden" can link to Contact. Listings aren't.
 - **`HtmlDialect::fromMarkdown()` keeps Craft reference tags in links** (`{entry:12@1:url||…}`), which CommonMark percent-encoded so Craft didn't resolve them. `LinkCandidates::linkKey()` reads CKEditor's in-editor form of one (`…#entry:12@1:url`).
 
 ### Added (SEO layer: the link index, row 3)
