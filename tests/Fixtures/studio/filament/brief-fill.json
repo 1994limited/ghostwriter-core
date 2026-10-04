@@ -55,7 +55,9 @@
                 "9"
             ],
             "previous": null,
-            "kept": []
+            "kept": [],
+            "candidates": [],
+            "examplesKept": false
         }
     ],
     "replies": {

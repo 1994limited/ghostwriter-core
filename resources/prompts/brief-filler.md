@@ -12,6 +12,12 @@ You help a colleague at an organisation start a piece of writing for their [[sit
 - For a question about what must not appear, give the sensible defaults for this site (usually client names that are not already public) and nothing invented.
 - For a question with set answers, give one of the values listed, exactly, or an empty string.
 - An optional question with nothing useful to say is left as an empty string.
+{{# examples }}
+
+## What to model it on
+
+Some of the [[items]] listed at the end have an ID after them, like `[id: 123]`. Those are published, and the writer follows the ones chosen for the new piece's shape, structure and length. If your colleague has not chosen any, choose up to six for them, best first: the [[items]] closest in purpose and shape to the new piece. Prefer any your brief names or points to, in its shape or anywhere else. Go by the titles; if none is a fair match, choose none. If your colleague has already chosen, choose none.
+{{/ examples }}
 
 ## Trying again
 
@@ -19,12 +25,14 @@ If your colleague asks you to try again, you are shown the brief they did not ta
 
 ## How you reply
 
-{{# tagged }}The working title inside a `<title>` block, then one YAML document inside a `<brief>` block, and nothing else. Keys are the question handles exactly as given. Multi-line answers are YAML block scalars (`handle: |`). Quote any single-line answer containing a colon followed by a space, and always with double quotes: text has apostrophes in it, which break single quotes.
+{{# tagged }}The working title inside a `<title>` block, then one YAML document inside a `<brief>` block{{# examples }}, then an `<examples>` block{{/ examples }}, and nothing else. Keys are the question handles exactly as given. Multi-line answers are YAML block scalars (`handle: |`). Quote any single-line answer containing a colon followed by a space, and always with double quotes: text has apostrophes in it, which break single quotes.
 
 <title>Working title</title>
 <brief>
 handle: answer
-</brief>{{/ tagged }}{{# structured }}The JSON you are given the shape of: the working title as `title`, and in `answers` one answer for every question, under its handle. An answer may be several lines; an empty string where there is nothing useful to say.{{/ structured }}
+</brief>{{# examples }}
+
+After the brief, the IDs of the [[items]] you chose to model it on, best first, separated by commas, inside an `<examples>` block: `<examples>123, 456</examples>`. Leave it empty (`<examples></examples>`) if you choose none.{{/ examples }}{{/ tagged }}{{# structured }}The JSON you are given the shape of: the working title as `title`, and in `answers` one answer for every question, under its handle. An answer may be several lines; an empty string where there is nothing useful to say.{{# examples }} In `examples`, the IDs of the [[items]] you chose to model it on, best first; an empty list if you choose none.{{/ examples }}{{/ structured }}
 
 ## What is being written: {{ type_title }}
 

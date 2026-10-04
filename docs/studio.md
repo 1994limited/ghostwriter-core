@@ -37,7 +37,7 @@ Each job takes small value objects. The addon needs one translator (a `StudioInp
 | `suggestKinds(KindSurvey)` | `KindSurvey(groupTitle, groupHandle, KindSample[], ContentKind[] taught, string[] dismissed)`; `KindSample(id, title, text, builtAs, ?under, ?variantHandle, ?variantName)` | `Result<SuggestedKind[]>` | The newest 60 published entries → `KindSample`; taught types → `ContentKind`. |
 | `suggestIdeas(PlanContext)` | `PlanContext(PlanGroup[], PlannedIdea[], voice, steer, count)`; `PlanGroup(title, handle, ContentKind[], PlanItem[])`; `PlanItem(title, published, summary)` | `Result<SuggestedIdea[]>` | Groups → `PlanGroup` with up to 150 items each; the plan's ideas → `PlannedIdea`. |
 | `analyseImagery($groupTitle, ImagerySample[])` | `ImagerySample(label, on, Image)` | `Result<string>` | Sampled images → `ImagerySample`. |
-| `fillBrief(BriefRequest)` (1.6) | `BriefRequest::fromDetails(kind, reply, titles, examples)`, `::fromIdea(kind, title, notes, titles, examples)`, `->tryAgain(Brief, answers, examples, title)`; or `BriefThread::request($session, $kind, $titles)` | `Result<Brief>` | As for `draftBrief`. See [The brief in the conversation](#the-brief-in-the-conversation-16). |
+| `fillBrief(BriefRequest)` (1.6) | `BriefRequest::fromDetails(kind, reply, titles, examples)`, `::fromIdea(kind, title, notes, titles, examples)`, `->withCandidates(candidates)`, `->tryAgain(Brief, answers, examples, title)`; or `BriefThread::request($session, $kind, $titles, $candidates, $kindExamples)` | `Result<Brief>` | As for `draftBrief`. See [The brief in the conversation](#the-brief-in-the-conversation-16). |
 | `draftBrief(ContentKind, $title, $notes, $titles)` | the kind; the group's 40 newest titles | `Result<array<string, string>>` | Deprecated in 1.6 (the brief screen); kept through 1.x. |
 | `write(Conversation, WriterContext)` | `Conversation(messages, ?draft, answers)`; `WriterContext(ContentKind, voice, Layout, images)` | `TaggedResponse` (`draft`) | Session → `Conversation`; type → `ContentKind` and `Layout`. |
 | `brief(ContentKind, $answers, ?$title)` | the working title (1.6) comes first when given | `string` | |
@@ -132,11 +132,16 @@ FillBrief::start($id);
 // In the brief's job (and for a retry: start it when BriefThread::fills($session), the writer's turn otherwise)
 $kind = $type->toStudio();
 try {
-    $result = $studio->fillBrief(BriefThread::request($session, $kind, $briefTitles));   // the group's 40 newest titles, as today
+    // the group's 40 newest titles, as today; the published ones among them by ID (the
+    // "Model it on" picker's); and the kind's own examples, if it was taught some
+    $result = $studio->fillBrief(BriefThread::request($session, $kind, $briefTitles, $candidates, $type->examples));
     $sessions->propose($id, $result->value, $result->usage->input, $result->usage->output);
 } catch (UnreadableReply|ProviderException $e) {
     $sessions->change($id, fn (Session $s) => $s->fail($e->getMessage()));
 }
+
+// The brief's `examples` are what "Model it on" ticks: the person's, or with none ticked the
+// kind's own, or with none of those the filler's choice from $candidates (see below).
 
 // 3. "Try again", with the card as the person left it (their changed answers are kept)
 $sessions->tryAgain($id, $viewer, $answers, $examples, $title);
@@ -165,6 +170,20 @@ Rendering, the same for a piece carried on and a shared conversation:
 - `Studio\Conversation` leaves the brief's own steps out, so `new Conversation($session->messages, ...)` still starts the writer from the brief.
 
 English for every label is in `resources/lang/en/brief.php`. Core writes four of them into the session (`BriefThread::ASK_TEXT`, `CARD_TEXT`, `OPEN_TEXT`, `TRY_AGAIN_TEXT`); each `SessionGuard` call takes the translation as an argument.
+
+### What to model it on
+
+The card's "Model it on" is ticked from the brief's `examples`:
+
+1. **The person's ticks.** What the session was opened with (the kind's own examples, a found kind's), and after "Try again" the card's as the person left it. They always win.
+2. **The kind's own**, when nothing is ticked and it was taught some (`BriefThread::request(..., $kindExamples)`).
+3. **The filler's choice.** With none of those, and candidates to choose from, the brief filler chooses up to `Brief::MAX_EXAMPLES` published records closest in purpose and shape to the new piece, best first, preferring any its brief names. `BriefRequest::choosesExamples()` says when.
+
+The candidates are the published records among the group's titles, by ID: `['id' => …, 'title' => …]` each, or `id => title`. The prompt lists every title as before, with ` [id: …]` after each candidate, so the model can name them; the list depends only on the group, so the instructions stay the same between requests (the prompt's `{{# examples }}` parts, the guidance, are kept whenever there are candidates). Whether to choose is said in the message: "Your colleague has not chosen what to model it on: choose for them." Structured, the choice is `examples`, an enum of the candidate IDs; tagged, the IDs in an `<examples>` block after the brief. Anything not a candidate is dropped, and each ID comes back as the candidate gave it (an integer stays one).
+
+"Try again" keeps the card's ticks. A card the person unticked completely stays empty (`BriefRequest::$examplesKept`); one that had none to begin with is chosen afresh.
+
+Each addon passes the candidates and pre-ticks the card from `examples`, with the ticked ones in the picker's list.
 
 ### Facts are never invented
 
@@ -217,7 +236,7 @@ Every call whose reply is data carries the reply's `OutputSchema`, so a provider
 | `reviewer`, `verifier` | `resources/schemas/reviewer-reply.json`, `verifier-reply.json` | `notes` first in each item; see suggest-edits.md |
 | `kind-finder` | `Studio::kindsSchema($survey, $numericIds)` | `why` first; `examples` an enum of the samples' IDs |
 | `planner` | `$studio->ideasSchema($context)` | `why` first; the vocabulary's group key, an enum of the groups |
-| `brief-writer`, `brief-filler` | `Studio::briefSchema($kind, $withTitle)` | every answer required, `""` for nothing; keys from `Studio::briefKeys()`, mapped back to handles |
+| `brief-writer`, `brief-filler` | `Studio::briefSchema($kind, $withTitle, $candidateIds)` | every answer required, `""` for nothing; keys from `Studio::briefKeys()`, mapped back to handles. With candidate IDs, `examples` too: up to `Brief::MAX_EXAMPLES` of them, an enum of the IDs as text (tagged: an `<examples>` block of IDs) |
 | `reworder` | `resources/schemas/reworder-reply.json` | two versions |
 | `gap-filler` | `resources/schemas/gap-filler-reply.json` | `result` |
 | `layout-planner` | `Arrange\PlanSchema::for($schema, $count)` | generic, every property required (no optional properties or unions), only the parts the site's fields need and blocks only as deep as they nest (at most three; Claude refuses a grammar that compiles too large); `PlanSchema::toRaw()` turns a plan back into the YAML's shape for `PlanReader` and `PlanValidator` |

@@ -4,6 +4,16 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
+### Added (the brief chooses what to model it on)
+
+- **With nothing ticked, the brief filler chooses the records to model the piece on.** A piece of a kind that wasn't taught (`any:journal`) opened with nothing under "Model it on", though the brief itself pointed at existing entries ("Match 'What to do in the garden in October'…"). Now:
+  - `BriefRequest::withCandidates($candidates)` gives the filler the published records it may choose from, by ID and title (`['id' => …, 'title' => …]` each, or `id => title`). `BriefThread::request($session, $kind, $titles, $candidates, $kindExamples)` takes them, and the kind's own examples.
+  - The person's ticks always win. With none, the kind's own examples are used; with none of those, the filler chooses up to `Brief::MAX_EXAMPLES`, closest in purpose and shape, best first, preferring any its brief names. `BriefRequest::choosesExamples()` says when.
+  - "Try again" keeps the card's ticks. A card the person unticked completely stays empty (`BriefRequest::$examplesKept`).
+  - The prompt lists each candidate's title with ` [id: …]`, and guidance under "What to model it on" (`{{# examples }}` in `brief-filler.md`) whenever there are candidates, so the instructions don't change between requests. Whether to choose is said in the message.
+  - `Studio::briefSchema($kind, $title, $candidateIds)` adds `examples`: an array of up to six, items an enum of the candidate IDs as text. Without structured output, the IDs come in an `<examples>` block after the brief. IDs that aren't candidates are dropped; each comes back as the candidate gave it.
+  - Addons: pass the candidates, and tick "Model it on" from `Brief::$examples`. See docs/studio.md#what-to-model-it-on.
+
 ### Changed (structured output for the layout planner)
 
 - **The layout planner uses structured output.** `Arrange\PlanSchema::for($schema, $count)` describes the plans for one site's fields. The shape is generic, so it stays small however many blocks the site has:
