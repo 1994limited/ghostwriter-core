@@ -114,3 +114,16 @@ Write the schema's properties in the order the model should fill them in: models
 
 In tests, `FakeProvider` stands for a model with structured output: `respondStructured($agent, $object)` queues a reply, `respondFromSchema($agent)` makes one up from the request's schema (`Testing\SchemaFaker`), and `withoutStructuredOutput()` stands for a model without it.
 
+
+## Scripted fakes for end-to-end tests
+
+`Testing\FakeScenario` builds a `FakeProvider` from a scenario file (JSON), so a browser test can drive a real control panel without spending tokens. Each agent's replies are handed out in order across requests and queued jobs: the addon passes a counter backed by its cache, keyed by the scenario and a run id, so one test's place in the script never leaks into another's.
+
+```php
+$fake = FakeScenario::load($dir, $request->header(FakeScenario::HEADER), fn (string $key) => Cache::increment($key) - 1);
+$providers->fake($fake);
+```
+
+The value is `<name>` or `<name>#<run>`; the name is a path under `$dir` without `.json`, and anything else (`..`, absolute paths, other characters) is ignored. A reply is `text` (or a list of lines), `textFile` (beside the scenario), `structured` (an object), `schema` (made up by `SchemaFaker`, with `merge` laid over it; `"$all"`/`"$first"` pick a list's allowed values) or `fail` (a `ProviderException`), each with an optional `delay` in milliseconds. Agents the file doesn't list are answered from their schema, or fail with `"fallback": "fail"`.
+
+Core never turns this on. Each addon wires it behind its own local-only switch (off by default, refused outside a local environment); see the addon's docs. The scenarios themselves live in the e2e test repository.
