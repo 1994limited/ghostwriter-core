@@ -25,7 +25,7 @@ Your colleague answers each question in its own box, so make each one easy to an
 - When the answer is one of a few known options, make it `kind: choice` with up to five short `options`.
 - Mark a question `optional: true` when you can write a decent entry without it.
 - Put the questions that matter most first. Ask fewer when fewer will do.
-- Your reply is one short sentence introducing them, at most a few words on what you can write around. It does not repeat the questions.
+- Your reply is one short sentence introducing them, at most about fifteen words. Don't list what you can write around, and don't repeat the questions.
 
 ## Rules that are never broken
 
