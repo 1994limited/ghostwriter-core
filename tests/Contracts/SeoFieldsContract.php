@@ -39,48 +39,19 @@ trait SeoFieldsContract
     /**
      * The `<title>` the page prints for an SEO title, as the addon composes
      * it for the `custom` entry ("Services | Northfold"); null where nothing
-     * adds a site name. (Concrete, returning null, only until every addon
-     * gives its own: then abstract again.)
+     * adds a site name.
      *
      * @return array{0: string, 1: string}|null [SEO title, the page's title]
      */
-    protected function seoTitle(): ?array
-    {
-        return null;
-    }
+    abstract protected function seoTitle(): ?array;
 
-    /**
-     * The state's entry; skipped where the addon has no such state (and,
-     * until every addon gives them, where its test predates the state).
-     *
-     * @return array{0: Schema, 1: EntryData}
-     */
-    private function entryIn(string $state): array
+    private function description(string $state): ?SeoField
     {
-        try {
-            $entry = $this->seoEntry($state);
-        } catch (\UnhandledMatchError) {
-            $entry = null;
-        }
+        $entry = $this->seoEntry($state);
 
         if ($entry === null) {
             $this->markTestSkipped("No {$state} state for this addon.");
         }
-
-        return $entry;
-    }
-
-    /** Skipped where the implementation predates noindex() and titleFormat() (until every addon has them). */
-    private function needsSettings(): void
-    {
-        if (! method_exists($this->seoFields(), 'noindex') || ! method_exists($this->seoFields(), 'titleFormat')) {
-            $this->markTestSkipped('This SeoFields has no noindex() or titleFormat() yet.');
-        }
-    }
-
-    private function description(string $state): ?SeoField
-    {
-        $entry = $this->entryIn($state);
 
         foreach ($this->seoFields()->in(...$entry) as $field) {
             if ($field->role === SeoField::DESCRIPTION) {
@@ -149,8 +120,6 @@ trait SeoFieldsContract
 
     public function test_nothing_on_the_entry_takes_the_sections_default(): void
     {
-        // An implementation from before section defaults were read (until every addon has them).
-        $this->needsSettings();
         $field = $this->description('section');
 
         $this->assertNotNull($field);
@@ -163,14 +132,9 @@ trait SeoFieldsContract
 
     public function test_noindex_is_read_from_the_setting(): void
     {
-        $this->needsSettings();
-        $custom = $this->entryIn('custom');
-
-        try {
-            $noindex = $this->seoEntry('noindex');
-        } catch (\UnhandledMatchError) {
-            $this->markTestSkipped('No noindex state for this addon yet.');
-        }
+        $noindex = $this->seoEntry('noindex');
+        $custom = $this->seoEntry('custom');
+        $this->assertNotNull($custom);
 
         $this->assertNotTrue($this->seoFields()->noindex(...$custom), 'A page with no robots setting is indexed.');
 
@@ -185,8 +149,8 @@ trait SeoFieldsContract
 
     public function test_the_title_format_composes_the_pages_title(): void
     {
-        $this->needsSettings();
-        $custom = $this->entryIn('custom');
+        $custom = $this->seoEntry('custom');
+        $this->assertNotNull($custom);
         $format = $this->seoFields()->titleFormat(...$custom);
         $expected = $this->seoTitle();
 
