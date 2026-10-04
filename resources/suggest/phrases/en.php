@@ -14,6 +14,9 @@
  * - numbers: number words the counts may use.
  * - link_text: link words that say nothing out of context.
  * - long_sentence: words in a sentence before it counts as long.
+ * - stop_words: words too common to match link targets on (Seo\LinkCandidates).
+ * - utility_slugs: address segments of pages never offered as link targets
+ *   (Seo\Linkable): search, login, cart, thank-you…; every language's list applies.
  */
 
 return [
@@ -69,4 +72,22 @@ return [
     ],
     'link_text' => ['here', 'click here', 'click', 'read more', 'more', 'this link', 'link', 'learn more', 'find out more', 'more info', 'this page', 'go'],
     'long_sentence' => 30,
+    'stop_words' => [
+        'a', 'an', 'the', 'and', 'or', 'but', 'nor', 'so', 'yet', 'of', 'to', 'in', 'on', 'at', 'by', 'for', 'with',
+        'from', 'into', 'onto', 'over', 'under', 'about', 'above', 'below', 'after', 'before', 'between', 'through',
+        'during', 'without', 'within', 'along', 'across', 'around', 'against', 'among', 'than', 'then', 'that',
+        'this', 'these', 'those', 'there', 'here', 'it', 'its', 'it\'s', 'is', 'are', 'was', 'were', 'be', 'been',
+        'being', 'am', 'do', 'does', 'did', 'doing', 'have', 'has', 'had', 'having', 'can', 'could', 'will', 'would',
+        'shall', 'should', 'may', 'might', 'must', 'not', 'no', 'yes', 'your', 'you', 'yours', 'we', 'our', 'ours',
+        'us', 'they', 'their', 'them', 'he', 'she', 'his', 'her', 'i', 'me', 'my', 'mine', 'what', 'which', 'who',
+        'whom', 'whose', 'when', 'where', 'why', 'how', 'all', 'any', 'both', 'each', 'every', 'few', 'more', 'most',
+        'other', 'some', 'such', 'only', 'own', 'same', 'very', 'just', 'also', 'too', 'as', 'if', 'out', 'up',
+        'down', 'off', 'again', 'further', 'once',
+    ],
+    'utility_slugs' => [
+        'search', '404', 'not-found', 'error', 'login', 'log-in', 'signin', 'sign-in', 'logout', 'log-out',
+        'signout', 'sign-out', 'account', 'my-account', 'register', 'signup', 'sign-up', 'cart', 'basket', 'checkout',
+        'thank-you', 'thanks', 'thankyou', 'confirmation', 'order-confirmation', 'unsubscribe', 'sitemap', 'password',
+        'reset-password', 'forgot-password',
+    ],
 ];

@@ -61,7 +61,7 @@ final class SiteDigest
             $text = $context->gaps->entry->title()."\n".implode("\n", array_map(fn (CheckText $text) => $text->plain, $context->texts()));
 
             foreach ($context->index->nearest($context->entry, mb_substr($text, 0, 4000), $limit) as $entry) {
-                $add(new DigestEntry($entry->entry, $entry->title, $entry->url, mb_substr($entry->summary, 0, DigestEntry::SUMMARY), $entry->link));
+                $add(new DigestEntry($entry->entry, $entry->title, $entry->url, mb_substr($entry->summary, 0, DigestEntry::SUMMARY), $entry->link, $entry->type));
             }
         }
 
@@ -105,7 +105,7 @@ final class SiteDigest
 
         foreach ($this->entries as $id => $entry) {
             $summary = trim((string) preg_replace('/\s+/u', ' ', $entry->summary));
-            $lines[] = $id.' "'.str_replace('"', "'", $entry->title).'"'.($entry->url !== null ? ' '.$entry->url : '').($summary !== '' ? ': '.$summary : '');
+            $lines[] = $id.' "'.str_replace('"', "'", $entry->title).'"'.($entry->type !== '' ? ' ('.$entry->type.')' : '').($entry->url !== null ? ' '.$entry->url : '').($summary !== '' ? ': '.$summary : '');
         }
 
         return implode("\n", $lines);

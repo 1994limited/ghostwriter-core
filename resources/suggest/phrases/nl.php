@@ -53,4 +53,19 @@ return [
     ],
     'link_text' => ['hier', 'klik hier', 'lees meer', 'meer', 'meer info', 'meer informatie', 'deze link', 'link', 'lees verder'],
     'long_sentence' => 28,
+    'stop_words' => [
+        'de', 'het', 'een', 'en', 'of', 'maar', 'want', 'dus', 'van', 'te', 'in', 'op', 'aan', 'bij', 'met', 'naar',
+        'uit', 'voor', 'door', 'over', 'onder', 'tussen', 'tegen', 'zonder', 'sinds', 'tot', 'om', 'als', 'dan',
+        'dat', 'die', 'dit', 'deze', 'daar', 'hier', 'er', 'is', 'zijn', 'was', 'waren', 'ben', 'bent', 'wordt',
+        'worden', 'werd', 'werden', 'heeft', 'hebben', 'had', 'hadden', 'kan', 'kunnen', 'moet', 'moeten', 'zal',
+        'zullen', 'wil', 'willen', 'mag', 'niet', 'geen', 'ook', 'nog', 'al', 'wel', 'zo', 'meer', 'alle', 'elk',
+        'elke', 'ieder', 'wie', 'wat', 'waar', 'wanneer', 'waarom', 'hoe', 'welk', 'welke', 'ik', 'mij', 'mijn', 'je',
+        'jij', 'jou', 'jouw', 'u', 'uw', 'hij', 'zij', 'ze', 'haar', 'hem', 'wij', 'we', 'ons', 'onze', 'jullie',
+        'hun', 'zich', 'men',
+    ],
+    'utility_slugs' => [
+        'zoeken', 'zoekresultaten', 'inloggen', 'uitloggen', 'login', 'account', 'mijn-account', 'registreren',
+        'winkelwagen', 'winkelmand', 'afrekenen', 'bestelling', 'bedankt', 'dankjewel', 'dank-u', 'bevestiging',
+        'uitschrijven', 'fout', 'pagina-niet-gevonden', 'sitemap', 'wachtwoord',
+    ],
 ];
