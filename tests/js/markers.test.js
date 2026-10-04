@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { LABELS, LINK_PREFIX, PATTERNS, chipRow, countByRegion, find, gapsIn, has, linkHint, markGaps, segments, toHtml, toPlainText } from '../../resources/js/preview/markers.js';
+import { LABELS, LINK_PREFIX, PATTERNS, chipRow, countByRegion, find, gapsIn, has, linkHint, markGaps, segments, toHtml, toPlainText, unmarkGaps } from '../../resources/js/preview/markers.js';
 import { locate } from '../../resources/js/preview/locator.js';
 import { marked, parse } from './dom.js';
 
@@ -45,9 +45,9 @@ test('a string formats as pieces, plain text and escaped HTML', () => {
     assert.equal(toPlainText(text), 'From adult ticket price in 3 areas. Talk to us <b>');
     assert.equal(
         toHtml(text),
-        'From <span class="gw-gap gw-gap-ask" data-gw-gap-kind="ask" title="Only you know this: add it before publishing"><span class="gw-gap-sr">Fact to add: </span>adult ticket price</span>'
-        + ' in <span class="gw-gap gw-gap-check" data-gw-gap-kind="check" title="Counted from &#39;A &amp; B, C&#39;. Check it before publishing"><span class="gw-gap-sr">Count to check: </span>3 areas</span>'
-        + '. <span class="gw-gap gw-gap-link" data-gw-gap-kind="link" title="Link to choose"><span class="gw-gap-sr">(link to choose) </span>Talk to us</span> &lt;b&gt;',
+        'From <span class="gw-gap gw-gap-ask" data-gw-gap-kind="ask" data-gw-gap-hint="adult ticket price" data-gw-gap-match="[[ask: adult ticket price]]" title="Only you know this: add it before publishing"><span class="gw-gap-sr">Fact to add: </span>adult ticket price</span>'
+        + ' in <span class="gw-gap gw-gap-check" data-gw-gap-kind="check" data-gw-gap-hint="3 areas" data-gw-gap-list="A &amp; B, C" data-gw-gap-match="[[check: 3 areas | from: A &amp; B, C]]" title="Counted from &#39;A &amp; B, C&#39;. Check it before publishing"><span class="gw-gap-sr">Count to check: </span>3 areas</span>'
+        + '. <span class="gw-gap gw-gap-link" data-gw-gap-kind="link" data-gw-gap-hint="contact page" data-gw-gap-match="[Talk to us](#gw-link:contact-page)" title="Link to choose"><span class="gw-gap-sr">(link to choose) </span>Talk to us</span> &lt;b&gt;',
     );
     assert.equal(toHtml('<script>[[ask: <img src=x onerror=alert(1)>]]</script>').includes('<img'), false, 'everything is escaped');
     assert.equal(toPlainText('Nothing to show'), 'Nothing to show');
@@ -135,6 +135,7 @@ test('with onActivate, chips are buttons: click, Enter and Space call it', () =>
 
     assert.equal(ask.getAttribute('role'), 'button');
     assert.equal(ask.getAttribute('tabindex'), '0');
+    assert.equal(ask.getAttribute('aria-haspopup'), 'dialog');
     assert.equal(link.getAttribute('role'), null, 'a link stays a link');
 
     assert.equal(ask.dispatch({ type: 'click' }).prevented, true);
@@ -165,4 +166,38 @@ test('after the locator, chips are counted in the right block regions', () => {
     assert.equal(chips.length, 4);
     assert.deepEqual(countByRegion(result.regions, chips), { b1: 1, b2: 1, b3: 1, b4: 1 });
     assert.equal(doc.body.querySelector('h1').textContent, 'Winter visits', 'the locator stripped its markers first');
+});
+
+test('each chip knows its marker as written and which of its kind and hint it is', () => {
+    const doc = parse('<p>[[ask: price]] then [[ASK: Price]] and [[check: 3 areas | from: A, B, C]] [[check: 3 areas | from: D, E, F]] [[ask: other]]</p><a href="#gw-link:contact-page">Us</a><a href="#gw-link:contact_page">Again</a>');
+    const chips = markGaps(doc);
+
+    assert.deepEqual(chips.map((found) => [found.kind, found.match, found.occurrence]), [
+        ['ask', '[[ask: price]]', 0],
+        ['ask', '[[ASK: Price]]', 1],
+        ['check', '[[check: 3 areas | from: A, B, C]]', 0],
+        ['check', '[[check: 3 areas | from: D, E, F]]', 0],
+        ['ask', '[[ask: other]]', 0],
+        ['link', '#gw-link:contact-page', 0],
+        ['link', '#gw-link:contact_page', 1],
+    ]);
+});
+
+test('unmarkGaps puts the markers back as written, so chip markup is never saved', () => {
+    const source = '<p>Pay [[ask: adult ticket price]] for [[check: 3 areas | from: A &amp; B, C]]. <a href="#gw-link:contact-page" class="btn">Talk to us</a></p>';
+    const doc = parse(source);
+    const p = doc.body.querySelector('p');
+    const before = html(p);
+
+    markGaps(doc, { onActivate: () => {} });
+    assert.notEqual(html(p), before);
+
+    unmarkGaps(p);
+    assert.equal(html(p), before);
+    assert.equal(p.textContent, 'Pay [[ask: adult ticket price]] for [[check: 3 areas | from: A & B, C]]. Talk to us');
+
+    // Chips made by toHtml() come back too.
+    const row = parse(`<div>${toHtml('A [[ask: x]] b')}</div>`).body.querySelector('div');
+    unmarkGaps(row);
+    assert.equal(row.textContent, 'A [[ask: x]] b');
 });

@@ -106,6 +106,10 @@ class Element extends Node {
         this.attributes.set(name, String(value));
     }
 
+    removeAttribute(name) {
+        this.attributes.delete(name);
+    }
+
     /** `data-rect="left,top,width,height"` stands in for layout. */
     getBoundingClientRect() {
         const [left, top, width, height] = (this.getAttribute('data-rect') ?? '0,0,0,0').split(',').map(Number);
