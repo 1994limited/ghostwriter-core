@@ -220,7 +220,7 @@ Every call whose reply is data carries the reply's `OutputSchema`, so a provider
 | `brief-writer`, `brief-filler` | `Studio::briefSchema($kind, $withTitle)` | every answer required, `""` for nothing; keys from `Studio::briefKeys()`, mapped back to handles |
 | `reworder` | `resources/schemas/reworder-reply.json` | two versions |
 | `gap-filler` | `resources/schemas/gap-filler-reply.json` | `result` |
-| `layout-planner` | `Arrange\PlanSchema::for($schema, $count)` | generic, every property required (no optional properties or unions), blocks three deep; `PlanSchema::toRaw()` turns a plan back into the YAML's shape for `PlanReader` and `PlanValidator` |
+| `layout-planner` | `Arrange\PlanSchema::for($schema, $count)` | generic, every property required (no optional properties or unions), only the parts the site's fields need and blocks only as deep as they nest (at most three; Claude refuses a grammar that compiles too large); `PlanSchema::toRaw()` turns a plan back into the YAML's shape for `PlanReader` and `PlanValidator` |
 
 The prompts mark their reply format with `{{# tagged }}…{{/ tagged }}` and `{{# structured }}…{{/ structured }}`; `Studio::prompt($name, $structured)` keeps the right part, and `Studio::takesSchema($agent, $schema)` says which. The tagged rendering is what the addons always sent. A layout planner reply that was read but holds no usable plan isn't asked for again; one cut off keeps the plans that closed. Prompts stay the same for every call of a job, so cached instructions still hit.
 
