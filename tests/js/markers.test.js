@@ -72,6 +72,16 @@ test('link hints decode', () => {
     assert.equal(linkHint('https://example.com/#gw-link:contact-page'), 'contact page');
     assert.equal(linkHint('#gw-link:caf%C3%A9_menu'), 'café menu');
     assert.equal(linkHint('/contact'), null);
+    assert.equal(linkHint('#gw-link:Winter structure'), 'Winter structure');
+    assert.equal(linkHint('#gw-link:Winter%20structure'), 'Winter structure');
+});
+
+test('a link to choose whose hint has a space is a link, raw, bracketed or encoded', () => {
+    for (const markdown of ['[our winter structure](#gw-link:Winter structure)', '[our winter structure](<#gw-link:Winter structure>)', '[our winter structure](#gw-link:Winter%20structure "A title")']) {
+        const pieces = segments(`See ${markdown}. And [us](#gw-link:contact-page) (soon).`).filter((piece) => piece.kind === 'link');
+
+        assert.deepEqual(pieces.map((piece) => [piece.text, piece.hint, piece.match]), [['our winter structure', 'Winter structure', markdown], ['us', 'contact page', '[us](#gw-link:contact-page)']], markdown);
+    }
 });
 
 test('in a document, markers become chips and links to choose are marked, once', () => {

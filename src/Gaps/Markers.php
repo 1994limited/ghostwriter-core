@@ -57,12 +57,22 @@ final class Markers
 
     /**
      * A markdown link still to choose. Group 1 is its words, group 2 the
-     * hint. The `https://example.com/` form of a link field counts too.
+     * hint as written (linkHintFrom() decodes it). The `https://example.com/`
+     * form of a link field counts too. The hint may hold spaces, raw
+     * (`[Winter structure](#gw-link:Winter structure)`, as rich text read
+     * back as markdown gives it), in angle brackets (`(<#gw-link:Winter
+     * structure>)`) or percent-encoded (`Winter%20structure`, as CKEditor
+     * and Bard keep it); a title (`"…"`) after it is not part of it.
      */
-    public const LINK_PATTERN = '/\[([^\[\]\n]*)\]\(\s*<?(?:https?:\/\/example\.com\/?)?#gw-link:([^\s)>]*)>?(?:\s+"[^"\n]*")?\s*\)/iu';
+    public const LINK_PATTERN = '/\[([^\[\]\n]*)\]\(\s*<?(?:https?:\/\/example\.com\/?)?#gw-link:([^()<>"\n]*?)>?(?:\s+"[^"\n]*")?\s*\)/iu';
 
-    /** The sentinel in any address. Group 1 is the hint. */
-    public const SENTINEL_PATTERN = '/#gw-link:([A-Za-z0-9._~%-]*)/u';
+    /**
+     * The sentinel in any address, or in text holding one (an `href="…"`,
+     * a markdown link). Group 1 is the hint as written: it runs to a quote,
+     * a bracket, a line break or the end, and its words may be apart
+     * (`#gw-link:Winter structure`).
+     */
+    public const SENTINEL_PATTERN = '/#gw-link:([^\s"\'<>()]*(?:[ \t]+[^\s"\'<>()]+)*)/u';
 
     /**
      * A vocabulary placeholder left in text (`[[item]]`): a prompt override
@@ -215,6 +225,56 @@ final class Markers
         return stripos($text, 'check') === false ? $text : (string) preg_replace_callback(self::CHECK_PATTERN, fn (array $match) => trim($match[1]), $text);
     }
 
+    /**
+     * A hint as written in a target (`Winter%20structure`, `Winter
+     * structure`, `winter-structure`) as one reads it: percent-decoded,
+     * trimmed, with single spaces. Its hyphens are kept; gap IDs and chips
+     * read them as spaces.
+     */
+    public static function linkHintFrom(string $written): string
+    {
+        return trim((string) preg_replace('/\s+/u', ' ', rawurldecode($written)));
+    }
+
+    /**
+     * A hint as a link's target safely takes it, keeping its words, case
+     * and script: `Winter structure` becomes `Winter-structure`. Spaces
+     * become hyphens; brackets, quotes and `%` are percent-encoded.
+     */
+    public static function safeLinkHint(string $hint): string
+    {
+        $hint = (string) preg_replace('/\s+/u', '-', self::linkHintFrom($hint));
+
+        return strtr($hint, ['%' => '%25', '(' => '%28', ')' => '%29', '<' => '%3C', '>' => '%3E', '"' => '%22', "'" => '%27']);
+    }
+
+    /**
+     * Some markdown with each link still to choose written safely: its
+     * hint as safeLinkHint() gives it, its words and any title kept. A
+     * model may write `[Winter structure](#gw-link:Winter structure)`,
+     * which a markdown reader takes for text, not a link.
+     */
+    public static function normaliseLinks(string $markdown): string
+    {
+        if (! str_contains($markdown, self::LINK_PREFIX)) {
+            return $markdown;
+        }
+
+        return (string) preg_replace_callback(self::LINK_PATTERN, function (array $match) {
+            $hint = self::linkHintFrom($match[2]);
+            $safe = self::safeLinkHint($hint);
+
+            if ($safe === $match[2] && ! str_contains($match[0], '<')) {
+                return $match[0];
+            }
+
+            $title = preg_match('/\s+("[^"\n]*")\s*\)\z/u', $match[0], $titled) === 1 ? ' '.$titled[1] : '';
+            $prefix = preg_match('/\(\s*<?(https?:\/\/example\.com\/?)#gw-link:/iu', $match[0], $site) === 1 ? $site[1] : '';
+
+            return '['.$match[1].']('.$prefix.self::LINK_PREFIX.($safe !== '' ? $safe : 'link').$title.')';
+        }, $markdown);
+    }
+
     /** The target of an inline link still to choose: `#gw-link:contact-page`. */
     public static function link(string $hint): string
     {
@@ -247,7 +307,7 @@ final class Markers
     /** The hint in a sentinel target, or null when it isn't one. */
     public static function linkHint(mixed $href): ?string
     {
-        return is_string($href) && preg_match(self::SENTINEL_PATTERN, $href, $match) === 1 ? rawurldecode($match[1]) : null;
+        return is_string($href) && preg_match(self::SENTINEL_PATTERN, $href, $match) === 1 ? self::linkHintFrom($match[1]) : null;
     }
 
     /**
@@ -275,7 +335,7 @@ final class Markers
 
         if (preg_match_all(self::LINK_PATTERN, $markdown, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE) > 0) {
             foreach ($matches as $match) {
-                $hint = rawurldecode($match[2][0]);
+                $hint = self::linkHintFrom($match[2][0]);
                 $key = self::normaliseHint($hint);
                 $found[] = ['hint' => $hint, 'words' => $match[1][0], 'match' => $match[0][0], 'offset' => $match[0][1], 'occurrence' => $seen[$key] = isset($seen[$key]) ? $seen[$key] + 1 : 0];
             }

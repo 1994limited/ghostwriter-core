@@ -109,6 +109,40 @@ class MarkerResolverTest extends TestCase
         $this->assertSame('Or [write to us](/contact).', MarkerResolver::apply($inline['text'], $inline, '/contact'));
     }
 
+    public function test_a_link_whose_hint_has_a_space_is_found_and_chosen_however_it_is_written(): void
+    {
+        $texts = MarkerResolver::leaves([
+            'body' => 'See [our winter structure](#gw-link:Winter structure).',
+            'craft' => 'https://example.com/#gw-link:Winter%20structure',
+            'statamic' => '#gw-link:Winter structure',
+        ]);
+
+        $inline = MarkerResolver::find($texts, 'link', 'Winter structure');
+        $this->assertSame(['body'], $inline['path']);
+        $this->assertSame('See [our winter structure](/winter).', MarkerResolver::apply($inline['text'], $inline, '/winter'));
+
+        $craft = MarkerResolver::find($texts, 'link', 'winter structure', occurrence: 1);
+        $this->assertSame(['craft'], $craft['path']);
+        $this->assertTrue($craft['whole']);
+
+        $statamic = MarkerResolver::find($texts, 'link', 'Winter-structure', occurrence: 2);
+        $this->assertSame(['statamic'], $statamic['path']);
+        $this->assertTrue($statamic['whole']);
+
+        $chosen = MarkerResolver::chosenLinks(MarkerResolver::chooseLink([], 'Winter structure', 'entry::w', '/winter'));
+        $built = [
+            'field' => '#gw-link:Winter structure',
+            'bard' => [['type' => 'text', 'marks' => [['type' => 'link', 'attrs' => ['href' => '#gw-link:Winter%20structure']]]]],
+            'html' => '<p><a href="#gw-link:Winter structure">x</a> and <a href="https://example.com/#gw-link:Winter%20structure">y</a></p>',
+        ];
+
+        $this->assertSame([
+            'field' => 'entry::w',
+            'bard' => [['type' => 'text', 'marks' => [['type' => 'link', 'attrs' => ['href' => '/winter']]]]],
+            'html' => '<p><a href="/winter">x</a> and <a href="/winter">y</a></p>',
+        ], MarkerResolver::withChosenLinks($built, $chosen));
+    }
+
     public function test_a_link_for_a_field_the_draft_doesnt_hold_is_chosen_by_hint_and_put_in_where_built(): void
     {
         $data = MarkerResolver::chooseLink(['title' => 'Winter'], 'Button  link', 'entry::abc', '/about');
