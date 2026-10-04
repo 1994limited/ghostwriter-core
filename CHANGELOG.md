@@ -2,7 +2,7 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 it follows semantic versioning: a minor or patch release doesn't break the public API.
 
-## Unreleased
+## 1.8.3 - 2026-10-04
 
 ### Added
 
