@@ -12,6 +12,13 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Ai;
  *
  * Left null, `maxTokens` and `effort` come from Agents, `model` from the
  * settings and then Models, and `timeout` from the settings.
+ *
+ * With a `schema`, the reply must be JSON of that shape: a provider that
+ * can hold the model to it does (structured output, see OutputSchema and
+ * Models::structuredOutput()), and puts the decoded object on
+ * TextResponse::$structured. One that can't sends the request as it is, and
+ * the caller reads the text as before, so the prompt should still describe
+ * the shape.
  */
 final class TextRequest
 {
@@ -32,6 +39,7 @@ final class TextRequest
         public readonly ?string $model = null,
         public readonly ?int $timeout = null,
         Effort|string|null $effort = null,
+        public readonly ?OutputSchema $schema = null,
     ) {
         $this->effort = is_string($effort) ? Effort::tryFrom($effort) : $effort;
     }
@@ -42,7 +50,7 @@ final class TextRequest
      */
     public function withMaxTokens(int $maxTokens): self
     {
-        return new self($this->agent, $this->instructions, $this->prompt, $this->history, $this->images, $maxTokens, $this->model, $this->timeout, $this->effort);
+        return new self($this->agent, $this->instructions, $this->prompt, $this->history, $this->images, $maxTokens, $this->model, $this->timeout, $this->effort, $this->schema);
     }
 
     /**
@@ -50,7 +58,24 @@ final class TextRequest
      */
     public function withModel(?string $model): self
     {
-        return new self($this->agent, $this->instructions, $this->prompt, $this->history, $this->images, $this->maxTokens, $model, $this->timeout, $this->effort);
+        return new self($this->agent, $this->instructions, $this->prompt, $this->history, $this->images, $this->maxTokens, $model, $this->timeout, $this->effort, $this->schema);
+    }
+
+    /**
+     * A copy asking for a reply of this shape; null asks for plain text.
+     */
+    public function withSchema(?OutputSchema $schema): self
+    {
+        return new self($this->agent, $this->instructions, $this->prompt, $this->history, $this->images, $this->maxTokens, $this->model, $this->timeout, $this->effort, $schema);
+    }
+
+    /**
+     * A copy with another prompt, the rest kept: e.g. to ask again after a
+     * reply that couldn't be read.
+     */
+    public function withPrompt(string $prompt): self
+    {
+        return new self($this->agent, $this->instructions, $prompt, $this->history, $this->images, $this->maxTokens, $this->model, $this->timeout, $this->effort, $this->schema);
     }
 
     /** The token limit to send: the request's own, or the agent's default. */

@@ -227,20 +227,19 @@ $review->verified;                                 // [suggestion id => 'keep' |
 
 - **Keep or drop.** The model answers every candidate once: a kept suggestion (`"finding": "f3"` and the fix) or `{"finding": "f3", "drop": "<a few words why>"}`. Any category may be dropped ("New for 2023" in a 2023 journal post is history). `SuggestionReader` also reads the older `decline` key as `drop`. For an Out of date candidate the replacement is the whole sentence rewritten so it no longer states a past date as current, with up to two meaningfully different alternatives, one of them the sentence with the dated words taken out and tidied ("New for 2023: winter care visits" → "Winter care visits", "Our winter care visits"). The model's own suggestions (voice, clarity, facts…) follow the same rule: only a real problem with the paragraph in view. It never supplies a fact.
 - **Images** go through `ModelInputGuard` in the Studio. A refused image (Getty, iStock) isn't attached; if the model keeps its candidate, it has no replacement ("Describe the image yourself").
-- **The reply** is JSON in `<suggestions>`, matching `resources/schemas/suggestions.schema.json`. `SuggestionReader` reads it leniently: code fences, a trailing comma, a single object, or a cut-off list (keeping the objects that closed). An unreadable reply gives no suggestions and logs a warning with no reply text, unless `logReplies` is on.
+- **The reply** is held to `resources/schemas/reviewer-reply.json` by the provider where the model has structured output (`Studio::reviewerSchema()`, see [providers.md](providers.md#structured-output)): bare JSON, every item starting with a short `notes` field (what the model checked in context, never shown), so it looks before it answers. The instructions then say "Your reply is JSON in the shape you are given"; for a model without structured output they ask for the same JSON in `<suggestions>`, as before (`{{ answer_intro }}`, `{{ answer_open }}`, `{{ answer_close }}` in the prompt). Either way `SuggestionReader` reads it, leniently: code fences, a trailing comma, a single object, a cut-off list (keeping the objects that closed), and a null key (as strict modes send what's left out) read as left out. Every reply also matches the contract, `resources/schemas/suggestions.schema.json`, checked by a test. A schema guarantees the shape, not the truth: `SuggestionValidator` checks every item as before.
+- **Unreadable, asked once more.** A reply that can't be read, and wasn't cut off, is asked for again with the same instructions and images and the problem quoted after the prompt ("Your last answer to this couldn't be read: the JSON did not parse. …"). The second reply stands. Each unreadable reply logs a warning with no reply text, unless `logReplies` is on; one still unreadable gives no suggestions.
 
 ### The second pass: the verifier
 
-After validation, `Studio::verifyEdits($input, $review->suggestions)` makes one `verifier` call per part that kept anything. It is shown each kept suggestion, numbered `s1, s2…` across the review in form order (`Suggest\VerifyPrompt`, pinned by `tests/Fixtures/suggest/verifier-services.json`): its whole paragraph, the heading it sits under, its field, the quote, the replacement and alternatives (or the fact's template), why it was made and the site entry it cites or links to. The entry's title, kind, last-updated date and today are on `<page>`; the voice guide and the kind are in the instructions. For each it checks that it is a real problem in context, that the replacement reads naturally in its sentence and paragraph, that it adds no fact, and that it is in the site's voice, and answers:
+After validation, `Studio::verifyEdits($input, $review->suggestions)` makes one `verifier` call per part that kept anything. It is shown each kept suggestion, numbered `s1, s2…` across the review in form order (`Suggest\VerifyPrompt`, pinned by `tests/Fixtures/suggest/verifier-services.json`): its whole paragraph, the heading it sits under, its field, the quote, the replacement and alternatives (or the fact's template), why it was made and the site entry it cites or links to. The entry's title, kind, last-updated date and today are on `<page>`; the voice guide and the kind are in the instructions. For each it checks that it is a real problem in context, that the replacement reads naturally in its sentence and paragraph, that it adds no fact, and that it is in the site's voice, and answers (held to `resources/schemas/verifier-reply.json`, `Studio::verifierSchema()`, where the model has structured output; in `<verdicts>` tags where it doesn't; asked once more when unreadable, as the reviewer is):
 
 ```
-<verdicts>
 {"verdicts": [
-  {"id": "s1", "verdict": "keep", "reason": "…"},
-  {"id": "s2", "verdict": "fix", "replacement": "…", "alternatives": ["…"], "reason": "…"},
-  {"id": "s3", "verdict": "drop", "reason": "…"}
+  {"notes": "…", "id": "s1", "verdict": "keep", "reason": "…"},
+  {"notes": "…", "id": "s2", "verdict": "fix", "replacement": "…", "alternatives": ["…"], "reason": "…"},
+  {"notes": "…", "id": "s3", "verdict": "drop", "reason": "…"}
 ]}
-</verdicts>
 ```
 
 `SuggestionValidator::verify()` applies it:
@@ -309,7 +308,7 @@ $kept     = array_filter($versions->value, fn ($v) => $validator->acceptsVersion
 
 ### Cost
 
-Shown in tokens only, never money. Every `Result` carries `usage` (input and output), counting every call, including re-asks and every part of a split page. `EditReview::$usage` adds the reviewer's and the verifier's, and `EditReview::$calls` counts both. The verifier roughly doubles a review's tokens; the top tier and effort `high` cost more again, for better suggestions. Nothing model-backed runs on load, typing, saving, polling, the free checks, the revisit index or the external link check.
+Shown in tokens only, never money. Every `Result` carries `usage` (input and output), counting every call, including re-asks (a cut-off reply, an unreadable one) and every part of a split page. The reply's schema is part of each request but the same for every call of an agent, so the cached instructions still hit (`cache_read_tokens` in the "A model call finished." log line). `EditReview::$usage` adds the reviewer's and the verifier's, and `EditReview::$calls` counts both. The verifier roughly doubles a review's tokens; the top tier and effort `high` cost more again, for better suggestions. Nothing model-backed runs on load, typing, saving, polling, the free checks, the revisit index or the external link check.
 
 | Action | Model calls |
 |---|---|

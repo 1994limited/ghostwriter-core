@@ -27,12 +27,14 @@ Give a short `reason` for every verdict, in {{ reply_language }}. Write replacem
 
 ## How you answer
 
-Only this, with nothing before or after it, with one verdict for every suggestion:
+With one verdict for every suggestion. {{ answer_intro }}
 
-<verdicts>
+{{ answer_open }}
 {"verdicts": [
-  {"id": "s1", "verdict": "keep", "reason": "…"},
-  {"id": "s2", "verdict": "fix", "replacement": "…", "alternatives": ["…"], "reason": "…"},
-  {"id": "s3", "verdict": "drop", "reason": "…"}
+  {"notes": "Reads well in its paragraph and adds nothing.", "id": "s1", "verdict": "keep", "reason": "…"},
+  {"notes": "Right problem, but the replacement doubles a word where it joins.", "id": "s2", "verdict": "fix", "replacement": "…", "alternatives": ["…"], "reason": "…"},
+  {"notes": "Dated 2023, written in 2023: history.", "id": "s3", "verdict": "drop", "reason": "…"}
 ]}
-</verdicts>
+{{ answer_close }}
+
+Every verdict starts with `notes`: a few words for yourself on what you checked before deciding. The editor never sees them.

@@ -83,9 +83,12 @@ abstract class HttpProvider
         }
     }
 
-    protected function finished(string $agent, TextResponse $response, float $started): TextResponse
+    /**
+     * @param  array<string, mixed>  $context  More for the log line, e.g. cache reads.
+     */
+    protected function finished(string $agent, TextResponse $response, float $started, array $context = []): TextResponse
     {
-        $this->transport->logger()->info('A model call finished.', [
+        $this->transport->logger()->info('A model call finished.', $context + [
             'agent' => $agent,
             'provider' => $this->handle(),
             'model' => $response->model,
@@ -94,9 +97,52 @@ abstract class HttpProvider
             'stop_reason' => $response->stopReason->value,
             'attempts' => $this->transport->attempts(),
             'ms' => (int) round((microtime(true) - $started) * 1000),
-        ]);
+        ] + ($response->structuredBy !== null ? ['structured' => $response->structuredBy, 'parsed' => $response->structured !== null] : []));
 
         return $response;
+    }
+
+    /**
+     * How this request's schema is sent to this model: TextResponse::JSON_SCHEMA,
+     * TextResponse::TOOL, or null when it has none or the model can't be
+     * held to one (Models::structuredOutput()).
+     */
+    protected function structuredMode(TextRequest $request, string $model): ?string
+    {
+        return $request->schema !== null ? Models::structuredOutput($this->handle(), $model) : null;
+    }
+
+    /** Whether the request's schema would be sent to the model it goes to (TakesSchemas). */
+    public function takesSchema(TextRequest $request): bool
+    {
+        return $this->structuredMode($request, $this->textModel($request)) !== null;
+    }
+
+    /**
+     * Whether a 400 is the provider refusing the schema or the way it was
+     * asked for (a model without the mode, a keyword it doesn't take), so
+     * the request can go again without it.
+     */
+    protected function refusedTheSchema(BadResponse $exception): bool
+    {
+        if ($exception->status() !== 400) {
+            return false;
+        }
+
+        return (bool) preg_match('/schema|output_config|response_format|structured|tool_choice|responseMimeType|response_mime_type/i', $exception->getMessage());
+    }
+
+    /**
+     * The request went again without its schema: say so once in the log.
+     */
+    protected function schemaDropped(string $agent, string $model, BadResponse $exception): void
+    {
+        $this->transport->logger()->warning('The provider refused the reply format; asking again without it.', [
+            'agent' => $agent,
+            'provider' => $this->handle(),
+            'model' => $model,
+            'error' => mb_substr($exception->getMessage(), 0, 300),
+        ]);
     }
 
     /**

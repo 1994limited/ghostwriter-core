@@ -128,6 +128,56 @@ final class Models
     }
 
     /**
+     * Anthropic models that refuse a forced tool_choice (`any` or `tool`).
+     * Dated snapshots match too.
+     */
+    public const ANTHROPIC_UNFORCED_TOOLS = ['claude-fable-5-1', 'claude-mythos-5-1', 'claude-opus-5-5', 'claude-sonnet-5-5'];
+
+    /**
+     * How a model can be held to a reply's JSON Schema (TextRequest::$schema):
+     *
+     * - `json_schema` (TextResponse::JSON_SCHEMA): a JSON output mode.
+     *   Anthropic's `output_config.format` on Opus, Sonnet and Fable 4.5
+     *   and later, Mythos and Haiku 4.5; OpenAI's strict `response_format`
+     *   on GPT-4o, GPT-4.1, GPT-5 and later and the o-series; Gemini's
+     *   `responseJsonSchema` on 2.0 and later; and OpenRouter's
+     *   `response_format` for the ids of those models.
+     * - `tool` (TextResponse::TOOL): another Claude model, given a tool whose
+     *   input is the reply.
+     * - null: anything else; the request goes as plain text and its prompt
+     *   has to ask for the shape. Also for an OpenRouter id from another
+     *   maker, whose support varies by host.
+     *
+     * Checked against each provider's documentation on 2026-10-04.
+     */
+    public static function structuredOutput(string $provider, string $model): ?string
+    {
+        if ($provider === 'openrouter') {
+            $native = self::nativeModel($model);
+
+            return $native !== null && self::structuredOutput($native[0], $native[1]) === TextResponse::JSON_SCHEMA ? TextResponse::JSON_SCHEMA : null;
+        }
+
+        return match ($provider) {
+            'anthropic' => match (true) {
+                self::anthropicVersion($model) >= [4, 5], (bool) preg_match('/^claude-(?:haiku-4-5|mythos-)/', $model) => TextResponse::JSON_SCHEMA,
+                str_starts_with($model, 'claude-') => TextResponse::TOOL,
+                default => null,
+            },
+            'openai' => preg_match('/^(?:gpt-4o|gpt-4\.1|gpt-[5-9]|o[1-9])(?:[.-]|$)/', $model) ? TextResponse::JSON_SCHEMA : null,
+            'gemini' => preg_match('/^gemini-(?:2\.\d+|[3-9](?:\.\d+)?)-/', $model) ? TextResponse::JSON_SCHEMA : null,
+            'fake' => TextResponse::JSON_SCHEMA,
+            default => null,
+        };
+    }
+
+    /** Whether an Anthropic model refuses a forced tool_choice. */
+    public static function refusesForcedTools(string $model): bool
+    {
+        return in_array((string) preg_replace('/-\d{8}$/', '', $model), self::ANTHROPIC_UNFORCED_TOOLS, true);
+    }
+
+    /**
      * Whether an Anthropic model takes server-side fallbacks: re-running a
      * request a safety classifier declines on the model Anthropic recommends.
      */
@@ -160,13 +210,13 @@ final class Models
     }
 
     /**
-     * [major, minor] of an Opus, Sonnet or Fable model; [0, 0] for anything else.
+     * [major, minor] of an Opus, Sonnet, Fable or Mythos model; [0, 0] for anything else.
      *
      * @return array{int, int}
      */
     private static function anthropicVersion(string $model): array
     {
-        if (! preg_match('/^claude-(?:opus|sonnet|fable)-(\d{1,2})(?:-(\d{1,2}))?(?:-\d{8})?$/', $model, $m)) {
+        if (! preg_match('/^claude-(?:opus|sonnet|fable|mythos)-(\d{1,2})(?:-(\d{1,2}))?(?:-\d{8})?$/', $model, $m)) {
             return [0, 0];
         }
 

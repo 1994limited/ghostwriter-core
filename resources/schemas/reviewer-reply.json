@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/1994limited/ghostwriter-core/resources/schemas/reviewer-reply.json",
+  "title": "Ghostwriter review reply (structured output)",
+  "description": "Your review: every candidate answered once, kept or dropped, and your own suggestions.",
+  "type": "object",
+  "required": ["suggestions"],
+  "additionalProperties": false,
+  "properties": {
+    "suggestions": {
+      "type": "array",
+      "maxItems": 40,
+      "items": {
+        "type": "object",
+        "description": "A kept suggestion (with category), or a dropped candidate (finding and drop only).",
+        "required": ["notes"],
+        "additionalProperties": false,
+        "properties": {
+          "notes": {"type": "string", "maxLength": 200, "description": "First, a few words for yourself on what you checked in context (the paragraph, its heading, the dates) before deciding. Never shown to the editor."},
+          "finding": {"type": "string", "pattern": "^f[0-9]+$", "description": "The candidate this answers (f1, f2…). Leave out for your own suggestion."},
+          "drop": {"type": "string", "maxLength": 200, "description": "Only to drop a candidate: why it isn't a real problem here, in a few words. A dropped candidate has only notes, finding and drop."},
+          "category": {"type": "string", "enum": ["out-of-date", "voice", "clarity", "fact-to-check", "link", "accessibility", "seo", "duplicate"]},
+          "unit": {"type": "string", "pattern": "^[ui][0-9]+$", "description": "The unit (u3) or image (i2) the suggestion is in."},
+          "quote": {"type": "string", "maxLength": 300, "description": "The exact words changed, as the unit has them."},
+          "occurrence": {"type": "integer", "minimum": 0, "description": "0 for the first time the quoted words appear in the unit, 1 for the second; only when they repeat."},
+          "reason": {"type": "string", "maxLength": 400, "description": "Why, in one or two sentences, for the editor."},
+          "source": {
+            "type": "object",
+            "required": ["kind"],
+            "additionalProperties": false,
+            "properties": {
+              "kind": {"type": "string", "enum": ["voice-guide", "kind", "house", "finding", "site-entry", "image", "general"]},
+              "heading": {"type": "string", "description": "The voice guide's heading, exactly, for voice-guide."},
+              "entry": {"type": "string", "pattern": "^e[0-9]+$", "description": "The site entry (e12), for site-entry."}
+            }
+          },
+          "replacement": {"type": "string", "maxLength": 600, "description": "The quoted words rewritten."},
+          "alternatives": {"type": "array", "maxItems": 2, "items": {"type": "string", "maxLength": 600}, "description": "Up to two genuinely different versions."},
+          "fact": {
+            "type": "object",
+            "required": ["ask", "template"],
+            "additionalProperties": false,
+            "properties": {
+              "ask": {"type": "string", "maxLength": 80, "description": "What to ask the editor, in a few words."},
+              "template": {"type": "string", "pattern": "\\{answer\\}", "description": "The quoted words with {answer} where the fact goes."},
+              "without": {"type": ["string", "null"], "description": "The quoted words without the fact, when they still work; null when they don't."},
+              "answer": {"type": "string", "enum": ["number", "date", "money", "text"]}
+            }
+          },
+          "link": {
+            "type": "object",
+            "required": ["entry"],
+            "additionalProperties": false,
+            "properties": {"entry": {"type": "string", "pattern": "^e[0-9]+$"}}
+          }
+        }
+      }
+    }
+  }
+}

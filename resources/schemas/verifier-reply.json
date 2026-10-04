@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/1994limited/ghostwriter-core/resources/schemas/verifier-reply.json",
+  "title": "Ghostwriter verifier reply (structured output)",
+  "description": "One verdict for every suggestion shown.",
+  "type": "object",
+  "required": ["verdicts"],
+  "additionalProperties": false,
+  "properties": {
+    "verdicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["notes", "id", "verdict", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "notes": {"type": "string", "maxLength": 200, "description": "First, a few words for yourself on what you checked in the paragraph before deciding. Never shown to the editor."},
+          "id": {"type": "string", "pattern": "^s[0-9]+$", "description": "The suggestion (s1, s2…)."},
+          "verdict": {"type": "string", "enum": ["keep", "fix", "drop"]},
+          "reason": {"type": "string", "maxLength": 300, "description": "Why, briefly."},
+          "replacement": {"type": "string", "maxLength": 600, "description": "Only for fix: the corrected replacement."},
+          "alternatives": {"type": "array", "maxItems": 2, "items": {"type": "string", "maxLength": 600}, "description": "Only for fix, and only when the alternatives need correcting too."}
+        }
+      }
+    }
+  }
+}

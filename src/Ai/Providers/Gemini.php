@@ -11,6 +11,9 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\Message;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Models;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Shape;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\StopReason;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Structured\JsonReply;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Structured\Schemas;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\TakesSchemas;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextProvider;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextResponse;
@@ -22,8 +25,12 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\Usage;
  *
  * Parts marked `thought` are the model's working, not its answer, and are
  * dropped. Thinking tokens are billed, so they count as output.
+ *
+ * A request with a schema asks for JSON (`responseMimeType`) of that shape
+ * (`responseJsonSchema`, Schemas::gemini()); a 400 refusing it sends the
+ * request again as plain text.
  */
-class Gemini extends HttpProvider implements ImageProvider, TextProvider
+class Gemini extends HttpProvider implements ImageProvider, TakesSchemas, TextProvider
 {
     public const URL = 'https://generativelanguage.googleapis.com/v1beta';
 
@@ -50,14 +57,34 @@ class Gemini extends HttpProvider implements ImageProvider, TextProvider
             $config['thinkingConfig'] = ['thinkingLevel' => $effort->value];
         }
 
-        $data = $this->generate($model, [
+        $mode = $this->structuredMode($request, $model);
+
+        if ($mode !== null && $request->schema !== null) {
+            $config['responseMimeType'] = 'application/json';
+            $config['responseJsonSchema'] = Schemas::gemini($request->schema);
+        }
+
+        $body = [
             'systemInstruction' => ['parts' => [['text' => $request->instructions]]],
             'contents' => [
                 ...array_map(fn (Message $message) => ['role' => $message->role === 'assistant' ? 'model' : 'user', 'parts' => [['text' => $message->content]]], $request->history),
                 ['role' => 'user', 'parts' => [...$this->inline($request->images), ['text' => $request->prompt]]],
             ],
             'generationConfig' => $config,
-        ], $this->timeoutFor($request->timeout), $request->agent);
+        ];
+
+        try {
+            $data = $this->generate($model, $body, $this->timeoutFor($request->timeout), $request->agent);
+        } catch (BadResponse $exception) {
+            if ($mode === null || ! $this->refusedTheSchema($exception)) {
+                throw $exception;
+            }
+
+            $this->schemaDropped($request->agent, $model, $exception);
+            unset($body['generationConfig']['responseMimeType'], $body['generationConfig']['responseJsonSchema']);
+            $mode = null;
+            $data = $this->generate($model, $body, $this->timeoutFor($request->timeout), $request->agent);
+        }
 
         $candidate = $data['candidates'][0] ?? null;
 
@@ -90,6 +117,8 @@ class Gemini extends HttpProvider implements ImageProvider, TextProvider
             ),
             'gemini',
             is_string($data['modelVersion'] ?? null) && $data['modelVersion'] !== '' ? $data['modelVersion'] : $model,
+            $mode !== null ? JsonReply::decode($text) : null,
+            $mode,
         ), $started);
     }
 

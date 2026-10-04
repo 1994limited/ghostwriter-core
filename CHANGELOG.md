@@ -4,6 +4,28 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
+### Added (structured output)
+
+- **Provider-native structured output.** A `TextRequest` may carry an `OutputSchema` (`new TextRequest(..., schema: $schema)`, `withSchema()`): the JSON Schema its reply must match. Each provider holds the model to it where it can, and keeps today's prompt-and-parse path where it can't. See docs/providers.md#structured-output.
+  - Anthropic: `output_config.format` (`json_schema`) merged with `output_config.effort`, on Opus, Sonnet and Fable 4.5 and later, Mythos and Haiku 4.5; older Claude models answer through a `reply` tool chosen for them (`tool_choice: auto` plus a line in the prompt on models that refuse a forced choice). The refusal retry on a recommended model keeps the format.
+  - OpenAI: strict `response_format` (`json_schema`, `strict: true`) on GPT-4o, GPT-4.1, GPT-5 and later and the o-series.
+  - Gemini: `responseMimeType: application/json` and `responseJsonSchema` on 2.0 and later.
+  - OpenRouter: strict `response_format` for the `anthropic/`, `openai/` and `google/` ids of those models; Claude keeps optional properties optional.
+  - A 400 refusing the format sends the request once more without it, with a warning.
+  - `Ai\Structured\Schemas` (`anthropic()`, `strict()`, `gemini()`): the schema rewritten per provider: objects closed, strict mode's every-property-required with nullable optionals, unsupported constraints folded into the description. `Ai\Structured\JsonReply::decode()`.
+  - `TextResponse::$structured` (the decoded object) and `$structuredBy` (`TextResponse::JSON_SCHEMA`, `TextResponse::TOOL` or null), `withUsage()`. `TextRequest::withPrompt()`.
+  - `Models::structuredOutput()`, `Models::refusesForcedTools()`; Mythos models now count in `takesEffort()`.
+  - `Ai\TakesSchemas`, implemented by every provider and `FakeProvider`; `Studio::takesSchema()`.
+  - "A model call finished." logs `structured` and `parsed`, and for Claude `cache_read_tokens` and `cache_write_tokens`.
+  - `FakeProvider::respondStructured()`, `respondFromSchema()` (`Testing\SchemaFaker`) and `withoutStructuredOutput()`. The fake stands for a model with structured output by default.
+  - `Studio::ask()` takes a `schema`.
+
+### Changed (Suggest edits)
+
+- **The reviewer and the verifier use structured output.** Their calls carry `Studio::reviewerSchema()` (`resources/schemas/reviewer-reply.json`) and `Studio::verifierSchema()` (`verifier-reply.json`). Every item starts with a short `notes` field (what the model checked in context; never shown). Where the model is held to the schema the instructions ask for bare JSON; elsewhere for the same JSON in `<suggestions>` or `<verdicts>`, as before (new placeholders `{{ answer_intro }}`, `{{ answer_open }}`, `{{ answer_close }}`). `SuggestionValidator` is unchanged: a schema guarantees shape, not truth.
+- **An unreadable reviewer or verifier reply is asked for once more**, with the problem quoted after the same prompt; the second reply stands. Both calls' usage counts. The log says "…couldn't be read (…); asking again once." and, if it is still unreadable, "…couldn't be read again (…)."
+- `SuggestionReader` reads a null key as left out (strict modes send every key). `suggestions.schema.json` knows `notes`.
+
 ### Changed (breaking for comments, which no addon has shipped)
 
 - **Comments are conversation messages.** The separate review store is gone. Pins not sent yet are the editor's own, in their panel; **Apply** sends them as one message from the editor (`comments.items`: each comment's number, scope, words, author and the hashes of what it may change), claiming the piece as Send does, and the job's one `reviser` call ends in one message from Ghostwriter (`comments.answers` naming the editor's message, `comments.results`: Changed with its before and after, Replied, Refused or Skipped, each with a reply in plain words). Put back and Resolve are noted on that answer. Shared conversations (E7) need nothing more: one run at a time through the session's claim, with no version to compare. See docs/comments.md.

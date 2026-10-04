@@ -43,7 +43,7 @@ Each job takes small value objects. The addon needs one translator (a `StudioInp
 | `brief(ContentKind, $answers, ?$title)` | the working title (1.6) comes first when given | `string` | |
 | `writerInstructions(WriterContext)` | | `string` | As for `write`. |
 | `photoQuery($title, $summary)` | `Studio::summaryOf($draft)` for the summary | `Result<string>` | None. |
-| `ask($agent, $prompt, ...)` | | `TextResponse` | For one-off calls; applies the cut-off policy. |
+| `ask($agent, $prompt, ..., schema: $schema)` | | `TextResponse` | For one-off calls; applies the cut-off policy. With an `OutputSchema`, the provider holds the reply to it where it can (`$response->structured`; see providers.md#structured-output). |
 
 `Result` has `value` and `usage` (`Ai\Usage`, every call the job made, retries included), so the addon keeps counting tokens: `$session->usage['input'] += $result->usage->input`.
 

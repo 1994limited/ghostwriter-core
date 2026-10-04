@@ -10,8 +10,12 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\ImageProvider;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\ImageRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Message;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Models;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\OutputSchema;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Shape;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\StopReason;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Structured\JsonReply;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Structured\Schemas;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\TakesSchemas;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextProvider;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextResponse;
@@ -23,7 +27,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\Usage;
  * Chat Completions rather than the Responses API, because the
  * OpenAI-compatible gateways a base URL points at almost all speak it.
  */
-class OpenAi extends HttpProvider implements ImageProvider, TextProvider
+class OpenAi extends HttpProvider implements ImageProvider, TakesSchemas, TextProvider
 {
     public const URL = 'https://api.openai.com/v1';
 
@@ -63,7 +67,13 @@ class OpenAi extends HttpProvider implements ImageProvider, TextProvider
             $body['reasoning_effort'] = $effort->value;
         }
 
-        $data = $this->transport->json($this->url('/chat/completions'), $this->headers(), $body, $this->timeoutFor($request->timeout), $request->agent);
+        $mode = $this->structuredMode($request, $model);
+
+        if ($mode !== null && $request->schema !== null) {
+            $body['response_format'] = self::responseFormat($request->schema, Schemas::strict($request->schema));
+        }
+
+        $data = $this->post($body, $request, $mode);
 
         $choice = $data['choices'][0] ?? null;
 
@@ -91,6 +101,8 @@ class OpenAi extends HttpProvider implements ImageProvider, TextProvider
             new Usage((int) ($usage['prompt_tokens'] ?? 0), (int) ($usage['completion_tokens'] ?? 0)),
             'openai',
             is_string($data['model'] ?? null) && $data['model'] !== '' ? $data['model'] : $model,
+            $mode !== null ? JsonReply::decode($text) : null,
+            $mode,
         ), $started);
     }
 
@@ -133,6 +145,46 @@ class OpenAi extends HttpProvider implements ImageProvider, TextProvider
         }
 
         return $this->decodedImage($encoded);
+    }
+
+    /**
+     * The chat completion, sent again without `response_format` if it is
+     * refused (a gateway or model without it); $mode is then null.
+     *
+     * @param  array<string, mixed>  $body
+     * @return array<string, mixed>
+     */
+    private function post(array $body, TextRequest $request, ?string &$mode): array
+    {
+        try {
+            return $this->transport->json($this->url('/chat/completions'), $this->headers(), $body, $this->timeoutFor($request->timeout), $request->agent);
+        } catch (BadResponse $exception) {
+            if (! isset($body['response_format']) || ! $this->refusedTheSchema($exception)) {
+                throw $exception;
+            }
+
+            $this->schemaDropped($request->agent, (string) $body['model'], $exception);
+            unset($body['response_format']);
+            $mode = null;
+
+            return $this->transport->json($this->url('/chat/completions'), $this->headers(), $body, $this->timeoutFor($request->timeout), $request->agent);
+        }
+    }
+
+    /**
+     * Chat Completions' `response_format` for a schema, strict.
+     *
+     * @param  array<string, mixed>  $schema  Already rewritten for the model (Schemas).
+     * @return array<string, mixed>
+     */
+    public static function responseFormat(OutputSchema $output, array $schema): array
+    {
+        return ['type' => 'json_schema', 'json_schema' => array_filter([
+            'name' => $output->name,
+            'description' => $output->description !== '' ? $output->description : null,
+            'schema' => $schema,
+            'strict' => true,
+        ], fn ($value) => $value !== null)];
     }
 
     public static function stopReason(mixed $reason): StopReason
