@@ -386,11 +386,14 @@ final class LayoutDiff
             }
         }
 
+        $indexed = [];
+
         foreach ($items as $i => $item) {
-            $items[$i]['index'] = $i;
+            $item['index'] = $i;
+            $indexed[] = $item;
         }
 
-        return $items;
+        return $indexed;
     }
 
     /**
