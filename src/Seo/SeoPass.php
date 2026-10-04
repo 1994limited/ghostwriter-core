@@ -23,8 +23,9 @@ use Throwable;
  * - **afterWriter()** (①): on the writer's draft, before units and
  *   layouts are made from it, so every layout starts from fixed, linked
  *   text. Headings are fitted to the template and each field's editor
- *   (HeadingFixer). After a writer's turn, LinkGuard turns any address the
- *   writer made up into a `#gw-link:` marker. On the first draft, where
+ *   (HeadingFixer). After a writer's turn, LinkGuard keeps the writer's
+ *   links to real pages of the site and turns any other address it made
+ *   up into a `#gw-link:` marker. On the first draft, where
  *   the addon gives a LinkContext and a Studio, the draft is linked to the
  *   site's other pages (SeoLinks: one `seo-editor` and one `seo-verifier`
  *   call). The session's draft is rewritten only when something changed.
@@ -95,7 +96,12 @@ final class SeoPass
         }
 
         if ($writer && $site->links !== null) {
-            [$data, $guarded] = $this->guard->guard($data, self::data($before), self::sources($session), SeoState::of($session));
+            [$data, $guarded, $real] = $this->guard->guard($data, self::data($before), self::sources($session), SeoState::of($session), $site->links);
+
+            if ($real !== []) {
+                $changed = $changed || array_filter($real, fn (array $link) => $link['to'] !== '['.$link['words'].']('.$link['href'].')') !== [];
+                $this->logger->info('Ghostwriter: the writer linked to '.count($real).' of the site\'s pages; '.(count($real) === 1 ? 'it is' : 'they are').' kept.', ['links' => array_map(fn (array $link) => "{$link['words']} → {$link['title']}", $real)]);
+            }
 
             if ($guarded !== []) {
                 $changed = true;
@@ -112,7 +118,7 @@ final class SeoPass
                 $this->spent = (new SeoLinks($this->studio, $this->logger))->add($session, $site);
             } catch (ProviderException $exception) {
                 $this->logger->warning("Ghostwriter: the draft wasn't linked to the site's other pages, as the call failed: {$exception->getMessage()}", ['agent' => 'seo-editor']);
-                (new SeoState(SeoState::of($session)->links, SeoState::of($session)->removed, null, gmdate('Y-m-d\TH:i:s\Z')))->saveTo($session);
+                SeoState::of($session)->withLinks(SeoState::of($session)->links, null, gmdate('Y-m-d\TH:i:s\Z'))->saveTo($session);
             }
 
             if ($this->spent->input > 0 || $this->spent->output > 0) {

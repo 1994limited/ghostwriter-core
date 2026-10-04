@@ -3,6 +3,7 @@
 namespace NineteenNinetyFour\Ghostwriter\Core\Seo;
 
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Sessions\Session;
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\Markers;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Message;
 
 /**
@@ -19,6 +20,11 @@ use NineteenNinetyFour\Ghostwriter\Core\Gaps\Message;
  *   linked to 3 of your pages: …"), as a message key and its parameters.
  * - `checked`: when the links were looked for (the first draft), so they
  *   are looked for once.
+ * - `suggested`: for the writer's own links to choose (`#gw-link:`
+ *   markers), the page the `seo-editor` call suggested and the verifier
+ *   kept, by the marker's hint and words, so Finish this page offers it
+ *   first, "Link to Contact us" (decision 24). The marker itself is never
+ *   resolved.
  */
 final class SeoState
 {
@@ -26,12 +32,14 @@ final class SeoState
      * @param  list<array{unit: string, words: string, href: string, title: string, type: string, url: ?string, why: string}>  $links
      * @param  list<string>  $removed
      * @param  array{key: string, params: array<string, scalar|null>}|null  $notice
+     * @param  list<array{hint: string, words: string, id: string, title: string, type: string, url: ?string, href: string, why: string}>  $suggested
      */
     public function __construct(
         public readonly array $links = [],
         public readonly array $removed = [],
         public readonly ?array $notice = null,
         public readonly ?string $checked = null,
+        public readonly array $suggested = [],
     ) {}
 
     public static function of(Session $session): self
@@ -68,11 +76,32 @@ final class SeoState
             ? ['key' => $notice['key'], 'params' => array_filter(is_array($notice['params'] ?? null) ? $notice['params'] : [], fn ($value) => is_scalar($value) || $value === null)]
             : null;
 
+        $suggested = [];
+
+        foreach (is_array($array['suggested'] ?? null) ? $array['suggested'] : [] as $suggestion) {
+            if (! is_array($suggestion) || ! is_string($suggestion['href'] ?? null) || $suggestion['href'] === '' || ! is_string($suggestion['title'] ?? null)) {
+                continue;
+            }
+
+            $text = fn (string $key) => is_scalar($suggestion[$key] ?? null) ? (string) $suggestion[$key] : '';
+            $suggested[] = [
+                'hint' => $text('hint'),
+                'words' => $text('words'),
+                'id' => $text('id'),
+                'title' => $suggestion['title'],
+                'type' => $text('type'),
+                'url' => is_string($suggestion['url'] ?? null) && $suggestion['url'] !== '' ? $suggestion['url'] : null,
+                'href' => $suggestion['href'],
+                'why' => $text('why'),
+            ];
+        }
+
         return new self(
             $links,
             array_values(array_filter(is_array($array['removed'] ?? null) ? $array['removed'] : [], fn ($href) => is_string($href) && $href !== '')),
             $notice,
             is_string($array['checked'] ?? null) ? $array['checked'] : null,
+            $suggested,
         );
     }
 
@@ -88,6 +117,7 @@ final class SeoState
             'removed' => $this->removed,
             'notice' => $this->notice,
             'checked' => $this->checked,
+            'suggested' => $this->suggested,
         ], fn ($value) => $value !== null && $value !== []);
     }
 
@@ -105,10 +135,43 @@ final class SeoState
     /**
      * @param  list<array{unit: string, words: string, href: string, title: string, type: string, url: ?string, why: string}>  $links
      * @param  array{key: string, params: array<string, scalar|null>}|null  $notice
+     * @param  list<array{hint: string, words: string, id: string, title: string, type: string, url: ?string, href: string, why: string}>|null  $suggested  Null keeps those it has.
      */
-    public function withLinks(array $links, ?array $notice, string $checked): self
+    public function withLinks(array $links, ?array $notice, string $checked, ?array $suggested = null): self
     {
-        return new self(array_values($links), $this->removed, $notice, $checked);
+        return new self(array_values($links), $this->removed, $notice, $checked, array_values($suggested ?? $this->suggested));
+    }
+
+    /**
+     * The page suggested for one of the writer's links to choose, by its
+     * hint as a gap or chip has it (hyphens and spaces alike, any case),
+     * and, where two markers share a hint, its words. Null when none was.
+     *
+     * @return array{hint: string, words: string, id: string, title: string, type: string, url: ?string, href: string, why: string}|null
+     */
+    public function suggestion(?string $hint, string $words = ''): ?array
+    {
+        if ($hint === null || trim($hint) === '') {
+            return null;
+        }
+
+        $key = self::hintKey($hint);
+        $same = array_values(array_filter($this->suggested, fn (array $suggestion) => self::hintKey($suggestion['hint']) === $key));
+
+        if (count($same) > 1 && trim($words) !== '') {
+            foreach ($same as $suggestion) {
+                if (self::hintKey($suggestion['words']) === self::hintKey($words)) {
+                    return $suggestion;
+                }
+            }
+        }
+
+        return $same[0] ?? null;
+    }
+
+    private static function hintKey(string $hint): string
+    {
+        return Markers::normaliseHint((string) preg_replace('/[-_]+/', ' ', Markers::linkHintFrom($hint)));
     }
 
     /**
@@ -121,7 +184,7 @@ final class SeoState
         $key = LinkCandidates::linkKey($href) ?? $href;
         $links = array_values(array_filter($this->links, fn (array $link) => (LinkCandidates::linkKey($link['href']) ?? $link['href']) !== $key));
 
-        return new self($links, array_values(array_unique([...$this->removed, $href])), $this->notice, $this->checked);
+        return new self($links, array_values(array_unique([...$this->removed, $href])), $this->notice, $this->checked, $this->suggested);
     }
 
     /**

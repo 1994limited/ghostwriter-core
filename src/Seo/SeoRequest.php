@@ -16,9 +16,14 @@ use NineteenNinetyFour\Ghostwriter\Core\Suggest\DigestEntry;
  * for every call on a site, so they are cached; everything that changes is
  * here, in the prompt.
  *
+ * The writer's own links to choose (`#gw-link:` markers) are listed too,
+ * m1…, for the model to suggest the page each most likely means (decision
+ * 24); they aren't links the page has (decision 23).
+ *
  * Its schema is built per call (schema()): `unit` is an enum of the units
- * that may take a link and `target` one of the candidates' ids (or '' for a
- * marker), so the model can't name anything else.
+ * that may take a link, `target` one of the candidates' ids (or '' for a
+ * marker) and `marker` one of the writer's markers, so the model can't name
+ * anything else.
  */
 final class SeoRequest
 {
@@ -30,7 +35,8 @@ final class SeoRequest
      * @param  list<string>  $linkable  The ids of the units that may take a link.
      * @param  list<DigestEntry>  $candidates  Numbered e1… in this order.
      * @param  int  $linkTarget  How many links to add, at most (§7.2); 0: none wanted.
-     * @param  int  $existing  Links the draft has already, markers included.
+     * @param  int  $existing  Links the draft has already, the writer's markers not counted.
+     * @param  list<WriterMarker>  $markers  The writer's links to choose, m1…
      */
     public function __construct(
         public readonly string $title,
@@ -43,6 +49,7 @@ final class SeoRequest
         public readonly string $voice = '',
         public readonly string $language = 'en',
         public readonly int $words = 0,
+        public readonly array $markers = [],
     ) {}
 
     /**
@@ -67,7 +74,9 @@ final class SeoRequest
         $kind = $this->kind !== null ? " ({$this->kind->title})" : '';
         $lines = [
             "The page: \"{$this->title}\"{$kind}, about {$this->words} words.",
-            "Links it has already: {$this->existing}. Add at most {$this->linkTarget}, and fewer, or none, when nothing fits.",
+            $this->linkTarget > 0
+                ? "Links it has already: {$this->existing}. Add at most {$this->linkTarget}, and fewer, or none, when nothing fits."
+                : "Links it has already: {$this->existing}. It has enough: add none, and give `\"links\": []`.",
             '',
             '## The page, by unit',
             '',
@@ -81,6 +90,15 @@ final class SeoRequest
 
             $allowed = in_array($unit->id, $this->linkable, true) ? 'links allowed' : 'no links here';
             array_push($lines, '', "[{$unit->id}] ({$unit->kind->value}, {$allowed})", trim($unit->markdown));
+        }
+
+        if ($this->markers !== []) {
+            array_push($lines, '', '## Links the writer left for the editor to choose', '', 'For each, the site\'s page the editor most likely means, or none.');
+
+            foreach ($this->markers as $marker) {
+                $hint = $marker->hintWords() !== '' ? " (the writer's note: \"{$marker->hintWords()}\")" : '';
+                $lines[] = "{$marker->id}. “{$marker->words}” in {$marker->unit->id}{$hint}";
+            }
         }
 
         array_push($lines, '', '## The site\'s pages you may link to', '');
@@ -109,6 +127,11 @@ final class SeoRequest
         $item['target']['enum'] = [...array_keys($this->byId()), ''];
         $schema['properties']['links']['maxItems'] = max(0, $this->linkTarget);
         unset($item);
+        $marker = &$schema['properties']['markers'];
+        $marker['items']['properties']['marker']['enum'] = $this->markers !== [] ? array_values(array_map(fn (WriterMarker $m) => $m->id, $this->markers)) : [''];
+        $marker['items']['properties']['target']['enum'] = [...array_keys($this->byId()), ''];
+        $marker['maxItems'] = count($this->markers);
+        unset($marker);
 
         return new OutputSchema($base->name, $schema, $base->description);
     }

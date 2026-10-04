@@ -2,9 +2,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/1994limited/ghostwriter-core/resources/schemas/seo-editor-reply.json",
   "title": "Ghostwriter seo-editor reply (structured output)",
-  "description": "The links chosen from a new page to other pages of its site. The unit and target enums are filled for each call.",
+  "description": "The links chosen from a new page to other pages of its site, and the page suggested for each link the writer left for the editor to choose. The unit, target and marker enums are filled for each call.",
   "type": "object",
-  "required": ["notes", "links"],
+  "required": ["notes", "links", "markers"],
   "additionalProperties": false,
   "properties": {
     "notes": {"type": "string", "maxLength": 600, "description": "First: one or two sentences for yourself on what the page is about, who reads it, and which of the site's pages are genuinely related. Never shown to the editor."},
@@ -22,6 +22,21 @@
           "target": {"type": "string", "enum": ["e1", ""], "description": "The page to link to (e1, e2…), or empty for a link only the editor can choose."},
           "hint": {"type": "string", "maxLength": 60, "description": "Only with an empty target: a few hyphenated words saying where it should go. Otherwise empty."},
           "why": {"type": "string", "maxLength": 200, "description": "One short sentence on why a reader would want that page there."}
+        }
+      }
+    },
+    "markers": {
+      "type": "array",
+      "maxItems": 8,
+      "description": "One item for each link the writer left for the editor to choose (m1, m2…): the site's page it most likely means. Empty when there are none.",
+      "items": {
+        "type": "object",
+        "required": ["marker", "target", "why"],
+        "additionalProperties": false,
+        "properties": {
+          "marker": {"type": "string", "enum": ["m1"], "description": "The writer's link to choose (m1, m2…)."},
+          "target": {"type": "string", "enum": ["e1", ""], "description": "The page the editor most likely means (e1, e2…), or empty when none on the list fits."},
+          "why": {"type": "string", "maxLength": 200, "description": "One short sentence on why that page, or why none fits."}
         }
       }
     }

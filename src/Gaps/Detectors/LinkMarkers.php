@@ -20,7 +20,11 @@ use NineteenNinetyFour\Ghostwriter\Core\Layout\LinkDialect;
  *   dialect says holds links.
  *
  * Where the addon has LinkTargets, the hint is matched against entry
- * titles and slugs for a "Link to …" fix.
+ * titles and slugs for a "Link to …" fix. An inline link the writer left,
+ * for which the SEO pass suggested a page (SessionGaps::suggestion(),
+ * decision 24), offers that page first, "Link to Contact us", with it in
+ * `meta.suggested` ({id, title, href, url, type, why}). Never resolved
+ * without the editor.
  */
 final class LinkMarkers implements Detector
 {
@@ -65,13 +69,15 @@ final class LinkMarkers implements Detector
             }
 
             foreach (Markers::links($text) as $link) {
-                [$fixes, $candidates] = self::linkFixes($context, $link['hint'], true);
+                $suggested = $context->session->suggestion($link['hint'], $link['words']);
+                [$fixes, $candidates] = self::linkFixes($context, $link['hint'], true, $suggested);
 
-                yield Gap::make(GapKind::LinkToChoose, $visit->path, $visit->label, $link['hint'], Markers::excerpt($text, $link['offset'], strlen($link['match'])), $link['occurrence'], $fixes, [
+                yield Gap::make(GapKind::LinkToChoose, $visit->path, $visit->label, $link['hint'], Markers::excerpt($text, $link['offset'], strlen($link['match'])), $link['occurrence'], $fixes, array_filter([
                     'inline' => true,
                     'words' => $link['words'],
                     'candidates' => $candidates,
-                ]);
+                    'suggested' => $suggested === null ? null : ['id' => $suggested['id'], 'title' => $suggested['title'], 'href' => $suggested['href'], 'url' => $suggested['url'], 'type' => $suggested['type'], 'why' => $suggested['why']],
+                ], fn ($value) => $value !== null));
             }
         }
     }

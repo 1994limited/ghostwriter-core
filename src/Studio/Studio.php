@@ -922,8 +922,10 @@ final class Studio
      * The SEO pass's `seo-editor` call, links part (SEO layer §8): one
      * call that reads the draft by unit and picks the words to link to the
      * site's other pages (SeoRequest's candidates, e1…). The units and the
-     * targets are enums in the schema, so nothing else can be named. The
-     * reply is read, not trusted: Seo\LinkValidator checks every pick.
+     * targets are enums in the schema, so nothing else can be named. It
+     * also suggests a page for each of the writer's own links to choose
+     * (`markers`, m1…, decision 24). The reply is read, not trusted:
+     * Seo\LinkValidator checks every pick, Seo\SeoLinks every suggestion.
      *
      * The instructions (the rules and the voice guide) are the same for
      * every call on a site, so they are cached (Agents::CACHED). A reply
@@ -965,8 +967,10 @@ final class Studio
 
     /**
      * The SEO pass's `seo-verifier` call (SEO layer §8.3, decision 10):
-     * each link LinkValidator kept, in its paragraph, kept or dropped. It
-     * never rewrites. Returns the links to drop, by id (l1…), with why; a
+     * each link LinkValidator kept, and each page suggested for one of the
+     * writer's links to choose (decision 24), in its paragraph, kept or
+     * dropped. It never rewrites. Returns what to drop, by id (l1…, m1…),
+     * with why; a
      * link with no verdict is kept. A reply that can't be read drops
      * nothing, with a warning: the links already passed every check in code.
      *
@@ -976,7 +980,7 @@ final class Studio
      */
     public function verifySeoLinks(LinkCheck $check): Result
     {
-        if ($check->links === []) {
+        if ($check->isEmpty()) {
             return new Result([]);
         }
 

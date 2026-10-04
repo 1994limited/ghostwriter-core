@@ -7,7 +7,9 @@ use NineteenNinetyFour\Ghostwriter\Core\Suggest\DigestEntry;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\EntryIndex;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\EntryRef;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\IndexedParagraph;
+use NineteenNinetyFour\Ghostwriter\Core\Suggest\IndexRow;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\LinkIndex;
+use NineteenNinetyFour\Ghostwriter\Core\Suggest\LinkLookup;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\Shingles;
 
 /**
@@ -152,6 +154,28 @@ trait LinkIndexContract
         $this->deleteEntry($entries['about']);
 
         $this->assertNotContains($entries['about']->key(), $this->relatedKeys());
+    }
+
+    public function test_a_link_already_in_a_draft_finds_its_page(): void
+    {
+        $index = $this->linkIndex();
+
+        if (! $index instanceof LinkLookup) {
+            $this->markTestSkipped('This index can\'t look links up (LinkLookup).');
+        }
+
+        $entries = $this->linkEntries();
+        $site = $entries['design']->site;
+        $about = $this->candidate($entries['about']);
+        $design = $this->candidate($entries['design']);
+
+        $this->assertNotNull($about);
+        $this->assertNotNull($design);
+        $this->assertTrue($index->linkRow(is_string($about->link) ? $about->link : (string) $about->url, $site)?->entry->is($entries['about']), 'By what a link to it stores.');
+        $this->assertTrue($index->linkRow((string) $about->url, $site)?->entry->is($entries['about']), 'By its address.');
+        $this->assertTrue($index->linkRow(is_string($design->link) ? $design->link : (string) $design->url, $site)?->entry->is($entries['design']), 'Full rows too.');
+        $this->assertNull($index->linkRow('/no-such-page-anywhere', $site));
+        $this->assertNull($index->linkRow('https://elsewhere.example.org'.IndexRow::pathOf($about->url), $site), 'Another site\'s address with the same path.');
     }
 
     /**

@@ -361,6 +361,127 @@ final class SeoLinksTest extends StudioTestCase
         $this->assertStringContainsString('[planting plan we drew for you](statamic://entry::plans)', $body);
     }
 
+    /** The writer's own links: one to a real page, one made up, and two it left for the editor to choose. */
+    private static function writerWithLinks(): string
+    {
+        return str_replace(
+            ['Seed heads of sedum, teasel and grasses stay standing', 'Tree ferns get', 'tell us about your garden and we will', 'Roses get a handful'],
+            ['[Seed heads of sedum](statamic://entry::october), teasel and grasses stay standing', '[Tree ferns](#gw-link:tree-fern-guide) get', '[get in touch](#gw-link:contact-page) and we will', '[Roses](statamic://entry::gone) get a handful'],
+            self::WRITER,
+        );
+    }
+
+    private function scriptWriterLinks(): void
+    {
+        $this->fake->respond('writer', self::reply(self::writerWithLinks(), 900, 700));
+        // e1 Planting plans, e2 Contact us: October is linked already.
+        $this->fake->respond('seo-editor', self::json(['notes' => 'Winter care; plans fit, and the call to get in touch suits Contact.', 'links' => [
+            ['unit' => 'u3', 'exact' => 'planting plan we drew for you', 'prefix' => '', 'target' => 'e1', 'hint' => '', 'why' => 'The sentence is about following a plan.'],
+        ], 'markers' => [
+            ['marker' => 'm1', 'target' => '', 'why' => 'Nothing about roses on the list.'],
+            ['marker' => 'm2', 'target' => '', 'why' => 'No guide to tree ferns on the list.'],
+            ['marker' => 'm3', 'target' => 'e2', 'why' => 'A call to get in touch.'],
+            ['marker' => 'm3', 'target' => 'e1', 'why' => 'A second answer for the same marker.'],
+        ]], 1200, 300));
+        $this->fake->respond('seo-verifier', self::json(['verdicts' => [
+            ['notes' => 'Right page.', 'id' => 'l1', 'verdict' => 'keep', 'reason' => 'Fits.'],
+            ['notes' => 'Right page.', 'id' => 'm3', 'verdict' => 'keep', 'reason' => 'Fits.'],
+        ]], 600, 100));
+        $this->fake->respondStructured('layout-planner', ['plans' => []]);
+    }
+
+    public function test_the_writers_links_to_real_pages_stay_and_count_and_its_markers_dont(): void
+    {
+        $this->scriptWriterLinks();
+        [$session] = $this->firstDraft();
+
+        $body = (string) Draft::parse((string) $session->draft)->data['body'];
+        $this->assertStringContainsString('[Seed heads of sedum](statamic://entry::october), teasel', $body, 'A real, published page: kept (decision 22).');
+        $this->assertStringContainsString('[Roses](#gw-link:roses) get a handful', $body, 'No such page: a marker, as before.');
+        $this->assertStringContainsString('[get in touch](#gw-link:contact-page) and we will', $body, 'The writer\'s markers stay markers.');
+        $this->assertStringContainsString('[planting plan we drew for you](statamic://entry::plans)', $body);
+
+        $request = $this->fake->prompted('seo-editor')[0];
+        $this->assertStringContainsString('Links it has already: 1. Add at most 1, and fewer', $request->prompt, 'The kept link counts; the three markers don\'t (decision 23).');
+        $this->assertStringContainsString("## Links the writer left for the editor to choose\n\nFor each, the site's page the editor most likely means, or none.\nm1. “Roses” in u4 (the writer's note: \"roses\")\nm2. “Tree ferns” in u5 (the writer's note: \"tree fern guide\")\nm3. “get in touch” in u6 (the writer's note: \"contact page\")", $request->prompt);
+        $this->assertStringNotContainsString('What to do in the garden in October', $request->prompt, 'A page linked already isn\'t a candidate.');
+        $markers = $request->schema?->schema['properties']['markers'];
+        $this->assertSame(['m1', 'm2', 'm3'], $markers['items']['properties']['marker']['enum'], 'The one LinkGuard made and the writer\'s two.');
+        $this->assertSame(['e1', 'e2', ''], $markers['items']['properties']['target']['enum']);
+        $this->assertSame(3, $markers['maxItems']);
+    }
+
+    public function test_the_seo_requests_with_the_writers_markers_are_pinned(): void
+    {
+        $this->scriptWriterLinks();
+        $this->firstDraft();
+
+        foreach (['seo-editor', 'seo-verifier'] as $agent) {
+            $record = RequestLog::records($this->fake->prompted($agent))[0];
+            $path = dirname(__DIR__)."/Fixtures/seo/{$agent}-markers-request.json";
+            $json = json_encode($record, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)."\n";
+
+            if (getenv('GHOSTWRITER_UPDATE_FIXTURES')) {
+                file_put_contents($path, $json);
+            }
+
+            $this->assertSame((string) file_get_contents($path), $json, 'Write the fixture with GHOSTWRITER_UPDATE_FIXTURES=1.');
+        }
+    }
+
+    public function test_a_writers_marker_gets_a_suggested_page_the_verifier_checked(): void
+    {
+        $this->scriptWriterLinks();
+        [$session] = $this->firstDraft();
+
+        $verifier = $this->fake->prompted('seo-verifier')[0];
+        $this->assertSame(['l1', 'm3'], $verifier->schema?->schema['properties']['verdicts']['items']['properties']['id']['enum'], 'Only a suggestion with a page is checked, once.');
+        $this->assertStringContainsString("m3. The words “get in touch”, in:\n    We look after gardens", $verifier->prompt);
+        $this->assertStringContainsString('If you would like a winter visit, ⟦get in touch⟧ and we will', $verifier->prompt);
+        $this->assertStringContainsString('The page suggested: Contact us (Pages), /contact', $verifier->prompt);
+
+        $state = SeoState::of($session);
+        $this->assertSame([['hint' => 'contact-page', 'words' => 'get in touch', 'id' => 'contact', 'title' => 'Contact us', 'type' => 'Pages', 'url' => '/contact', 'href' => 'statamic://entry::contact', 'why' => 'A call to get in touch.']], array_values(array_filter($state->suggested, fn (array $s) => $s['hint'] === 'contact-page')));
+        $this->assertSame('Contact us', $state->suggestion('contact page')['title'] ?? null, 'Found by the hint as a chip shows it.');
+        $this->assertNull($state->suggestion('tree-fern-guide'), 'Nothing fits: no suggestion.');
+        $this->assertStringContainsString('[get in touch](#gw-link:contact-page)', (string) $session->draft, 'Never resolved by the pass.');
+        $this->assertSame(['statamic://entry::plans'], array_column($state->links, 'href'));
+    }
+
+    public function test_a_suggestion_the_verifier_drops_is_not_kept(): void
+    {
+        $this->scriptWriterLinks();
+        $this->fake->reset('seo-verifier');
+        $this->fake->respondStructured('seo-verifier', ['verdicts' => [
+            ['notes' => '…', 'id' => 'l1', 'verdict' => 'keep', 'reason' => 'Fits.'],
+            ['notes' => '…', 'id' => 'm3', 'verdict' => 'drop', 'reason' => 'Too vague.'],
+        ]]);
+        [$session] = $this->firstDraft();
+
+        $this->assertNull(SeoState::of($session)->suggestion('contact-page'));
+        $this->assertCount(1, SeoState::of($session)->links);
+    }
+
+    public function test_a_draft_with_enough_links_still_gets_suggestions_for_its_markers(): void
+    {
+        $links = str_replace(
+            ['Winter is when a garden', 'Most borders need', 'Old stems of perennials', 'A thick layer', 'Nothing is wrapped', 'tell us about your garden and we will'],
+            ['[Winter](statamic://entry::october) is when a garden', '[Most borders](statamic://entry::plans) need', '[Old stems](statamic://entry::summer) of perennials', 'A [thick layer](statamic://entry::october) of', '[Nothing](statamic://entry::plans) is wrapped', '[get in touch](#gw-link:contact-page) and we will'],
+            self::WRITER,
+        );
+        $this->fake->respond('writer', self::reply($links));
+        $this->fake->respondStructured('seo-editor', ['notes' => 'Enough links.', 'links' => [], 'markers' => [['marker' => 'm1', 'target' => 'e1', 'why' => 'A call to get in touch.']]]);
+        $this->fake->respondStructured('seo-verifier', ['verdicts' => [['notes' => '…', 'id' => 'm1', 'verdict' => 'keep', 'reason' => 'Fits.']]]);
+        $this->fake->respondStructured('layout-planner', ['plans' => []]);
+        [$session] = $this->firstDraft();
+
+        $request = $this->fake->prompted('seo-editor')[0];
+        $this->assertStringContainsString('Links it has already: 5. It has enough: add none', $request->prompt);
+        $this->assertSame(0, $request->schema?->schema['properties']['links']['maxItems']);
+        $this->assertSame('Contact us', SeoState::of($session)->suggestion('contact-page')['title'] ?? null);
+        $this->assertNull(SeoState::of($session)->notice, 'No links were wanted: nothing to say about them.');
+    }
+
     public function test_a_short_draft_or_one_with_enough_links_is_not_sent(): void
     {
         $this->assertSame(2, SeoLinks::target(100));

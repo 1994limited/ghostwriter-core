@@ -13,16 +13,17 @@ use NineteenNinetyFour\Ghostwriter\Core\Suggest\IndexedParagraph;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\IndexRow;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\IndexScope;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\LinkIndex;
+use NineteenNinetyFour\Ghostwriter\Core\Suggest\LinkLookup;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\Shingles;
 
 /**
  * An EntryIndex and LinkIndex over rows held in memory, for tests and the
  * demo, and the reference for what the ports must do (EntryIndexContract,
  * LinkIndexContract): full rows with their paragraphs' shingles, link rows
- * without, sharing() and nearest() over full rows only, related() over
- * both.
+ * without, sharing() and nearest() over full rows only, related() and
+ * linkRow() over both.
  */
-final class MemoryEntryIndex implements EntryIndex, LinkIndex
+final class MemoryEntryIndex implements EntryIndex, LinkIndex, LinkLookup
 {
     /** @var array<string, array{row: IndexRow, paragraphs: list<list<int>>}> */
     private array $entries = [];
@@ -122,5 +123,10 @@ final class MemoryEntryIndex implements EntryIndex, LinkIndex
     public function related(string $text, string $group, int|string|null $site = null, ?EntryRef $except = null, int $limit = LinkCandidates::LIMIT, array $linked = [], ?DateTimeImmutable $now = null): array
     {
         return LinkCandidates::rank(array_map(fn (array $entry) => $entry['row'], $this->entries), $text, $group, $site, $except, $limit, $linked, $now);
+    }
+
+    public function linkRow(string $href, int|string|null $site = null): ?IndexRow
+    {
+        return LinkCandidates::rowFor(array_map(fn (array $entry) => $entry['row'], $this->entries), $href, $site);
     }
 }

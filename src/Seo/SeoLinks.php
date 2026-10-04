@@ -11,6 +11,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Arrange\Unit;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\UnitKind;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Units;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Sessions\Session;
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\Markers;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Walk;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\LinkPlaceholders;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\EntryData;
@@ -30,21 +31,27 @@ use Throwable;
  * carries the links:
  *
  * 1. How many: about one per 250 words of the draft's prose, 2 to 5, less
- *    the links it has already (markers too); none under 150 words, and
- *    none when it has enough (decision 8).
+ *    the links it has already; none under 150 words, and none when it has
+ *    enough (decision 8). The writer's own `#gw-link:` markers aren't
+ *    links the page has, so they don't count (decision 23); its links to
+ *    real pages, which LinkGuard kept, do.
  * 2. Where to: the link index's best candidates for the draft (LinkIndex::
  *    related(): every routable page of the site, decision 9), up to 25,
  *    each one the dialect can link to. None: no call, and the notice says
  *    so.
- * 3. One `seo-editor` call picks the words and the pages; LinkValidator
- *    checks every pick in code; one `seo-verifier` call keeps or drops
- *    each link in its paragraph (decision 10). A failed verifier keeps
- *    what passed the checks.
+ * 3. One `seo-editor` call picks the words and the pages, and suggests a
+ *    page for each of the writer's markers (decision 24); LinkValidator
+ *    checks every pick in code, and each suggestion is checked to be a
+ *    candidate the dialect can link to; one `seo-verifier` call keeps or
+ *    drops each link and suggestion in its paragraph (decision 10). A
+ *    failed verifier keeps what passed the checks.
  * 4. The kept links are written into the draft (the words never change)
- *    and recorded on the session (SeoState), with the notice.
+ *    and recorded on the session (SeoState), with the notice. The kept
+ *    suggestions are recorded too (SeoState::$suggested).
  *
- * The writer's own `#gw-link:` markers are never resolved here, even when
- * a page matches: Finish this page offers that match (§7.5).
+ * The writer's own markers are never resolved here: a suggestion is only
+ * offered first in Finish this page, "Link to Contact us", for the editor
+ * to take or leave (§7.5).
  */
 final class SeoLinks
 {
@@ -112,13 +119,18 @@ final class SeoLinks
 
         $words = array_sum(array_map(fn (Unit $unit) => count(NormalisedText::words($unit->markdown)), $prose));
         $hrefs = self::links($draft->data);
-        $room = self::target($words) - count($hrefs);
+        $markers = WriterMarker::in($units->all());
+        $room = $linkable === [] || $words < self::MIN_WORDS ? 0 : max(0, self::target($words) - count($hrefs));
 
-        if ($linkable === [] || $words < self::MIN_WORDS || $room <= 0) {
+        if ($room <= 0 && $markers === []) {
             $this->logger->info("Ghostwriter: no internal links looked for ({$words} words of prose, ".count($hrefs).' links already, '.count($linkable).' units that can take one).');
-            (new SeoState($state->links, $state->removed, $state->notice, $now))->saveTo($session);
+            $state->withLinks($state->links, $state->notice, $now)->saveTo($session);
 
             return new Usage;
+        }
+
+        if ($room <= 0) {
+            $this->logger->info("Ghostwriter: no internal links looked for ({$words} words of prose, ".count($hrefs).' links already, '.count($linkable).' units that can take one); pages are suggested for the writer\'s '.count($markers).' '.(count($markers) === 1 ? 'link' : 'links').' to choose.');
         }
 
         $title = $draft->title();
@@ -130,23 +142,30 @@ final class SeoLinks
 
         if ($candidates === []) {
             $this->logger->info('Ghostwriter: no page of the site is close enough to this draft to link to.');
-            $state->withLinks($state->links, ['key' => 'seo.notice.no-links', 'params' => []], $now)->saveTo($session);
+            $state->withLinks($state->links, $room > 0 ? ['key' => 'seo.notice.no-links', 'params' => []] : $state->notice, $now)->saveTo($session);
 
             return new Usage;
         }
 
-        $request = new SeoRequest($title, $units->all(), array_keys($linkable), $candidates, $room, count($hrefs), $context->kind, $context->voice, $context->locale, $words);
+        $request = new SeoRequest($title, $units->all(), array_keys($linkable), $candidates, $room, count($hrefs), $context->kind, $context->voice, $context->locale, $words, $markers);
         $result = $this->studio->seoEdit($request);
         $usage = $result->usage;
         $first = $prose[0]->id ?? null;
         $validated = $this->validator->validate($result->value->links, $request, $linkable, $context->links, $first, $context->locale);
         $checked = array_values(array_filter($validated->kept, fn (PlacedLink $link) => $link->target !== null));
+        $suggestions = $this->suggestions($result->value->markers, $request, $context);
 
-        if ($checked !== []) {
+        if ($checked !== [] || $suggestions !== []) {
             try {
-                $verdicts = $this->studio->verifySeoLinks(new LinkCheck($title, $checked, $context->kind, $context->locale));
+                $verdicts = $this->studio->verifySeoLinks(new LinkCheck($title, $checked, $context->kind, $context->locale, $suggestions));
                 $usage = $usage->plus($verdicts->usage);
                 $validated = $validated->without($verdicts->value);
+                $dropped = array_values(array_filter($suggestions, fn (MarkerSuggestion $suggestion) => isset($verdicts->value[$suggestion->id()])));
+                $suggestions = array_values(array_filter($suggestions, fn (MarkerSuggestion $suggestion) => ! isset($verdicts->value[$suggestion->id()])));
+
+                if ($dropped !== []) {
+                    $this->logger->info('Ghostwriter: the link verifier dropped '.count($dropped).' of the pages suggested for the writer\'s links to choose.', ['dropped' => array_map(fn (MarkerSuggestion $suggestion) => "{$suggestion->marker->words} → {$suggestion->target->title}: ".$verdicts->value[$suggestion->id()], $dropped)]);
+                }
             } catch (ProviderException $exception) {
                 $this->logger->warning("Ghostwriter: the link verifier failed, so the links that passed the checks are kept unverified: {$exception->getMessage()}", ['agent' => 'seo-verifier']);
             }
@@ -187,18 +206,60 @@ final class SeoLinks
         }
 
         $notice = $added === []
-            ? ['key' => 'seo.notice.no-links', 'params' => []]
+            ? ($room > 0 ? ['key' => 'seo.notice.no-links', 'params' => []] : $state->notice)
             : ['key' => count($added) === 1 ? 'seo.notice.links-one' : 'seo.notice.links', 'params' => ['count' => count($added), 'titles' => implode(', ', array_map(fn (array $link) => $link['title'], $added))]];
-        $state->withLinks([...$state->links, ...$added], $notice, $now)->saveTo($session);
+        $state->withLinks([...$state->links, ...$added], $notice, $now, array_map(fn (MarkerSuggestion $suggestion) => $suggestion->toArray(), $suggestions))->saveTo($session);
 
         $this->logger->info('Ghostwriter: linked the draft to '.count($added).' of the site\'s pages.', ['links' => array_map(fn (array $link) => "{$link['words']} → {$link['title']}", $added)]);
+
+        if ($markers !== []) {
+            $this->logger->info('Ghostwriter: suggested pages for '.count($suggestions).' of the writer\'s '.count($markers).' '.(count($markers) === 1 ? 'link' : 'links').' to choose.', ['suggested' => array_map(fn (MarkerSuggestion $suggestion) => "{$suggestion->marker->words} → {$suggestion->target->title}", $suggestions)]);
+        }
 
         return $usage;
     }
 
     /**
-     * Every link in some draft data, markers too, as written (repeats
-     * kept): what counts towards the five.
+     * The `seo-editor` call's suggestions for the writer's markers, checked:
+     * a marker shown, once; a candidate shown that the dialect can link to.
+     * An empty target (nothing fits) is no suggestion.
+     *
+     * @param  list<MarkerPick>  $picks
+     * @return list<MarkerSuggestion>
+     */
+    private function suggestions(array $picks, SeoRequest $request, LinkContext $context): array
+    {
+        $markers = [];
+
+        foreach ($request->markers as $marker) {
+            $markers[$marker->id] = $marker;
+        }
+
+        $candidates = $request->byId();
+        $kept = [];
+
+        foreach ($picks as $pick) {
+            $marker = $markers[$pick->marker] ?? null;
+            $target = $candidates[$pick->target] ?? null;
+
+            if ($marker === null || $target === null || isset($kept[$pick->marker])) {
+                continue;
+            }
+
+            $href = $context->links->inlineHref($target);
+
+            if ($href !== null && trim($href) !== '') {
+                $kept[$pick->marker] = new MarkerSuggestion($marker, $target, trim($href), $pick->why);
+            }
+        }
+
+        return array_values($kept);
+    }
+
+    /**
+     * Every link in some draft data, as written (repeats kept): what counts
+     * towards the five. The writer's `#gw-link:` markers don't: they are
+     * links the page needs, not links it has (decision 23).
      *
      * @param  array<mixed>  $data
      * @return list<string>
@@ -213,7 +274,7 @@ final class SeoLinks
             }
         });
 
-        return array_values(array_filter($hrefs, fn (string $href) => $href !== ''));
+        return array_values(array_filter($hrefs, fn (string $href) => $href !== '' && ! Markers::isLinkSentinel($href)));
     }
 
     /**

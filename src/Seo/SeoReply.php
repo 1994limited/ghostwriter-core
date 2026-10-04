@@ -4,17 +4,20 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Seo;
 
 /**
  * The `seo-editor` call's answer, read: what the model made of the page
- * (`notes`, for the log) and the links it proposes, in its order. Nothing
- * here is checked yet: LinkValidator does that.
+ * (`notes`, for the log), the links it proposes, in its order, and the
+ * page it suggests for each of the writer's links to choose (`markers`).
+ * Nothing here is checked yet: LinkValidator and SeoLinks do that.
  */
 final class SeoReply
 {
     /**
      * @param  list<LinkPick>  $links
+     * @param  list<MarkerPick>  $markers
      */
     public function __construct(
         public readonly string $notes = '',
         public readonly array $links = [],
+        public readonly array $markers = [],
     ) {}
 
     /**
@@ -30,6 +33,14 @@ final class SeoReply
             }
         }
 
-        return new self(is_scalar($data['notes'] ?? null) ? trim((string) $data['notes']) : '', $links);
+        $markers = [];
+
+        foreach (is_array($data['markers'] ?? null) ? $data['markers'] : [] as $item) {
+            if (is_array($item) && ($pick = MarkerPick::fromArray($item)) !== null) {
+                $markers[] = $pick;
+            }
+        }
+
+        return new self(is_scalar($data['notes'] ?? null) ? trim((string) $data['notes']) : '', $links, $markers);
     }
 }
