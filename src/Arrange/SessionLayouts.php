@@ -10,7 +10,6 @@ use NineteenNinetyFour\Ghostwriter\Core\Domain\Sessions\Session;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\FieldPath;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\BuiltEntry;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\Layouts;
-use NineteenNinetyFour\Ghostwriter\Core\Review\Review;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\Conversation;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\LayoutBrief;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\Studio;
@@ -116,7 +115,6 @@ final class SessionLayouts
 
         $session->units = $units->sidecar();
         $this->rearrange($session, $draft, $units, $site);
-        $this->reanchor($session, $units);
 
         return true;
     }
@@ -251,23 +249,6 @@ final class SessionLayouts
     {
         $session->extras = $this->extras($session)->without($itemId)->toArray();
         $this->afterEdit($session, $session->draft, $site);
-    }
-
-    /**
-     * The piece's comments follow their units: those whose text is gone
-     * are Detached (Review\Review::reanchor()).
-     */
-    private function reanchor(Session $session, Units $units): void
-    {
-        if ($session->review === []) {
-            return;
-        }
-
-        $review = Review::fromArray($session->review);
-
-        if ($review->reanchor($units, array_keys($this->extras($session)->items()))) {
-            $session->review = $review->toArray();
-        }
     }
 
     /**

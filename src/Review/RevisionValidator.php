@@ -88,17 +88,17 @@ final class RevisionValidator
      * One comment's item checked against the draft as it is now.
      *
      * @param  array<string, mixed>  $data  The draft's data now (with the earlier comments in this run applied).
-     * @param  list<string>  $brief  The editor's own words besides the thread: the brief, the answers, their messages.
+     * @param  list<string>  $brief  The editor's own words besides the comment: the brief, the answers, their messages.
      * @param  list<string>  $sources  Everything else facts may come from: the draft, the entries shown.
      */
-    public function check(Thread $thread, ?RevisionItem $item, array $data, Units $units, Extras $extras, array $brief = [], array $sources = []): Verdict
+    public function check(Comment $comment, ?RevisionItem $item, array $data, Units $units, Extras $extras, array $brief = [], array $sources = []): Verdict
     {
         if ($item === null) {
-            return new Verdict($thread, '', [self::MISSING]);
+            return new Verdict($comment, '', [self::MISSING]);
         }
 
-        $editable = $thread->scope->editableUnits($units, array_keys($extras->items()));
-        $comments = array_map(fn (Note $note) => $note->body, $thread->asks());
+        $editable = $comment->scope->editableUnits($units, array_keys($extras->items()));
+        $comments = $comment->asks();
         $givers = [...$comments, ...$brief];
         $all = [...$givers, ...$sources];
         $rules = [];
@@ -128,7 +128,7 @@ final class RevisionValidator
                 continue;
             }
 
-            $text = $this->replaced($new[$unit->id] ?? $unit->markdown, $replace['exact'], $replace['with'], $thread->scope->quote);
+            $text = $this->replaced($new[$unit->id] ?? $unit->markdown, $replace['exact'], $replace['with'], $comment->scope->quote);
 
             if ($text === null) {
                 $rules[] = self::SCOPE;
@@ -152,7 +152,7 @@ final class RevisionValidator
                 continue;
             }
 
-            $quote = $thread->scope->kind === ScopeKind::Text && $thread->scope->units === [$id] ? $thread->scope->quote : null;
+            $quote = $comment->scope->kind === ScopeKind::Text && $comment->scope->units === [$id] ? $comment->scope->quote : null;
             $problems = $this->check->check($unit->markdown, $after, $all, self::MIN_RATIO, self::MAX_RATIO, $quote, mayFillAsks: true);
 
             foreach ($problems as $problem) {
@@ -167,7 +167,7 @@ final class RevisionValidator
                 array_push($unsourced, ...$this->sources->unsourced($after, [$unit->markdown, ...$all]));
             }
 
-            $fills = $this->fills($unit->markdown, $after, $givers, $thread->startedBy);
+            $fills = $this->fills($unit->markdown, $after, $givers, $comment->by);
 
             if ($fills === null) {
                 $rules[] = self::MARKERS;
@@ -212,7 +212,7 @@ final class RevisionValidator
                 array_push($unsourced, ...$this->sources->unsourced($after, [$before, ...$all]));
             }
 
-            $fills = $this->fills($before, $after, $givers, $thread->startedBy);
+            $fills = $this->fills($before, $after, $givers, $comment->by);
 
             if ($fills === null) {
                 $rules[] = self::MARKERS;
@@ -224,10 +224,10 @@ final class RevisionValidator
         $rules = array_values(array_unique($rules));
 
         if ($rules !== []) {
-            return new Verdict($thread, $item->reply, $rules, unsourced: array_values(array_unique($unsourced)));
+            return new Verdict($comment, $item->reply, $rules, unsourced: array_values(array_unique($unsourced)));
         }
 
-        return new Verdict($thread, $item->reply, [], $new, $changedExtras, $filled, $item->layout, array_values(array_unique($warnings)), [], $data);
+        return new Verdict($comment, $item->reply, [], $new, $changedExtras, $filled, $item->layout, array_values(array_unique($warnings)), [], $data);
     }
 
     /**
