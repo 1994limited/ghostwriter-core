@@ -53,4 +53,19 @@ return [
     ],
     'link_text' => ['ici', 'cliquez ici', 'cliquer ici', 'en savoir plus', 'lire la suite', 'plus', 'ce lien', 'lien', 'voir plus', 'plus d\'infos'],
     'long_sentence' => 35,
+    'stop_words' => [
+        'le', 'la', 'les', 'l', 'un', 'une', 'des', 'du', 'de', 'd', 'et', 'ou', 'mais', 'donc', 'or', 'ni', 'car',
+        'à', 'au', 'aux', 'en', 'dans', 'sur', 'sous', 'par', 'pour', 'avec', 'sans', 'chez', 'entre', 'vers',
+        'contre', 'depuis', 'pendant', 'avant', 'après', 'comme', 'que', 'quoi', 'dont', 'où', 'quand', 'si',
+        'ne', 'pas', 'plus', 'moins', 'très', 'tout', 'tous', 'toute', 'toutes', 'ce', 'cet', 'cette', 'ces', 'son',
+        'sa', 'ses', 'leur', 'leurs', 'notre', 'nos', 'votre', 'vos', 'mon', 'ma', 'mes', 'ton', 'ta', 'tes', 'il',
+        'elle', 'ils', 'elles', 'on', 'nous', 'vous', 'je', 'me', 'te', 'se', 'y', 'est', 'sont', 'été', 'être', 'a',
+        'ont', 'avait', 'avoir', 'fait', 'faire', 'peut', 'peuvent', 'doit', 'aussi', 'encore', 'déjà', 'bien', 'ici',
+        'là',
+    ],
+    'utility_slugs' => [
+        'recherche', 'connexion', 'deconnexion', 'déconnexion', 'compte', 'mon-compte',
+        'inscription', 'panier', 'paiement', 'merci', 'confirmation', 'desinscription', 'désinscription',
+        'erreur', 'page-introuvable', 'plan-du-site', 'mot-de-passe',
+    ],
 ];

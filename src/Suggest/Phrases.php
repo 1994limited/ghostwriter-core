@@ -29,6 +29,8 @@ final class Phrases
      * @param  list<string>  $counts
      * @param  array<string, int>  $numbers
      * @param  list<string>  $linkText
+     * @param  list<string>  $stopWords  Words too common to match pages on (articles, prepositions…), lower case.
+     * @param  list<string>  $utilitySlugs  Address segments of pages never linked to (search, cart, thank-you…).
      */
     public function __construct(
         public readonly string $language,
@@ -41,6 +43,8 @@ final class Phrases
         public readonly array $numbers,
         public readonly array $linkText,
         public readonly int $longSentence,
+        public readonly array $stopWords = [],
+        public readonly array $utilitySlugs = [],
     ) {}
 
     /**
@@ -141,6 +145,8 @@ final class Phrases
             $numbers('numbers'),
             $strings('link_text'),
             is_int($lists['long_sentence'] ?? null) ? $lists['long_sentence'] : 30,
+            array_map('mb_strtolower', $strings('stop_words')),
+            array_map('mb_strtolower', $strings('utility_slugs')),
         );
     }
 }

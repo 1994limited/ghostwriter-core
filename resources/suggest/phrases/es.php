@@ -52,4 +52,21 @@ return [
     ],
     'link_text' => ['aquí', 'haz clic aquí', 'pulsa aquí', 'clic aquí', 'leer más', 'más', 'más información', 'este enlace', 'enlace', 'ver más'],
     'long_sentence' => 35,
+    'stop_words' => [
+        'el', 'la', 'los', 'las', 'lo', 'un', 'una', 'unos', 'unas', 'y', 'e', 'o', 'u', 'pero', 'sino', 'ni', 'de',
+        'del', 'a', 'al', 'en', 'con', 'por', 'para', 'sin', 'sobre', 'entre', 'hacia', 'hasta', 'desde', 'durante',
+        'contra', 'según', 'tras', 'ante', 'bajo', 'que', 'quien', 'quienes', 'cual', 'cuales', 'cuando',
+        'donde', 'como', 'porque', 'si', 'no', 'más', 'menos', 'muy', 'todo', 'toda', 'todos', 'todas', 'este',
+        'esta', 'estos', 'estas', 'ese', 'esa', 'esos', 'esas', 'aquel', 'su', 'sus', 'nuestro', 'nuestra',
+        'nuestros', 'nuestras', 'vuestro', 'mi', 'mis', 'tu', 'tus', 'yo', 'me', 'te', 'se', 'le', 'les', 'nos', 'os',
+        'él', 'ella', 'ellos', 'ellas', 'usted', 'ustedes', 'es', 'son', 'era', 'eran', 'fue', 'fueron', 'ser',
+        'estar', 'está', 'están', 'ha', 'han', 'había', 'haber', 'hay', 'puede', 'pueden', 'debe', 'también', 'ya',
+        'aquí', 'allí',
+    ],
+    'utility_slugs' => [
+        'buscar', 'busqueda', 'búsqueda', 'iniciar-sesion', 'iniciar-sesión', 'acceder',
+        'cerrar-sesion', 'cerrar-sesión', 'cuenta', 'mi-cuenta', 'registro', 'registrarse', 'carrito', 'cesta',
+        'finalizar-compra', 'gracias', 'muchas-gracias', 'confirmacion', 'confirmación',
+        'darse-de-baja', 'error', 'pagina-no-encontrada', 'mapa-del-sitio', 'contrasena', 'contraseña',
+    ],
 ];

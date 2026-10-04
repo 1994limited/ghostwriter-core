@@ -4,6 +4,18 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
+### Added (SEO layer: the link index, row 3)
+
+- **Link rows** (decision 9): the entry index can hold every routable page of a site, not only Ghostwriter's own groups. `Suggest\IndexRow` (title, address, summary, type, kind, live dates, noindex, key page, link reference, stems, published, updated, indexed; `make()`, `toArray()`, `fromArray()`, `digest()`), `Suggest\IndexScope` (`Full`, `Link`) and `Suggest\RowKind` (`Entry`, `Term`, `Category`, `Record`).
+- **`Suggest\LinkIndex::related()`**: the published pages a draft could link to, best first. It's its own port (the SEO layer's `EntryIndex::related()`), so an addon without it still loads with this core.
+- **`Seo\LinkCandidates`**: the shared ranking: stems (five letters, the language's stop words), title 3 / slug 2 / summary 1, the floor, tie-breaks (key page, the draft's group, terms and categories last, newer first), at most 25, 4 a group and 2 listings; `linkKey()` for the forms a link is stored in. The caps (5,000 rows a group, 20,000 a site, a stem index above 5,000 rows, 500 a chunk, 5,000 a run) are its constants.
+- **`Seo\Linkable`**: why a page isn't a link target: unpublished, scheduled, expired, no address, noindex, the home page, a utility page in any of the five languages.
+- **`Seo\LinkPlan`**: what a daily pass writes and forgets of a site's link rows (key pages, then the newest; the caps; groups over them for the developer note).
+- **`DigestEntry::$type`** (default `''`): the digest shows "Contact us (Pages)".
+- `Phrases::$stopWords` and `::$utilitySlugs`, with `stop_words` and `utility_slugs` lists in English, German, French, Dutch and Spanish.
+- `MemoryEntryIndex` implements `LinkIndex` (`put()` takes an `IndexRow`); `sharing()` and `nearest()` read full rows only.
+- **`LinkIndexContract`** for the addons.
+
 ### Changed (a hero-like name needs the group looked at)
 
 - **`EmptyImages`' name rule applies only where the group's published entries were looked at** (`GapContext::$pattern` given) and are too few to go by. A context without a pattern, such as Suggest edits' checks, no longer prompts for an optional image on its name alone.

@@ -55,4 +55,21 @@ return [
     ],
     'link_text' => ['hier', 'hier klicken', 'klicken sie hier', 'mehr', 'weiterlesen', 'mehr erfahren', 'mehr lesen', 'link', 'dieser link', 'diesen link', 'mehr infos'],
     'long_sentence' => 25,
+    'stop_words' => [
+        'der', 'die', 'das', 'den', 'dem', 'des', 'ein', 'eine', 'einer', 'eines', 'einem', 'einen', 'und', 'oder',
+        'aber', 'doch', 'sondern', 'denn', 'von', 'vom', 'zu', 'zum', 'zur', 'in', 'im', 'ins', 'an', 'am', 'auf',
+        'aus', 'bei', 'mit', 'nach', 'seit', 'über', 'unter', 'vor', 'hinter', 'neben', 'zwischen', 'durch', 'für',
+        'gegen', 'ohne', 'um', 'bis', 'als', 'wie', 'wenn', 'dass', 'ob', 'weil', 'ist', 'sind', 'war', 'waren',
+        'sein', 'bin', 'bist', 'seid', 'wird', 'werden', 'wurde', 'wurden', 'hat', 'haben', 'hatte', 'hatten', 'kann',
+        'können', 'muss', 'müssen', 'soll', 'sollen', 'darf', 'dürfen', 'will', 'wollen', 'mag', 'nicht', 'kein',
+        'keine', 'keinen', 'keiner', 'es', 'er', 'sie', 'ihr', 'ihre', 'ihren', 'wir', 'uns', 'unser', 'unsere',
+        'ich', 'mich', 'mein', 'meine', 'du', 'dich', 'dein', 'deine', 'sich', 'man', 'was', 'wer', 'wo', 'wann',
+        'warum', 'welche', 'welcher', 'welches', 'dies', 'diese', 'dieser', 'dieses', 'jener', 'auch', 'noch', 'nur',
+        'schon', 'sehr', 'so', 'mehr', 'alle', 'jede', 'jeder', 'jedes', 'hier', 'dort',
+    ],
+    'utility_slugs' => [
+        'suche', 'suchergebnisse', 'anmelden', 'abmelden', 'login', 'logout', 'konto', 'mein-konto', 'registrieren',
+        'warenkorb', 'kasse', 'danke', 'vielen-dank', 'bestaetigung', 'bestätigung', 'abmeldung',
+        'newsletter-abmelden', 'fehler', 'seite-nicht-gefunden', 'sitemap', 'passwort',
+    ],
 ];
