@@ -198,6 +198,32 @@ A required field the writer never fills is not a reason to drop a plan: images a
 
 Violations are logged at debug level, with their rules. A plan that fails is dropped. `SessionLayouts::planned()` gives the last planner call's `Validated` (null before one), so a reply that produced no layouts can be explained: `$layouts->planned()?->rules()` is `['p2' => ['required']]`, and the log has a line naming each dropped plan and its rules. A plan marked stale after an edit is logged at debug with its rules too.
 
+## Only noticeably different layouts: `LayoutGate`
+
+After `PlanValidator`, `SessionLayouts` offers only the layouts that look noticeably different from the writer's and from each other. If none is, the piece simply has the writer's layout (no cards to choose between).
+
+```php
+$diff = LayoutDiff::between(Plan $a, Plan $b, Plan $writer, Units $units, $extras, Schema $schema);
+$diff->share();          // 0–1: how much of the page changed, by weight
+$diff->regions;          // separate places on the page that changed (a moved section is two)
+$diff->blockEdits;       // page builders: blocks added, dropped or of another set (edit distance over set types)
+$diff->added; $diff->removed;   // what changed, as the reader sees it: {key, kind, weight, units, field}
+$diff->changedUnits();   // the units whose words are shaped or placed differently in $b
+
+$gate = (new LayoutGate)->filter(list<Plan> $plans, $units, $extras, $schema, ?string $prefer);
+// ['kept' => list<Plan> (the writer's first, in order), 'dropped' => [planId => why]]
+```
+
+- **The diff** lays each plan out as a reader sees it, top to bottom: a page builder's blocks (each one's set, then what is in its fields) and a rich-text value's constructs as the arranger writes them (a heading, a paragraph, a list, a quote, an inline set). Constructs are compared by kind and words, not by how the plan spells its refs, so a section "as written" and the same section construct by construct are equal. The two sequences are aligned (longest common subsequence) and what is left over is the change.
+- **Weight** is words; a heading's words count double (up to ten extra), a block's own frame counts 20 and an image 40.
+- **Noticeably different** is any of: a page builder's blocks changed (`BLOCK_EDITS`, 1); a quarter of the page changed (`SHARE`, 0.25); or changes in three or more places (`REGIONS`) adding up to at least 15% (`SPREAD_SHARE`).
+- **Tuned on real plans** (`tests/Fixtures/arrange/gate`): a journal post's "Quoted close" (one closing line as a quote: 1% of the page, one place) and "Prose sections" (two lists as paragraphs: 12%, two places) are dropped; a Pages builder's "Sections apart" (two blocks added) and "Where we work first" (a call to action under the hero) are kept, as is "Two checklists" (ten lead-in paragraphs as two lists: 61%).
+- **Near-copies of each other:** the alternatives are weighed with the Suggested one first (`Candidates::rank()` over the kept plans), so of two near-copies the Suggested one stays.
+- **Logged** at info level when any are not offered: the count, and per plan the share, places and block changes. No page text.
+- Only a planner call (the first draft, or Refresh layouts) is gated. Layouts already stored on a session are left as they are.
+
+The planner is also told to propose only layouts that are clearly different in structure at a glance, and fewer, or none, when the fields give little to rearrange. An empty list (`<plans>[]</plans>`, or `plans: []`) is an answer, not an unreadable reply: it isn't asked for again or logged as a problem.
+
 ## After the text changes
 
 ```php

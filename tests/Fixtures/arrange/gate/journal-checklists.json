@@ -1,0 +1,223 @@
+{
+ "note": "A Craft journal post (one CKEditor body): \"Two checklists\" turns ten lead-in paragraphs into two lists. Noticeably different.",
+ "draft": "title: \"Summer jobs, and the ones that can wait\"\nexcerpt: \"The few garden jobs worth doing between June and August in the north of England, and the longer list you can happily leave.\"\ncategory: seasonal\nbody: |-\n  Summer starts late up here. A June job in the north of England is often what a southern guide would call a May one. If your borders look a few weeks behind the books, they probably are, and that's fine.\n\n  The weather has changed shape, too. We get long dry spells, then a downpour that arrives all at once and runs off hard ground faster than it can soak in. Summer gardening in the north is mostly about coping with both.\n\n  The good news is that summer asks very little of you. Here is the short list, and the longer list of things you can leave.\n\n  ## Do these\n\n  **Water deeply, and less often.** A good soak once or twice a week beats a sprinkle every evening. Light watering keeps roots near the surface, where the soil dries out first. A proper soak sends them down. Water the roots, not the leaves, and do it in the morning or evening.\n\n  **Deadhead what you want to keep flowering.** Many plants slow down once they start setting seed. Snipping off the faded flowers persuades them to keep going. Do it only on the plants you want more flowers from, and leave the rest.\n\n  **Sort the holiday watering before you go.** [[ask: our recommended approach to holiday watering]] Then go, and stop worrying.\n\n  ## Leave these\n\n  **Leave the seed heads.** Not everything needs deadheading. Seed heads feed birds through autumn and give the garden its shape well into winter. There is more on that in [Winter structure](#gw-link:winter-structure-journal-entry).\n\n  **Leave the meadow until it has set seed.** Cut it in late summer, not before. Cut too early and you take away next year's flowers before they have had a chance to drop. [[ask: when we cut a meadow, and what we do with the cuttings]] If you are starting one, read [Making a meadow from a lawn](#gw-link:making-a-meadow-from-a-lawn-journal-entry).\n\n  **Leave the lawn food in the shed.** Grass slows down and turns brown in a dry spell. It isn't dead. It's resting, and it greens up again when the rain comes. Feeding it now does very little.\n\n  **Leave the heavy pruning.** A light trim to keep a path clear is fine. Big cuts can wait for the right season for each plant.\n\n  **Leave new planting until autumn.** Anything planted in summer needs watering through every dry spell. In autumn the soil is still warm and the rain does the work, so roots settle in before winter.\n\n  **Leave plants where they are.** Moving a plant in full leaf in a hot week is hard on it. If something is in the wrong place, make a note and move it in autumn.\n\n  **Leave the borders a little untidy.** Long growth gives cover to insects, frogs and birds, and it will all be cut back soon enough. Nobody else is looking as closely as you are.\n\n  ## When the storms come\n\n  Let the rain soak in where it falls. Bare, compacted ground sheds water. Mulched soil and planted beds hold it. If a downpipe empties onto a path or into a drain, think about where else that water could go. Our piece on [rain gardens for ordinary front gardens](#gw-link:rain-gardens-for-ordinary-front-gardens-journal-entry) shows how.\n\n  > Do the short list. Leave the rest. Go on holiday.\n\n  ## The rest of the year\n\n  For the other seasons, read [Spring jobs, in the order we'd do them](#gw-link:spring-jobs-journal-entry), [What to do in the garden in late autumn](#gw-link:late-autumn-jobs-journal-entry) and [Winter structure](#gw-link:winter-structure-journal-entry).\n\n  Then put the kettle on. It's summer.",
+ "extras": [
+  {
+   "id": "x1",
+   "kind": "at_a_glance",
+   "items": [
+    {
+     "id": "x1.1",
+     "text": "Water deeply, and less often.",
+     "source": {
+      "kind": "draft",
+      "quote": "Water deeply, and less often."
+     }
+    },
+    {
+     "id": "x1.2",
+     "text": "Deadhead only what you want to keep flowering.",
+     "source": {
+      "kind": "draft",
+      "quote": "Deadhead what you want to keep flowering."
+     }
+    },
+    {
+     "id": "x1.3",
+     "text": "Leave the seed heads, the meadow and the lawn food.",
+     "source": {
+      "kind": "draft",
+      "quote": "Leave the seed heads."
+     }
+    },
+    {
+     "id": "x1.4",
+     "text": "Let summer storms soak in where they fall.",
+     "source": {
+      "kind": "draft",
+      "quote": "Let the rain soak in where it falls."
+     }
+    }
+   ]
+  },
+  {
+   "id": "x2",
+   "kind": "pull_quote",
+   "items": [
+    {
+     "id": "x2.1",
+     "text": "Do the short list. Leave the rest. Go on holiday.",
+     "source": {
+      "kind": "draft",
+      "quote": "Do the short list. Leave the rest. Go on holiday."
+     }
+    }
+   ]
+  }
+ ],
+ "plans": [
+  {
+   "id": "w",
+   "origin": "writer",
+   "name": "As written",
+   "description": "The writer’s own layout",
+   "fields": {
+    "body": [
+     {
+      "type": "text",
+      "placements": [
+       {
+        "field": "@body",
+        "from": [
+         "u3"
+        ]
+       }
+      ]
+     },
+     {
+      "type": "text",
+      "placements": [
+       {
+        "field": "@body",
+        "from": [
+         "u4"
+        ]
+       }
+      ]
+     },
+     {
+      "type": "text",
+      "placements": [
+       {
+        "field": "@body",
+        "from": [
+         "u5"
+        ]
+       }
+      ]
+     },
+     {
+      "type": "text",
+      "placements": [
+       {
+        "field": "@body",
+        "from": [
+         "u6"
+        ]
+       }
+      ]
+     },
+     {
+      "type": "text",
+      "placements": [
+       {
+        "field": "@body",
+        "from": [
+         "u7"
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "p2",
+   "origin": "model",
+   "name": "Two checklists",
+   "description": "The do and leave sections become bulleted lists with bold starts.",
+   "fields": {
+    "body": [
+     {
+      "type": "text",
+      "placements": [
+       {
+        "field": "@body",
+        "from": [
+         "u3"
+        ]
+       }
+      ]
+     },
+     {
+      "type": "text",
+      "placements": [
+       {
+        "field": "@body",
+        "from": [
+         "u4#1"
+        ]
+       }
+      ]
+     },
+     {
+      "type": "list",
+      "placements": [
+       {
+        "field": "@body",
+        "from": [
+         "u4#2",
+         "u4#3",
+         "u4#4"
+        ],
+        "transform": "paragraphs-to-list"
+       }
+      ]
+     },
+     {
+      "type": "text",
+      "placements": [
+       {
+        "field": "@body",
+        "from": [
+         "u5#1"
+        ]
+       }
+      ]
+     },
+     {
+      "type": "list",
+      "placements": [
+       {
+        "field": "@body",
+        "from": [
+         "u5#2",
+         "u5#3",
+         "u5#4",
+         "u5#5",
+         "u5#6",
+         "u5#7",
+         "u5#8"
+        ],
+        "transform": "paragraphs-to-list"
+       }
+      ]
+     },
+     {
+      "type": "text",
+      "placements": [
+       {
+        "field": "@body",
+        "from": [
+         "u6"
+        ]
+       }
+      ]
+     },
+     {
+      "type": "text",
+      "placements": [
+       {
+        "field": "@body",
+        "from": [
+         "u7"
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "suggested": true
+  }
+ ]
+}

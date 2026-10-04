@@ -4,6 +4,11 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
+### Changed (only noticeably different layouts are offered)
+
+- **A layout that looks like the writer's, or like another on offer, is not offered.** A journal post's alternatives that set one closing line as a quote, or turned two lists into paragraphs, looked the same as "As written" to the person choosing. After `PlanValidator`, `SessionLayouts` now runs `Arrange\LayoutGate` on the planner's plans, which compares each with the writer's and with the ones already kept (`Arrange\LayoutDiff`, a structural diff of what a reader sees) and keeps it only when a page builder's blocks changed, a quarter of the page changed, or three or more places changed adding up to 15%. Of two near-copies the Suggested one stays. When none is left, the piece simply has the writer's layout. Dropped plans are logged at info level, with numbers and no page text. See docs/layouts.md#only-noticeably-different-layouts-layoutgate.
+- **The layout planner proposes up to two layouts**, each clearly different in structure at a glance, and fewer or none when the fields give little to rearrange. An empty list is read as an answer: no second call, no warning.
+
 ### Added (structured questions before the draft)
 
 - **The writer's questions come back structured.** When it must ask before drafting, the writer now sends at most four short questions in a `<questions>` YAML block beside a one-sentence `<reply>`, in the same call. Each item is `{id, question, hint?, kind: text|choice, options?, optional?}`. See docs/studio.md#questions-before-the-draft-17.
