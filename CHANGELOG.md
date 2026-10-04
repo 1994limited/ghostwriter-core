@@ -2,6 +2,20 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 it follows semantic versioning: a minor or patch release doesn't break the public API.
 
+## Unreleased
+
+### Added
+
+- **Comments on blocks: the comments model on the session (`Review\*`).** An editor comments on a block, a card, some words, a field or the whole page; the comments are shared by everyone on the piece (E7) and follow their words from layout to layout and from turn to turn. No model is called. See docs/comments.md.
+  - `SessionReview`, what the addons call: `add()`, `edit()`, `delete()`, `reply()`, `resolve()`, `reopen()`, `repin()`, each under the session's lock and allowed while Ghostwriter works, each taking the review's `version` (a change from an older copy is refused with `Conflict`); `threads()` (every thread with its state, the blocks holding it in a layout and whether it is in that layout), `where()` and `review()`.
+  - `Review` (threads, the next pin number, a version; `reanchor()`, and `send()`, `answer()`, `sendBack()` for a run), `Thread`, `Note`, `NoteKind`, `Change`, `Scope`, `ScopeKind`, `ThreadStatus` (Not sent, Revising, Changed, Replied, Resolved, Detached) and `ReviewRules`. Limits: 100 threads per piece, 30 notes per thread, 2000 characters per note, 12 threads per Apply.
+- **`Session::$review`**: the piece's comments (`Review::toArray()`), stored like `units`, under `review` (Filament: a JSON column the addon adds).
+- `SessionGuard::annotate()`: a change anyone who can see the piece may make whatever Ghostwriter is doing, under the session's lock.
+
+### Changed
+
+- `SessionLayouts::afterEdit()` (and so `afterWriter()`) re-anchors the session's comments to the units it carried over: a comment whose text is gone becomes Detached, and comes back when the text does.
+
 ## 1.8.2 - 2026-10-04
 
 ### Added
