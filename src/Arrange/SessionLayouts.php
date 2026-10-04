@@ -11,6 +11,8 @@ use NineteenNinetyFour\Ghostwriter\Core\Gaps\FieldPath;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\BuiltEntry;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\Layouts;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Schema;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\RenderProfile;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\SeoPass;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\Conversation;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\LayoutBrief;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\Studio;
@@ -55,6 +57,8 @@ final class SessionLayouts
 
     private readonly LoggerInterface $logger;
 
+    private readonly SeoPass $seo;
+
     /** The last planner call's plans, checked: kept, and dropped with why. */
     private ?Validated $planned = null;
 
@@ -62,8 +66,10 @@ final class SessionLayouts
         private readonly Studio $studio,
         private readonly Layouts $layouts = new Layouts,
         ?LoggerInterface $logger = null,
+        ?SeoPass $seo = null,
     ) {
         $this->logger = $logger ?? new NullLogger;
+        $this->seo = $seo ?? new SeoPass(logger: $this->logger);
     }
 
     /**
@@ -86,6 +92,9 @@ final class SessionLayouts
             $session->extras = $this->studio->extras($response, $conversation, $writer, $site->exampleIds)->toArray();
         }
 
+        // ① The SEO pass on the writer's text, before units are cut from it.
+        $this->seo->afterWriter($session, $site);
+
         if (! $this->afterEdit($session, $before, $site)) {
             return new Usage;
         }
@@ -103,6 +112,8 @@ final class SessionLayouts
      */
     public function afterEdit(Session $session, ?string $before, LayoutContext $site): bool
     {
+        // ① again: an edit can bring back a heading the template or the editor can't take.
+        $this->seo->afterWriter($session, $site);
         $draft = self::draft($session->draft);
 
         if ($draft === null) {
@@ -195,6 +206,9 @@ final class SessionLayouts
      * (EntryBuilder, HouseStyle, placeholders, images). The session's
      * draft stays the writer's text.
      *
+     * ② The SEO pass fits the arranged data's headings (layouts make
+     * headings), every time a plan is built; nothing is stored.
+     *
      * @return array<string, mixed>
      */
     public function draftData(Session $session, LayoutContext $site, ?string $planId = null): array
@@ -203,10 +217,10 @@ final class SessionLayouts
         $plan = $planId === null ? $this->chosen($session) : $this->plans($session)->get($planId);
 
         if ($plan === null) {
-            return $draft->data;
+            return $this->seo->arranged($draft->data, $site);
         }
 
-        return (new Arranger)->arrange($plan, $this->units($session, $draft, $site), $session->extras, $draft, $site->schema);
+        return $this->seo->arranged((new Arranger)->arrange($plan, $this->units($session, $draft, $site), $session->extras, $draft, $site->schema), $site);
     }
 
     /** The chosen layout built with the addon's EntryBuilder, as "Use this draft" builds a draft. */
@@ -240,7 +254,7 @@ final class SessionLayouts
      *
      * @return array<string, array{summary: list<string>, places: list<array{field: string, block: int|null, section: int|null}>, units: list<string>}>
      */
-    public function changes(Session $session, Schema $schema): array
+    public function changes(Session $session, Schema $schema, ?RenderProfile $profile = null): array
     {
         $draft = self::draft($session->draft);
         $plans = $this->plans($session);
@@ -259,7 +273,7 @@ final class SessionLayouts
                     continue;
                 }
 
-                $diff = LayoutDiff::between($writer, $plan, $writer, $units, $session->extras, $schema);
+                $diff = LayoutDiff::between($writer, $plan, $writer, $units, $session->extras, $schema, $profile);
                 $changes[$plan->id] = ['summary' => $diff->summary(), 'places' => $diff->places(), 'units' => $diff->changedUnits()];
             }
 
@@ -356,7 +370,7 @@ final class SessionLayouts
         $proposed = [];
 
         try {
-            $result = $this->studio->planLayouts(new LayoutBrief($units, $extras, $site->schema, $patterns, $profile, $writer, self::ALTERNATIVES, $site->pattern));
+            $result = $this->studio->planLayouts(new LayoutBrief($units, $extras, $site->schema, $patterns, $profile, $writer, self::ALTERNATIVES, $site->pattern, $site->profile));
             $usage = $result->usage;
             $proposed = $result->value;
         } catch (ProviderException $exception) {
@@ -373,7 +387,7 @@ final class SessionLayouts
         // Only layouts that look noticeably different are offered; of two
         // near-copies, the one most like the site's pages stays.
         $suggested = (new Candidates)->rank(new Plans($this->planned->kept), $patterns, $profile, $units, $extras, $draft, $site->schema)->suggested();
-        $gate = (new LayoutGate)->filter($this->planned->kept, $units, $extras, $site->schema, $suggested?->id);
+        $gate = (new LayoutGate)->filter($this->planned->kept, $units, $extras, $site->schema, $suggested?->id, $site->profile);
 
         if ($gate['dropped'] !== []) {
             $this->logger->info('Ghostwriter: '.count($gate['dropped']).' of '.(count($this->planned->kept) - 1).' layouts were not offered, as they look too like another ('.implode('; ', array_map(fn (string $id, string $why) => "{$id}: {$why}", array_keys($gate['dropped']), $gate['dropped'])).').', ['agent' => 'layout-planner', 'notOffered' => $gate['dropped']]);

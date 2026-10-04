@@ -228,7 +228,11 @@
                     }
                 }
             },
-            "expected": "- `title` (short text, required)\n- `summary` (plain text). One or two sentences, shown in lists. Never more than two sentences\n- `body` (markdown)\n- `status` (one of draft, published, required)"
+            "expected": "- `title` (short text, required)\n- `summary` (plain text). One or two sentences, shown in lists. Never more than two sentences\n- `body` (markdown)\n- `status` (one of draft, published, required)",
+            "deliberate": {
+                "reason": "SEO layer: each rich-text field lists the heading levels it takes, from the template's H1 and its editor's heading buttons.",
+                "expected": "- `title` (short text, required)\n- `summary` (plain text). One or two sentences, shown in lists. Never more than two sentences\n- `body` (markdown). Section headings: `##` to `######` (the page's main heading is the title)\n- `status` (one of draft, published, required)"
+            }
         }
     ]
 }

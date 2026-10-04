@@ -511,7 +511,11 @@
                     }
                 }
             },
-            "expected": "- `title` (short text, required)\n- `excerpt` (plain text). One or two sentences, shown in lists and on social cards. Never more than two sentences. No exclamation marks\n- `body` (markdown)\n- `status` (one of draft, published, required)\n- `category` (one of projects, advice, studio)"
+            "expected": "- `title` (short text, required)\n- `excerpt` (plain text). One or two sentences, shown in lists and on social cards. Never more than two sentences. No exclamation marks\n- `body` (markdown)\n- `status` (one of draft, published, required)\n- `category` (one of projects, advice, studio)",
+            "deliberate": {
+                "reason": "SEO layer: each rich-text field lists the heading levels it takes, from the template's H1 and its editor's heading buttons.",
+                "expected": "- `title` (short text, required)\n- `excerpt` (plain text). One or two sentences, shown in lists and on social cards. Never more than two sentences. No exclamation marks\n- `body` (markdown). Section headings: `##` to `######` (the page's main heading is the title)\n- `status` (one of draft, published, required)\n- `category` (one of projects, advice, studio)"
+            }
         },
         {
             "algorithm": "describe",
@@ -519,7 +523,11 @@
             "input": {
                 "pattern": []
             },
-            "expected": "- `title` (short text, required)\n- `excerpt` (plain text). One or two sentences, shown in lists and on social cards. Never more than two sentences. No exclamation marks\n- `body` (markdown)\n- `status` (one of draft, published, required)\n- `category` (one of projects, advice, studio)"
+            "expected": "- `title` (short text, required)\n- `excerpt` (plain text). One or two sentences, shown in lists and on social cards. Never more than two sentences. No exclamation marks\n- `body` (markdown)\n- `status` (one of draft, published, required)\n- `category` (one of projects, advice, studio)",
+            "deliberate": {
+                "reason": "SEO layer: each rich-text field lists the heading levels it takes, from the template's H1 and its editor's heading buttons.",
+                "expected": "- `title` (short text, required)\n- `excerpt` (plain text). One or two sentences, shown in lists and on social cards. Never more than two sentences. No exclamation marks\n- `body` (markdown). Section headings: `##` to `######` (the page's main heading is the title)\n- `status` (one of draft, published, required)\n- `category` (one of projects, advice, studio)"
+            }
         },
         {
             "algorithm": "kinds",

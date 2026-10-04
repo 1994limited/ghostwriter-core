@@ -278,3 +278,16 @@ test('the page core marks is located whole (tests/Fixtures/preview/page.json, wr
     assert.ok(!/[\u{E0000}-\u{E007F}]/u.test(doc.body.textContent), 'every marker is gone from the page');
     assert.deepEqual(result.byKey.s2.parent, 'b2');
 });
+
+test('the outline: each heading, what printed it, and whether it is part of a value (tests/Fixtures/seo/outlines.json)', async () => {
+    const { readFile } = await import('node:fs/promises');
+    const { outline } = await import('../../resources/js/preview/locator.js');
+    const fixture = JSON.parse(await readFile(new URL('../Fixtures/seo/outlines.json', import.meta.url), 'utf8'));
+
+    for (const example of fixture.cases) {
+        const doc = parse(marked(example.html));
+        const located = locate(doc, example.map);
+
+        assert.deepEqual(outline(doc, example.map, located), example.outline, example.name);
+    }
+});

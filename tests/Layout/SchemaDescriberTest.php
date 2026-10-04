@@ -24,7 +24,7 @@ class SchemaDescriberTest extends LayoutTestCase
                   - `heading` (short text, required)
                   - `background` (one of light, dark)
               - `text`: Text
-                  - `copy` (markdown)
+                  - `copy` (markdown). Section headings: `##` to `######`
               - `quote`: Quote
                   - `quote` (plain text)
                   - `person` (short text)
@@ -47,7 +47,7 @@ class SchemaDescriberTest extends LayoutTestCase
               - `hero`: Hero. The top of the page, on 100% of entries
                   - `heading` (short text, required)
               - `text`: Text, on 100% of entries
-                  - `copy` (markdown)
+                  - `copy` (markdown). Section headings: `##` to `######`
               - `quote`: Quote, on 100% of entries
                   (the same on every entry; write `type: quote` and nothing else)
               - `spacer`: Spacer, on 100% of entries

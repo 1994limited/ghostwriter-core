@@ -6,21 +6,35 @@ use NineteenNinetyFour\Ghostwriter\Core\Schema\Field;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Kind;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Schema;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Set;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\H1Source;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\HeadingPolicy;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\RenderProfile;
 
 /**
  * Writes a schema out as the brief the model works to: which keys a draft
  * may contain, what each one is for, and how this group's entries are
  * usually assembled. It is the `fields` text of a Studio Layout.
+ *
+ * Each rich-text field lists the heading levels it takes: from where the
+ * template's own headings leave off (Seo\RenderProfile) to what its
+ * editor can show (Schema\HeadingLevels).
  */
 final class SchemaDescriber
 {
-    public function __construct(private readonly LayoutOptions $options = new LayoutOptions) {}
+    private RenderProfile $profile;
+
+    public function __construct(private readonly LayoutOptions $options = new LayoutOptions)
+    {
+        $this->profile = RenderProfile::default();
+    }
 
     /**
      * @param  Pattern|array<string, mixed>|null  $pattern  What the pattern finder found; none before anything is published.
+     * @param  RenderProfile|null  $profile  How the group's template prints headings; null for the default (the title is the H1).
      */
-    public function describe(Schema $schema, Pattern|array|null $pattern = null): string
+    public function describe(Schema $schema, Pattern|array|null $pattern = null, ?RenderProfile $profile = null): string
     {
+        $this->profile = $profile ?? RenderProfile::default();
         $pattern = $pattern instanceof Pattern ? $pattern->toArray() : ($pattern ?? []);
         $lines = $this->fields($schema->fields, 0, $pattern);
 
@@ -50,9 +64,10 @@ final class SchemaDescriber
      * @param  array<int, Field>  $fields
      * @param  array<string, mixed>  $pattern
      * @param  array<string, mixed>  $hints  House defaults for these fields, shown as "usually ...".
+     * @param  string|null  $blockType  The block these fields are in, if any.
      * @return array<int, string>
      */
-    private function fields(array $fields, int $depth, array $pattern = [], array $hints = []): array
+    private function fields(array $fields, int $depth, array $pattern = [], array $hints = [], ?string $blockType = null): array
     {
         $lines = [];
         $pad = str_repeat('  ', $depth);
@@ -82,12 +97,16 @@ final class SchemaDescriber
                 $line .= '. Usually "'.$hints[$field->handle].'"';
             }
 
+            if ($field->kind === Kind::RichText) {
+                $line .= $this->headings($field, $blockType);
+            }
+
             $lines[] = $line;
 
             if ($field->kind === Kind::Blocks) {
                 array_push($lines, ...$this->blocks($field, $depth + 1, $pattern['blocks'][$field->handle] ?? null));
             } elseif (in_array($field->kind, [Kind::Rows, Kind::Group], true)) {
-                array_push($lines, ...$this->fields($field->fields, $depth + 1));
+                array_push($lines, ...$this->fields($field->fields, $depth + 1, blockType: $blockType));
             }
         }
 
@@ -130,6 +149,7 @@ final class SchemaDescriber
                 $this->worthDescribing($set->fields, $pattern['fixed'][$handle] ?? [], $pattern['used'][$handle] ?? null),
                 $depth + 2,
                 hints: $pattern['fixed'][$handle] ?? [],
+                blockType: (string) $handle,
             ));
         }
 
@@ -142,6 +162,30 @@ final class SchemaDescriber
         }
 
         return $lines;
+    }
+
+    /**
+     * The heading levels a rich-text field takes, for the end of its line:
+     * ". Section headings: `##` and `###` (the page's main heading is the
+     * title)", or ". No headings: use a bold lead-in instead".
+     */
+    private function headings(Field $field, ?string $blockType): string
+    {
+        $policy = HeadingPolicy::for($field, $this->profile, $blockType);
+
+        if (! $policy->allowsHeadings()) {
+            return '. No headings: use a bold lead-in instead';
+        }
+
+        $main = match (true) {
+            $blockType !== null => '',
+            $policy->top === 1 => ' (`#` is the page\'s main heading)',
+            $this->profile->h1 === H1Source::Title => ' (the page\'s main heading is the title)',
+            $this->profile->h1 === H1Source::Field && $this->profile->h1Field !== null => ' (the page\'s main heading is `'.$this->profile->h1Field.'`)',
+            default => '',
+        };
+
+        return '. Section headings: '.$policy->markdown().$main;
     }
 
     private function kindLabel(Kind $kind): string

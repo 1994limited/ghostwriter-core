@@ -5,6 +5,7 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Studio;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\Pattern;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\SchemaDescriber;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Schema;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\RenderProfile;
 
 /**
  * What a kind of content is built from, as the type analyst and the writer
@@ -34,15 +35,16 @@ final class Layout
      * From a schema and what the pattern finder found in the group's
      * entries: the schema described by core's SchemaDescriber (pass one
      * built with the addon's LayoutOptions), the examples and the count
-     * from the pattern.
+     * from the pattern. With the group's render profile, rich-text fields
+     * list the heading levels the template and their editors leave them.
      *
      * @param  Pattern|array<string, mixed>  $pattern
      */
-    public static function fromSchema(Schema $schema, Pattern|array $pattern = [], SchemaDescriber $describer = new SchemaDescriber): self
+    public static function fromSchema(Schema $schema, Pattern|array $pattern = [], SchemaDescriber $describer = new SchemaDescriber, ?RenderProfile $profile = null): self
     {
         $pattern = $pattern instanceof Pattern ? $pattern : Pattern::fromArray($pattern);
 
-        return new self($describer->describe($schema, $pattern), $pattern->examples, $pattern->entries, $schema);
+        return new self($describer->describe($schema, $pattern, $profile), $pattern->examples, $pattern->entries, $schema);
     }
 
     /**

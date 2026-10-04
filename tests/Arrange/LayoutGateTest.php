@@ -2,6 +2,8 @@
 
 namespace NineteenNinetyFour\Ghostwriter\Core\Tests\Arrange;
 
+use NineteenNinetyFour\Ghostwriter\Core\Anchor\NormalisedText;
+use NineteenNinetyFour\Ghostwriter\Core\Arrange\Arranger;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Extras\Extras;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\LayoutDiff;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\LayoutGate;
@@ -10,11 +12,13 @@ use NineteenNinetyFour\Ghostwriter\Core\Arrange\Plan;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\PlanBlock;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Plans;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\PlanValidator;
+use NineteenNinetyFour\Ghostwriter\Core\Arrange\Transform;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Units;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Field;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Kind;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Schema;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Set;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\SeoPass;
 use NineteenNinetyFour\Ghostwriter\Core\Text\Draft;
 use PHPUnit\Framework\TestCase;
 
@@ -129,6 +133,54 @@ final class LayoutGateTest extends TestCase
         [$plans, $units, $extras, $schema] = self::fixture('journal-checklists', self::craftJournal());
         $this->assertSame(['Paragraphs as lists'], LayoutDiff::between($plans[0], $plans[1], $plans[0], $units, $extras, $schema)->summary());
         $this->assertSame([], LayoutDiff::between($plans[0], $plans[0], $plans[0], $units, $extras, $schema)->summary());
+    }
+
+    public function test_a_layout_that_only_moves_heading_levels_the_seo_pass_moves_back_is_not_different(): void
+    {
+        [$plans, $units, $extras, $schema] = self::fixture('journal-near-copies', Northfold::richText());
+        $writer = $plans[0];
+        $smaller = $writer->with(id: 'p9', fields: ['body' => array_map(fn (PlanBlock $block) => new PlanBlock($block->type, array_map(fn (Placement $placement) => new Placement($placement->field, $placement->from, Transform::HeadingLevel, ['level' => 3]), $block->placements)), $writer->fields['body'])]);
+
+        $this->assertTrue(LayoutDiff::between($writer, $smaller, $writer, $units, $extras, $schema)->none(), 'Every heading one smaller is the same page once the pass fits them.');
+        $this->assertSame(['w'], array_map(fn (Plan $plan) => $plan->id, (new LayoutGate)->filter([$writer, $smaller], $units, $extras, $schema)['kept']));
+    }
+
+    public function test_the_recorded_drafts_and_layouts_rebuild_the_same_but_for_headings(): void
+    {
+        $seo = new SeoPass;
+
+        foreach (['journal-near-copies' => Northfold::richText(), 'journal-checklists' => self::craftJournal(), 'pages-builder' => self::craftPages(), 'statamic-pages' => self::statamicPages()] as $name => $schema) {
+            [$plans, $units, $extras] = self::fixture($name, $schema);
+            $raw = json_decode((string) file_get_contents(__DIR__."/../Fixtures/arrange/gate/{$name}.json"), true);
+            $draft = Draft::parse($raw['draft']);
+
+            foreach ($plans as $plan) {
+                $arranged = (new Arranger)->arrange($plan, $units, $extras, $draft, $schema);
+                [$fitted] = $seo->headings($arranged, $schema);
+
+                $this->assertSame(self::without($arranged), self::without($fitted), "{$name} {$plan->id}: only headings change.");
+                $this->assertSame($fitted, $seo->headings($fitted, $schema)[0], "{$name} {$plan->id}: fitting twice is fitting once.");
+            }
+        }
+    }
+
+    /**
+     * Draft data's words, with heading marks and bold taken out.
+     *
+     * @param  array<string, mixed>  $data
+     * @return list<string>
+     */
+    private static function without(array $data): array
+    {
+        $words = [];
+
+        array_walk_recursive($data, function (mixed $value) use (&$words): void {
+            if (is_string($value)) {
+                array_push($words, ...NormalisedText::words((string) preg_replace('/[*#]+/', ' ', $value)));
+            }
+        });
+
+        return $words;
     }
 
     /**

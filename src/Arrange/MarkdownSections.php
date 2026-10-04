@@ -62,12 +62,13 @@ final class MarkdownSections
     }
 
     /**
-     * The value's blocks, each with its lines [start, end).
+     * The value's blocks, each with its lines [start, end). Also used by
+     * Seo\HeadingFixer, so it sees the same headings Units cuts at.
      *
      * @param  list<string>  $lines
      * @return list<array{kind: string, markdown: string, level: int, start: int, end: int}>
      */
-    private static function blocks(array $lines): array
+    public static function blocks(array $lines): array
     {
         $blocks = [];
         $count = count($lines);

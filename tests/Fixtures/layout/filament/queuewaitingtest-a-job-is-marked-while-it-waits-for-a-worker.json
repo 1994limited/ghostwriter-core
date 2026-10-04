@@ -191,7 +191,11 @@
                     }
                 }
             },
-            "expected": "- `title` (short text, required)\n- `slug` (short text, required)\n- `content` (list of blocks)\n  Each block is written as `type: <block>` followed by that block's fields. Blocks:\n  - `hero`: Hero\n      - `heading` (short text, required)\n  - `text`: Text\n      - `body` (markdown)\n      - `width` (one of narrow, wide)\n  - `spacer`: Spacer\n      - `height` (number)"
+            "expected": "- `title` (short text, required)\n- `slug` (short text, required)\n- `content` (list of blocks)\n  Each block is written as `type: <block>` followed by that block's fields. Blocks:\n  - `hero`: Hero\n      - `heading` (short text, required)\n  - `text`: Text\n      - `body` (markdown)\n      - `width` (one of narrow, wide)\n  - `spacer`: Spacer\n      - `height` (number)",
+            "deliberate": {
+                "reason": "SEO layer: each rich-text field lists the heading levels it takes, from the template's H1 and its editor's heading buttons.",
+                "expected": "- `title` (short text, required)\n- `slug` (short text, required)\n- `content` (list of blocks)\n  Each block is written as `type: <block>` followed by that block's fields. Blocks:\n  - `hero`: Hero\n      - `heading` (short text, required)\n  - `text`: Text\n      - `body` (markdown). Section headings: `##` to `######`\n      - `width` (one of narrow, wide)\n  - `spacer`: Spacer\n      - `height` (number)"
+            }
         }
     ]
 }

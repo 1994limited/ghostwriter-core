@@ -4,6 +4,19 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
+### Added (SEO layer: headings)
+
+- **Every draft's headings fit the page template and the field's editor.** `Seo\SeoPass` runs on the writer's draft before units are cut (①, in `SessionLayouts::afterWriter()` and `afterEdit()`) and on every plan when it is built (②, in `SessionLayouts::draftData()`). `Seo\HeadingFixer`: the body starts one level below the template's H1, levels never skip, empty headings go, bold lines posing as headings become headings, and a heading deeper than the editor can show becomes a bold lead-in. Words never change; it is idempotent. No model call. See docs/seo.md.
+- **`Schema\HeadingLevels::allowed()`** reads the levels an addon's reader recorded under `headings` in the field spec.
+- **`Seo\RenderProfile`**, `Outline`, `H1Source` and the `RenderProfiles` port: what prints a group's H1, read from the preview (`locator.js` `outline()`), stored per group, changed only when two renders agree; `SeoPass::observe()` for the addons' outline endpoints. Without a render: the title is the H1, corrected by the site's own entries.
+- **`LayoutContext::$profile`**, and `Layout::fromSchema(…, $profile)`, `SchemaDescriber::describe(…, $profile)`, `LayoutBrief(…, render:)`: the writer and the layout planner are told each rich-text field's real heading levels.
+- **`PlanValidator` rule `no-headings-here`.**
+- **Contracts** `HeadingLevelsContract` and `RenderProfileContract`.
+
+### Changed (SEO layer: headings)
+
+- The writer prompt says to use the heading levels each field lists, and never to use bold text on its own line as a heading; the layout planner's, to use only the levels a field lists.
+- `LayoutDiff` and `LayoutGate` compare rich text with its headings fitted, so a layout that only moves heading levels is not offered.
 ### Fixed (links to choose with a space in the hint)
 
 - **A link to choose whose hint has a space is a gap again.** `[Winter structure](#gw-link:Winter structure)`, as Bard and TipTap store the href and the writer sometimes drafts it, and the angle-bracket form `(<#gw-link:Winter structure>)`, were not matched by `Markers::LINK_PATTERN`, so "Finish this page" never listed them; `SENTINEL_PATTERN` (and `MarkerResolver`'s) stopped at the space too. Every reader now takes the hint raw, bracketed or percent-encoded (`Winter%20structure`) and decodes it the same way (`Markers::linkHintFrom()`). `resources/gaps/patterns.json` and `markers.js` have the new patterns. What the writer drafts is stored with a safe hint (`#gw-link:Winter-structure`, `Markers::normaliseLinks()` in `EntryBuilder`), keeping its words and case.
