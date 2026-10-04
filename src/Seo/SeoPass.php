@@ -2,12 +2,15 @@
 
 namespace NineteenNinetyFour\Ghostwriter\Core\Seo;
 
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\ProviderException;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Usage;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\LayoutContext;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Sessions\Session;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Field;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\HeadingLevels;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Kind;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Schema;
+use NineteenNinetyFour\Ghostwriter\Core\Studio\Studio;
 use NineteenNinetyFour\Ghostwriter\Core\Text\Draft;
 use NineteenNinetyFour\Ghostwriter\Core\Text\DraftEditor;
 use Psr\Log\LoggerInterface;
@@ -16,42 +19,64 @@ use Throwable;
 
 /**
  * The SEO layer's pass over a draft: what the writing pipeline calls.
- * No model in this phase; the parts that call one (links, the search
- * title and description) join afterWriter() later.
  *
  * - **afterWriter()** (①): on the writer's draft, before units and
- *   layouts are made from it, so every layout starts from fixed text.
- *   Headings are fitted to the template and each field's editor
- *   (HeadingFixer); the session's draft is rewritten only when something
- *   changed. SessionLayouts runs it after every writer turn and edit.
+ *   layouts are made from it, so every layout starts from fixed, linked
+ *   text. Headings are fitted to the template and each field's editor
+ *   (HeadingFixer). After a writer's turn, LinkGuard turns any address the
+ *   writer made up into a `#gw-link:` marker. On the first draft, where
+ *   the addon gives a LinkContext and a Studio, the draft is linked to the
+ *   site's other pages (SeoLinks: one `seo-editor` and one `seo-verifier`
+ *   call). The session's draft is rewritten only when something changed.
+ *   SessionLayouts runs it after every writer turn and edit.
  * - **arranged()** (②): on a plan's arranged data, in
  *   SessionLayouts::draftData(), because layouts make headings
  *   (lead-in-to-heading, heading-level). Nothing is stored: a plan is
  *   fixed whenever it is built, for the preview, the cards and "Use this
  *   draft" alike.
+ * - **removeLink()**: an editor's "Remove link" on a link the pass added:
+ *   the words stay, the link goes, and LinkGuard won't let it back.
  *
- * Both are deterministic and idempotent.
+ * Everything but the first draft's links is deterministic and idempotent.
  */
 final class SeoPass
 {
+    /** What the panel says while ① runs on a first draft: "Checking headings and links…". */
+    public const CHECKING = 'checking';
+
     private readonly LoggerInterface $logger;
+
+    /** The tokens the last afterWriter() spent. */
+    private Usage $spent;
 
     public function __construct(
         private readonly HeadingFixer $fixer = new HeadingFixer,
         ?LoggerInterface $logger = null,
+        private readonly ?Studio $studio = null,
+        private readonly LinkGuard $guard = new LinkGuard,
     ) {
         $this->logger = $logger ?? new NullLogger;
+        $this->spent = new Usage;
     }
 
     /**
-     * ① on the session's draft. Returns what changed, by value (a dotted
-     * path: `body`, `page_builder.2.text`); the draft is left alone when
-     * nothing did, or when it doesn't parse.
+     * ① on the session's draft. Returns what changed in the headings, by
+     * value (a dotted path: `body`, `page_builder.2.text`); the draft is
+     * left alone when nothing did, or when it doesn't parse.
+     *
+     * - $writer: the draft is a writer's turn, so its links are guarded
+     *   against $before (the draft it had before; null on the first).
+     * - $first: the first draft, so it is linked to the site's other pages
+     *   where $site has a LinkContext (two calls; their tokens are added to
+     *   the session's usage and given by spent()). A failed call never
+     *   fails the turn: the draft goes on without links.
      *
      * @return array<string, list<HeadingChange>>
      */
-    public function afterWriter(Session $session, LayoutContext $site): array
+    public function afterWriter(Session $session, LayoutContext $site, bool $first = false, ?string $before = null, bool $writer = false): array
     {
+        $this->spent = new Usage;
+
         if ($session->draft === null || trim($session->draft) === '') {
             return [];
         }
@@ -63,13 +88,102 @@ final class SeoPass
         }
 
         [$data, $changes] = $this->headings($draft->data, $site->schema, $site->profile);
+        $changed = $changes !== [];
 
-        if ($changes !== []) {
-            $session->draft = (new DraftEditor)->dump($data);
+        if ($changed) {
             $this->log($changes, 'draft');
         }
 
+        if ($writer && $site->links !== null) {
+            [$data, $guarded] = $this->guard->guard($data, self::data($before), self::sources($session), SeoState::of($session));
+
+            if ($guarded !== []) {
+                $changed = true;
+                $this->logger->warning('Ghostwriter: the writer used '.count($guarded).' '.(count($guarded) === 1 ? 'address' : 'addresses').' that it wasn\'t given; '.(count($guarded) === 1 ? 'it is' : 'they are').' now a link for the editor to choose.', ['links' => array_map(fn (array $change) => $change['href'], $guarded)]);
+            }
+        }
+
+        if ($changed) {
+            $session->draft = (new DraftEditor)->dump($data);
+        }
+
+        if ($first && $site->links !== null && $this->studio !== null && SeoState::of($session)->checked === null) {
+            try {
+                $this->spent = (new SeoLinks($this->studio, $this->logger))->add($session, $site);
+            } catch (ProviderException $exception) {
+                $this->logger->warning("Ghostwriter: the draft wasn't linked to the site's other pages, as the call failed: {$exception->getMessage()}", ['agent' => 'seo-editor']);
+                (new SeoState(SeoState::of($session)->links, SeoState::of($session)->removed, null, gmdate('Y-m-d\TH:i:s\Z')))->saveTo($session);
+            }
+
+            if ($this->spent->input > 0 || $this->spent->output > 0) {
+                $session->usage = ['input' => (int) ($session->usage['input'] ?? 0) + $this->spent->input, 'output' => (int) ($session->usage['output'] ?? 0) + $this->spent->output] + $session->usage;
+            }
+        }
+
         return $changes;
+    }
+
+    /** The tokens the last afterWriter() spent on links (none on most turns). */
+    public function spent(): Usage
+    {
+        return $this->spent;
+    }
+
+    /**
+     * "Remove link" on a link the pass added: every link to that page in
+     * the draft loses its link and keeps its words, the link leaves the
+     * session's SEO state and joins its removed ones (LinkGuard won't let
+     * the writer put it back). False when the draft has no such link.
+     */
+    public function removeLink(Session $session, string $href): bool
+    {
+        if ($session->draft === null || trim($session->draft) === '') {
+            return false;
+        }
+
+        try {
+            $draft = Draft::parse($session->draft);
+        } catch (Throwable) {
+            return false;
+        }
+
+        $key = LinkCandidates::linkKey($href) ?? $href;
+        $found = false;
+        $unlink = function (mixed $value) use (&$unlink, $key, &$found): mixed {
+            if (is_array($value)) {
+                return array_map($unlink, $value);
+            }
+
+            if (! is_string($value) || ! str_contains($value, '](')) {
+                return $value;
+            }
+
+            return (string) preg_replace_callback('/(?<!!)\[([^\[\]\n]*)\]\(\s*<?([^()\s>]*)>?(?:\s+"[^"\n]*")?\s*\)/u', function (array $match) use ($key, &$found) {
+                if ((LinkCandidates::linkKey($match[2]) ?? $match[2]) !== $key) {
+                    return $match[0];
+                }
+
+                $found = true;
+
+                return $match[1];
+            }, $value);
+        };
+
+        $data = $unlink($draft->data);
+        $state = SeoState::of($session);
+
+        if (! $found && $state->link($href) === null) {
+            return false;
+        }
+
+        if ($found) {
+            $session->draft = (new DraftEditor)->dump($data);
+        }
+
+        $state->without($href)->saveTo($session);
+        $this->logger->info('Ghostwriter: an editor removed a link Ghostwriter added.', ['href' => $href]);
+
+        return true;
     }
 
     /**
@@ -180,6 +294,50 @@ final class SeoPass
         }
 
         return $values;
+    }
+
+    /**
+     * A draft's data from its YAML; null when there is none or it doesn't
+     * parse.
+     *
+     * @return array<string, mixed>|null
+     */
+    private static function data(?string $yaml): ?array
+    {
+        if ($yaml === null || trim($yaml) === '') {
+            return null;
+        }
+
+        try {
+            return Draft::parse($yaml)->data;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * What the editor gave: the brief's answers and the conversation, as
+     * text, where an outside address the writer may use would appear.
+     *
+     * @return list<string>
+     */
+    private static function sources(Session $session): array
+    {
+        $texts = [];
+
+        array_walk_recursive($session->answers, function (mixed $value) use (&$texts) {
+            if (is_scalar($value)) {
+                $texts[] = (string) $value;
+            }
+        });
+
+        foreach ($session->messages as $message) {
+            if (($message['role'] ?? null) === 'user' && is_string($message['content'] ?? null)) {
+                $texts[] = $message['content'];
+            }
+        }
+
+        return $texts;
     }
 
     /**

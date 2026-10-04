@@ -70,3 +70,40 @@ Bold lines become headings, empty headings go (one holding an `[[ask: …]]` is 
 ### Contracts
 
 `Tests\Contracts\HeadingLevelsContract` (the reader's levels; four levels into a two-level field through the real apply path) and `RenderProfileContract` (a seeded preview's outline says the title is the H1; two renders must agree).
+
+## Internal links (row 4)
+
+On a first draft, where the addon gives `LayoutContext` a `Seo\LinkContext`, the SEO pass links the writer's text to the site's other pages, before units and layouts are made from it, so every layout carries the links (decision 5).
+
+```php
+new LayoutContext($schema, …, links: new LinkContext(
+    index: $linkIndex,            // Suggest\LinkIndex: related() over every routable page (decision 9)
+    links: new StatamicLinks,     // an InlineLinks dialect: how the field's rich text stores a link
+    group: 'journal', site: 'default', except: null,
+    kind: $contentKind, voice: $voiceGuide, locale: 'en_GB',
+));
+
+$layouts->afterWriter($session, $before, $response, $conversation, $writer, $site, function (string $stage) {
+    // SeoPass::CHECKING ("Draft ready. Checking headings and links…"), then SessionLayouts::PLANNING ("Finding other layouts…")
+});
+```
+
+| Step | Who | What |
+|---|---|---|
+| How many | `SeoLinks::target()` | About one per 250 words of prose, 2 to 5, less the links (and markers) already there; none under 150 words |
+| Where to | `LinkIndex::related()` | Up to 25 candidates, each one the dialect can link to (`InlineLinks::inlineHref()`); none: no call, notice `seo.notice.no-links` |
+| The pick | `Studio::seoEdit(SeoRequest)` | One `seo-editor` call (writing tier, high effort, cached instructions): unit, words (`exact`, `prefix`), target (`e1`…, an enum), `why`. A target of `''` with a `hint` is a `#gw-link:` marker (one at most) |
+| The checks | `LinkValidator` | The target is real and new; the words are in the unit once; 2–8 words, not vague, not the page's title, not a long target title pasted whole; not in a heading, bold, a quotation, a link, a marker, code or an address; one sentence; not the page's first sentence; one a unit; within the room |
+| The second look | `Studio::verifySeoLinks(LinkCheck)` | One `seo-verifier` call: each link in its paragraph, keep or drop. A failure keeps what passed the checks |
+| Writing | `PlacedLink::linked()`, `DraftEditor` | `[words](href)`; the words never change |
+| What is kept | `SeoState` on `Session::$seo` | `links` (unit, words, href, title, type, url, why), `removed`, `notice`, `checked` |
+
+`InlineLinks::inlineHref(DigestEntry)` is a separate interface from `LinkDialect`, as `LinkPlaceholders` is: `StatamicLinks` gives `statamic://entry::id` (a term: its address), `CraftLinks` `{entry:12@1:url||/address}`, `FilamentLinks` (new) the public address `->publicUrlUsing()` gives, `NoLinks` none. `HtmlDialect::fromMarkdown()` keeps a Craft reference tag in an href as CKEditor stores it (CommonMark would percent-encode its braces), and `LinkCandidates::linkKey()` reads CKEditor's in-editor form (`https://…/x#entry:12@1:url`) too.
+
+**Later turns, edits and removals.** No call: `LinkGuard` runs after every writer turn (where the addon gives a `LinkContext`) and turns any address the writer wasn't given (not in the previous draft, not added by the pass, not a `#gw-link:` marker, not an outside address in the brief or the conversation) into a `#gw-link:` marker. The writer's own markers are never resolved by the pass: Finish this page offers a match. `SessionLayouts::removeLink($session, $href, $site)` is the Text tab's **Remove link**: the words stay, the link leaves `SeoState::$links` for `$removed`, and LinkGuard takes it out again if the writer puts it back.
+
+**Finish this page.** `SessionGaps::fromSession()` carries `SeoState::$links`, and the `AddedLinks` detector (in `GapFinder::standard()`) gives one `links-added` suggestion a link still in the form ("Check 3 links Ghostwriter added. “…” goes to …"), with **Keep it** (`dismiss`, label `gaps.fix.keep-link`) and **Remove the link** (`remove-link`). Its meta has `href` (as stored), `formHref` (as the form holds it), `words`, `title`, `type`, `url`, `why` and `count`. A suggestion: never counted, never blocking. An addon that finds the session for an entry by its gap list should also take one whose `SessionGaps` isn't empty for its links.
+
+**Strings.** `resources/lang/en/seo.php`: the notice (`notice.links`, `notice.links-one`, `notice.no-links`), the status (`status.checking`) and the Text tab's (`link.added`, `link.added-long`, `link.remove`, `link.open`, `link.removed`); `gaps.links-added`, `gaps.links-added-one`, `gaps.speech.links-added`, `gaps.fix.keep-link`.
+
+`Tests\Contracts\LinkInsertContract`: a link `inlineHref()` gives for a real page goes through the addon's real apply path into a rich-text field, reads back as a link to the same page with its words and the markers beside it, and renders as the page's address.

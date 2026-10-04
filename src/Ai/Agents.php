@@ -34,6 +34,8 @@ final class Agents
         'reviewer' => 16000,
         'verifier' => 12000,
         'reworder' => 4000,
+        'seo-editor' => 6000,
+        'seo-verifier' => 4000,
     ];
 
     /** Agents with an effort of their own; the rest leave it to the provider. */
@@ -48,6 +50,8 @@ final class Agents
         'reviewer' => 'high',
         'verifier' => 'high',
         'reworder' => 'medium',
+        'seo-editor' => 'high',
+        'seo-verifier' => 'high',
     ];
 
     /** The tier of the agents that write, read and plan: the default. */
@@ -71,11 +75,12 @@ final class Agents
 
     /**
      * Agents whose instructions are long and the same from call to call
-     * (the review's rules and the voice guide), marked for the provider's
-     * prompt cache where it has one (Anthropic, and Claude through
-     * OpenRouter). Below the provider's minimum size, nothing is cached.
+     * (the review's rules and the voice guide; the SEO pass's link rules
+     * and the voice guide), marked for the provider's prompt cache where it
+     * has one (Anthropic, and Claude through OpenRouter). Below the
+     * provider's minimum size, nothing is cached.
      */
-    public const CACHED = ['reviewer', 'verifier', 'reworder'];
+    public const CACHED = ['reviewer', 'verifier', 'reworder', 'seo-editor', 'seo-verifier'];
 
     public static function cachesInstructions(string $agent): bool
     {

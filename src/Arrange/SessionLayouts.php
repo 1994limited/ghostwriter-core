@@ -2,6 +2,7 @@
 
 namespace NineteenNinetyFour\Ghostwriter\Core\Arrange;
 
+use Closure;
 use InvalidArgumentException;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\ProviderException;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Usage;
@@ -44,8 +45,10 @@ use Throwable;
  * the writer's.
  *
  * Model calls: the first draft's turn makes one to the layout planner,
- * after the writer's; refresh() makes one. Nothing else here calls a
- * model: switching, editing, deleting an extra and applying cost nothing.
+ * after the writer's, and, where the addon links drafts (LayoutContext::
+ * $links), one `seo-editor` and one `seo-verifier` before it (SeoPass);
+ * refresh() makes one. Nothing else here calls a model: switching,
+ * editing, deleting an extra, removing a link and applying cost nothing.
  */
 final class SessionLayouts
 {
@@ -54,6 +57,9 @@ final class SessionLayouts
 
     /** The fewest units worth laying out another way. */
     public const MIN_UNITS = 3;
+
+    /** What the panel says while the planner looks for layouts: "Finding other layouts…". */
+    public const PLANNING = 'planning';
 
     private readonly LoggerInterface $logger;
 
@@ -69,7 +75,7 @@ final class SessionLayouts
         ?SeoPass $seo = null,
     ) {
         $this->logger = $logger ?? new NullLogger;
-        $this->seo = $seo ?? new SeoPass(logger: $this->logger);
+        $this->seo = $seo ?? new SeoPass(logger: $this->logger, studio: $studio);
     }
 
     /**
@@ -79,8 +85,19 @@ final class SessionLayouts
      * layout and brings the others up to date. On the first draft it then
      * asks the layout planner for alternatives. The planner's tokens are
      * added to the session's usage, and returned.
+     *
+     * The SEO pass (①) runs first, on the writer's text: headings fitted,
+     * made-up addresses guarded and, on the first draft where $site has a
+     * LinkContext, links to the site's other pages added (two calls, their
+     * tokens added and returned too), so every layout carries them.
+     * $progress, when given, is told what is under way so the panel can say
+     * so: SeoPass::CHECKING ("Checking headings and links…") before ①
+     * on a first draft that gets links, PLANNING ("Finding other
+     * layouts…") before the planner.
+     *
+     * @param  (Closure(string): void)|null  $progress
      */
-    public function afterWriter(Session $session, ?string $before, TaggedResponse $response, Conversation $conversation, WriterContext $writer, LayoutContext $site): Usage
+    public function afterWriter(Session $session, ?string $before, TaggedResponse $response, Conversation $conversation, WriterContext $writer, LayoutContext $site, ?Closure $progress = null): Usage
     {
         if ($response->document === null) {
             return new Usage;
@@ -92,14 +109,48 @@ final class SessionLayouts
             $session->extras = $this->studio->extras($response, $conversation, $writer, $site->exampleIds)->toArray();
         }
 
-        // ① The SEO pass on the writer's text, before units are cut from it.
-        $this->seo->afterWriter($session, $site);
-
-        if (! $this->afterEdit($session, $before, $site)) {
-            return new Usage;
+        if ($first && $site->links !== null && $progress !== null) {
+            $progress(SeoPass::CHECKING);
         }
 
-        return $first ? $this->plan($session, $site) : new Usage;
+        // ① The SEO pass on the writer's text, before units are cut from it.
+        $this->seo->afterWriter($session, $site, first: $first, before: $before, writer: true);
+        $spent = $this->seo->spent();
+
+        if (! $this->afterEdit($session, $before, $site)) {
+            return $spent;
+        }
+
+        if (! $first) {
+            return $spent;
+        }
+
+        if ($progress !== null) {
+            $progress(self::PLANNING);
+        }
+
+        return $this->plan($session, $site)->plus($spent);
+    }
+
+    /**
+     * "Remove link" on a link the SEO pass added (the Text tab's popover):
+     * the words stay, the link goes from the draft and from the session's
+     * SEO state, and the layouts follow. No model. False when the draft
+     * has no such link.
+     */
+    public function removeLink(Session $session, string $href, LayoutContext $site): bool
+    {
+        $before = $session->draft;
+
+        if (! $this->seo->removeLink($session, $href)) {
+            return false;
+        }
+
+        if ($session->draft !== $before) {
+            $this->afterEdit($session, $before, $site);
+        }
+
+        return true;
     }
 
     /**

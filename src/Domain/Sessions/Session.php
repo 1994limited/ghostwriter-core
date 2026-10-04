@@ -57,6 +57,7 @@ final class Session
      * @param  list<array<string, mixed>>  $extras  The extras the writer prepared with the draft (Arrange\Extras\Extras::toArray()), kept until it sends new ones. Stored like `units`, under `extras`.
      * @param  list<array<string, mixed>>  $plans  The layouts (Arrange\Plans::toArray()): the writer's first, then the planner's. Stored like `units`, under `plans`.
      * @param  string|null  $plan  The chosen layout's id, shared by everyone on the piece; null for the writer's. Stored under `plan` once chosen.
+     * @param  array<string, mixed>  $seo  What the SEO pass did to the draft (Seo\SeoState): the links it added and those removed since, and its notice. Stored like `units`, under `seo` (Filament: a JSON column the addon adds).
      */
     public function __construct(
         public readonly Format $format,
@@ -89,6 +90,7 @@ final class Session
         public array $extras = [],
         public array $plans = [],
         public ?string $plan = null,
+        public array $seo = [],
     ) {
         $this->editing = $editing || $source !== null;
     }
@@ -492,6 +494,10 @@ final class Session
             $data['plan'] = $this->plan;
         }
 
+        if ($this->seo !== [] || array_key_exists('seo', $this->stored)) {
+            $data['seo'] = $format !== Format::Filament ? $this->seo : ($this->seo === [] ? null : $format->json($this->seo));
+        }
+
         // Kept where the record has room for it; Filament's table has no
         // column, and falls back on updated_at, which a claim also sets.
         if ($this->startedWorkingAt !== null && $format !== Format::Filament) {
@@ -533,6 +539,7 @@ final class Session
             extras: self::records($data['extras'] ?? []),
             plans: self::records($data['plans'] ?? []),
             plan: self::nullableText($data['plan'] ?? null),
+            seo: self::map($data['seo'] ?? []),
         );
     }
 
@@ -569,6 +576,7 @@ final class Session
             extras: self::records($data['extras'] ?? []),
             plans: self::records($data['plans'] ?? []),
             plan: self::nullableText($data['plan'] ?? null),
+            seo: self::map($data['seo'] ?? []),
         );
     }
 
@@ -608,7 +616,18 @@ final class Session
             extras: self::records(self::decoded($row['extras'] ?? null)),
             plans: self::records(self::decoded($row['plans'] ?? null)),
             plan: self::nullableText($row['plan'] ?? null),
+            seo: self::map(self::decoded($row['seo'] ?? null)),
         );
+    }
+
+    /**
+     * A stored object (string keys), or nothing.
+     *
+     * @return array<string, mixed>
+     */
+    private static function map(mixed $value): array
+    {
+        return is_array($value) && ! array_is_list($value) ? $value : [];
     }
 
     /**

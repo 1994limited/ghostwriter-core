@@ -33,6 +33,8 @@ return [
     'missing-alt' => 'This image in :label has no alt text.',
     'seo-length' => ':label is too long.',
     'off-style-image' => 'The image in :label doesn\'t look like the others here.',
+    'links-added' => 'Check :count links Ghostwriter added. “:words” goes to :title (:url). Keep it, or remove the link and keep the words.',
+    'links-added-one' => 'Check the link Ghostwriter added. “:words” goes to :title (:url). Keep it, or remove the link and keep the words.',
 
     // The mark's speech label, by kind.
     'speech.ask' => 'Fill this in',
@@ -51,6 +53,7 @@ return [
     'speech.missing-alt' => 'Describe me',
     'speech.seo-length' => 'Too long',
     'speech.off-style-image' => 'Hmm',
+    'speech.links-added' => 'Linked',
 
     // Fixes.
     'fix.answer' => 'Type it in',
@@ -74,6 +77,7 @@ return [
     'fix.focus' => 'I\'ll write it',
     'fix.remove' => 'Remove it',
     'fix.dismiss' => 'It\'s fine',
+    'fix.keep-link' => 'Keep it',
 
     // The guide.
     'guide.title' => 'Finish this page',

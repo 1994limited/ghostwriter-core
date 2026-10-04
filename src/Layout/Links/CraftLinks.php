@@ -3,9 +3,11 @@
 namespace NineteenNinetyFour\Ghostwriter\Core\Layout\Links;
 
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Markers;
+use NineteenNinetyFour\Ghostwriter\Core\Layout\InlineLinks;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\LinkDialect;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\LinkPlaceholders;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Field;
+use NineteenNinetyFour\Ghostwriter\Core\Suggest\DigestEntry;
 
 /**
  * Craft's links: Hyper fields, which hold a list of links each with
@@ -20,8 +22,13 @@ use NineteenNinetyFour\Ghostwriter\Core\Schema\Field;
  *
  * Both validate a link's address, so a link still to choose
  * (placeholderFor()) holds `https://example.com/#gw-link:<hint>`.
+ *
+ * An inline link to another page (inlineHref()) is the reference CKEditor
+ * stores, `{entry:12@1:url||/journal/winter-care}`: the element, its site
+ * and the address as the fallback, so Craft renders the page's current
+ * address. A category is `{category:5@1:url||…}`.
  */
-final class CraftLinks implements LinkDialect, LinkPlaceholders
+final class CraftLinks implements InlineLinks, LinkDialect, LinkPlaceholders
 {
     use MarksLinks;
 
@@ -83,6 +90,20 @@ final class CraftLinks implements LinkDialect, LinkPlaceholders
     public function toSelf(int|string $id): array
     {
         return [$id];
+    }
+
+    public function inlineHref(DigestEntry $entry): ?string
+    {
+        $link = is_string($entry->link) ? trim($entry->link) : '';
+
+        if (preg_match('/^\{(\w+):(\d+)(@\d+)?(?::([\w.]*))?(?:\|\|[^}]*)?\}$/', $link, $m) !== 1) {
+            return null;
+        }
+
+        $fallback = trim((string) $entry->url);
+        $fallback = preg_match('#^(?:https?://|/)[^\s(){}<>|]*$#i', $fallback) === 1 ? '||'.$fallback : '';
+
+        return '{'.$m[1].':'.$m[2].($m[3] ?? '').':'.(($m[4] ?? '') !== '' ? $m[4] : 'url').$fallback.'}';
     }
 
     public function placeholder(Field $field, array $siblings): ?array

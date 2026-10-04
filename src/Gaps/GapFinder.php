@@ -2,6 +2,7 @@
 
 namespace NineteenNinetyFour\Ghostwriter\Core\Gaps;
 
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\AddedLinks;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\AskMarkers;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\AskValues;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\BrokenLinks;
@@ -67,6 +68,7 @@ final class GapFinder
             new PlaceholderText,
             new MissingAlt,
             new SeoLength,
+            new AddedLinks,
         ]);
     }
 

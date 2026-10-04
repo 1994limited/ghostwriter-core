@@ -44,7 +44,30 @@ final class HtmlDialect implements RichTextDialect
             return '';
         }
 
-        return trim((string) (new CommonMarkConverter(['html_input' => 'escape', 'allow_unsafe_links' => false]))->convert($markdown));
+        $html = trim((string) (new CommonMarkConverter(['html_input' => 'escape', 'allow_unsafe_links' => false]))->convert($markdown));
+
+        return self::references($html);
+    }
+
+    /**
+     * Craft's reference tags in links put back as CKEditor stores them:
+     * CommonMark percent-encodes an href's braces and pipes, so
+     * `{entry:12@1:url||/journal/x}` would reach the field as
+     * `%7Bentry:12@1:url%7C%7C/journal/x%7D`, which Craft doesn't resolve.
+     */
+    private static function references(string $html): string
+    {
+        if (! str_contains($html, 'href="%7B')) {
+            return $html;
+        }
+
+        return (string) preg_replace_callback('/href="(%7B[^"]*%7D)"/i', function (array $match) {
+            $decoded = rawurldecode(html_entity_decode($match[1], ENT_QUOTES | ENT_HTML5));
+
+            return preg_match('/^\{\w+:\d+(?:@\d+)?(?::[\w.]*)?(?:\|\|[^{}"]*)?\}$/', $decoded) === 1
+                ? 'href="'.htmlspecialchars($decoded, ENT_QUOTES | ENT_HTML5).'"'
+                : $match[0];
+        }, $html);
     }
 
     public function toMarkdown(mixed $value, Field $field): ?string

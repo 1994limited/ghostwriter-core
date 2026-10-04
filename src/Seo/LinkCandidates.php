@@ -234,7 +234,8 @@ final class LinkCandidates
     /**
      * One form for the ways a link to a page can be written, so a page the
      * draft already links to is known: `entry::abc` for Statamic's
-     * `statamic://entry::abc`, `entry:12` for Craft's `{entry:12@1:url||…}`,
+     * `statamic://entry::abc`, `entry:12` for Craft's `{entry:12@1:url||…}`
+     * (or CKEditor's `https://…/x#entry:12@1:url`),
      * `path:/contact` for an address. Null for anything else (`#gw-link:`,
      * `mailto:`).
      */
@@ -256,6 +257,11 @@ final class LinkCandidates
 
         if (preg_match('/^\{(\w+):(\d+)(?:@\d+)?(?::[\w.]*)?(?:\|\|.*)?\}$/s', $href, $m)) {
             return strtolower($m[1]).':'.$m[2];
+        }
+
+        // CKEditor's form of a reference, as the editor shows it: the address with `#entry:12@1:url`.
+        if (preg_match('/#(entry|category|asset):(\d+)(?:@\d+)?(?::[\w.]*)?$/', $href, $m)) {
+            return $m[1].':'.$m[2];
         }
 
         if (preg_match('/^(#|mailto:|tel:|javascript:)/i', $href)) {
