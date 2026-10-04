@@ -109,7 +109,60 @@ Only two, both named by the design's decisions:
 - **The claim-check switch**, per site: `new SuggestOptions(claims: false)` turns off `stated-count` and the review call's claim flags. Closing dates are always checked.
 - **The age switch, per group:** `AgePolicy::fromGroups($groupsWithADateField, $switchedOff)`. Groups with a date field weigh age and past years at a quarter (`AgePolicy::DATED_WEIGHT`); a switched-off group weighs like any other.
 
-## Ports the addons implement
+## Content to revisit: `Revisit\*`
+
+A list on the Overview that ranks published entries by the free checks, at no cost. No model is ever called, and no request is made unless the weekly external link check is on.
+
+```php
+use NineteenNinetyFour\Ghostwriter\Core\Revisit\{RevisitIndex, RevisitScanner, AgePolicy};
+
+$scanner = new RevisitScanner(
+    AgePolicy::fromGroups($groupsWithADateField, $switchedOff),   // the same policy the snapshots' CheckContexts use
+    ownHosts: ['northfold.co.uk'],                                  // links to these aren't "other sites"
+);
+$index = new RevisitIndex($scanner, $revisitStore);
+
+$index->refreshOne($entrySource, $ref, $now);                      // on save (queued, deduplicated)
+$index->deleted($entrySource, $ref, $now, ['entry::abc']);         // on delete: forget it, rescan its linkers
+$index->refresh($entrySource, $now, $lastRun, $site);              // daily
+$index->refresh($entrySource, $now, $lastRun, $site, full: true);  // weekly, and the first run
+
+$revisitStore->top($site, $group, limit: 25, offset: 0, kinds: ['past-year'], now: $now);  // the list
+$revisitStore->count($site, $group, $kinds, $now);
+$revisitStore->stats($site, $now);   // the tiles: entries per reason kind, and 'worth-a-look'
+$revisitStore->put($row->snooze($now));   // Snooze for 90 days
+```
+
+- **Incremental.** `refreshOne()` scans one entry. `refresh()` scans the entries saved since `$lastRun`, and the rows whose `watch` date has come (the day after a closing date, 1 January for a "New for 2026", the day an entry turns a year old). It only re-scores every other row for its age. `full: true` scans everything and forgets rows whose entry has gone.
+- **Scanning.** `RevisitScanner::scan(EntrySnapshot, $now, ?RevisitRow $previous)` runs `Findings::standard()->without('overlap')` at `$now` (`CheckContext::at()`). It keeps the previous row's snooze and external link results. `rescore(RevisitRow, $now)` updates age and external links without reading the entry. With nothing changed, it equals a scan.
+- **Reasons** (`RevisitReason`, `ReasonKind`): `leftover`, `closing-date`, `broken-link`, `past-year`, `external-link`, `relative-time`, `empty-field`, `stated-count`, `missing-alt`, `seo-length`, `age`. Each has a `message()` (the chip, `revisit.reason.*`: "“New for 2024”", "1 broken link", "no alt text ×3", "2 years old") and a `severity()` (`high`, `medium`, `low`).
+- **Score** (`Priority`): each kind's weight times its count, up to its cap, plus age (20 × `AgePolicy::share()`), capped at 100. In a dated group, age, past years and relative time weigh a quarter. `Priority::word($score)` gives `high` (≥ 60), `medium` (≥ 30, "worth a look") or `low`.
+- **`RevisitRow`**: `entry`, `title`, `editUrl`, `updatedAt`, `reasons`, `score`, `priority()`, `checkedAt`, `contentHash`, `watch`, `linksTo` (what its internal links hold), `external` (URL ⇒ `LinkResult`), `snoozedUntil`, `snooze()`, `has()`, `toArray()`/`fromArray()`.
+- **Reviewing** opens the entry with `?ghostwriter=suggest`. There is no overnight review: a review runs only when someone clicks.
+
+### The weekly external link check (opt-in)
+
+```php
+$check = new ExternalLinkCheck(new HttpLinkProbe($httpClients), $scanner);
+$check->run($revisitStore, new RevisitOptions(externalLinks: $siteSetting), $now, $site);   // weekly
+```
+
+- **Off by default.** `RevisitOptions::$externalLinks` is the site setting the addons expose, and only a manager can turn it on. With it off, `run()` makes no request.
+- **Politeness.** Each address is checked at most once a week (`EVERY`), however many pages link to it, and at most `LIMIT` (500) addresses a run. Requests go one at a time, round-robin across hosts, at least `PER_HOST` (1 s) apart on one host, with a 10 s `TIMEOUT`. The probe sends a HEAD request, falls back to a one-byte GET when the site refuses HEAD, and gives a User-Agent that says what it is.
+- **Results.** A 404, a 410 or a name that no longer resolves is `Broken`. 2xx and 3xx are `Ok`. Anything else (timeouts, 401, 403, 429, 5xx) is `Unknown` and never shown. A link counts as broken only after two Broken checks in a row (`LinkResult::FAILURES`). The results go into each linking row's `external`, so they show in the list at once (`external-link` reason). In the next review they also become Link findings: pass the row's `external` as `CheckContext::$external`.
+- Links to the site's own entries are always checked, with no request (`LinkTargets`).
+
+### Ports for the revisit list
+
+| Port | What | Contract |
+|---|---|---|
+| `Revisit\RevisitStore` | `put`, `get`, `forget`, `top`, `count`, `stats`, `linkingTo`, `all`. Statamic: JSON shards per site and collection; Craft and Filament: a table, plus a links table indexed on the target. | `Tests\Contracts\RevisitStoreContract` |
+| `Revisit\EntrySource` | `all($site, $chunk)` (published, chunked), `updatedSince($since, $site)`, `find($ref)` (unpublished comes back with `published` false). Each `EntrySnapshot` carries the `CheckContext` the free checks read. | `Tests\Contracts\EntrySourceContract` |
+| `Revisit\LinkProbe` | `probe($url, $timeout): LinkResult`. Core's `HttpLinkProbe` works over any `Ai\Ports\HttpClients`; an addon may use its framework's client instead. | `Tests\Contracts\LinkProbeContract` |
+
+In-memory versions for tests: `Revisit\Testing\InMemoryRevisitStore`, `Revisit\Testing\MemoryEntrySource`.
+
+## Ports the free checks read
 
 | Port | What | Contract |
 |---|---|---|
@@ -122,4 +175,4 @@ In-memory versions for tests: `Gaps\Testing\MemoryAssetAlt`, `Suggest\Testing\Me
 
 ## Strings
 
-`resources/lang/en/suggest.php`: `suggest.category.*`, `suggest.speech.*`, `suggest.finding.*`, `suggest.source.*`, `suggest.fact.*`, `suggest.review.*`. `Gaps\Message::english()` now reads any namespace that has a file in `resources/lang/en/` (`suggest`, `revisit`); keys without one are `gaps` keys, as before.
+`resources/lang/en/revisit.php`: `revisit.reason.*`, `revisit.priority.*`, the tiles, the note, the empty state and the external link setting's label and help. `resources/lang/en/suggest.php`: `suggest.category.*`, `suggest.speech.*`, `suggest.finding.*`, `suggest.source.*`, `suggest.fact.*`, `suggest.review.*`. `Gaps\Message::english()` now reads any namespace that has a file in `resources/lang/en/` (`suggest`, `revisit`); keys without one are `gaps` keys, as before.

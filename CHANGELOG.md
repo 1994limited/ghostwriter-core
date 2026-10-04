@@ -28,6 +28,12 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
   - Ports: `Suggest\EntryIndex`, with `Testing\MemoryEntryIndex` and `Tests\Contracts\EntryIndexContract`.
 - **Finish this page: `MissingAlt` and `SeoLength` detectors**, in `GapFinder::standard()` as suggestions (never counted, never blocking). Ports `Gaps\AssetAlt` and `Gaps\SeoFields`, with `SeoField`, `PlainSeoFields`, `Testing\MemoryAssetAlt`, `Tests\Contracts\AssetAltContract` and `SeoFieldsContract`. `GapContext` gains `alt` and `seo` (named, optional): without them, neither detector finds anything, so Finish is unchanged until an addon passes them.
 - `resources/lang/en/suggest.php`. `Gaps\Message::english()` and `strings()` read any namespace with a file in `resources/lang/en/`; keys without one are `gaps` keys, as before.
+- **Content to revisit, with no model (`Revisit\*`).** See docs/suggest-edits.md.
+  - `RevisitScanner` (`scan()`, `rescore()`), `RevisitIndex` (`refreshOne()` on save, `deleted()` rescans the entries that linked to it, `refresh()` daily with `watch` dates, `full: true` weekly), `RevisitRow` (`snooze()`, `priority()`), `RevisitReason`, `ReasonKind`, `Priority`, `EntrySnapshot`, `Links`.
+  - Ports `RevisitStore` and `EntrySource`, with `Testing\InMemoryRevisitStore`, `Testing\MemoryEntrySource`, `Tests\Contracts\RevisitStoreContract` and `EntrySourceContract`.
+  - **The opt-in weekly external link check:** `ExternalLinkCheck` (once a week per address, one request per host per second, 10 s timeout, at most 500 a run), `RevisitOptions::$externalLinks` (off by default), port `LinkProbe` with core's `HttpLinkProbe` (HEAD, then a one-byte GET) and `Tests\Contracts\LinkProbeContract`, `LinkResult` (broken only after two failed checks in a row), `LinkStatus`. Results feed the new `external-link` Link findings (`Suggest\Checks\ExternalLinks`, through `CheckContext::$external`).
+  - `Suggest\Watches` (`PastYears`, `ClosingDates`): when time alone changes a check's answer. `CheckContext::at()`.
+  - `resources/lang/en/revisit.php`.
 
 ### Changed
 

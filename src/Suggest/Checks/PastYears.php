@@ -8,6 +8,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Suggest\Check;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\CheckContext;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\Finding;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\Needs;
+use NineteenNinetyFour\Ghostwriter\Core\Suggest\Watches;
 
 /**
  * A year before this one written as if it were current: "New for 2024",
@@ -19,7 +20,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Suggest\Needs;
  * In a dated group (AgePolicy), a year the entry was written in or after
  * is history too: a 2023 post may say "new for 2023".
  */
-final class PastYears implements Check
+final class PastYears implements Check, Watches
 {
     use ReadsText;
 
@@ -72,5 +73,26 @@ final class PastYears implements Check
                 ]), ['year' => $year]);
             }
         }
+    }
+
+    /** A phrase with this year in it becomes a past year on 1 January. */
+    public function watch(CheckContext $context): array
+    {
+        $phrases = $context->phrases();
+        $thisYear = $context->now->format('Y');
+
+        if ($phrases === null || $phrases->current === []) {
+            return [];
+        }
+
+        $pattern = self::alternation($phrases->current, ['{year}' => preg_quote($thisYear, '/')]);
+
+        foreach ($context->texts() as $text) {
+            if ($text->matches($pattern) !== []) {
+                return [new \DateTimeImmutable(((int) $thisYear + 1).'-01-01')];
+            }
+        }
+
+        return [];
     }
 }
