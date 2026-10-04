@@ -13,7 +13,8 @@ use NineteenNinetyFour\Ghostwriter\Core\Domain\Testing\InMemoryLock;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Testing\InMemorySessionStore;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Viewer;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\Layouts;
-use NineteenNinetyFour\Ghostwriter\Core\Review\SessionReview;
+use NineteenNinetyFour\Ghostwriter\Core\Review\Comments;
+use NineteenNinetyFour\Ghostwriter\Core\Review\Scope;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\EntryData;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\ContentKind;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\Conversation;
@@ -61,7 +62,7 @@ abstract class ReviewTestCase extends StudioTestCase
 
     protected SessionLayouts $layouts;
 
-    protected SessionReview $comments;
+    protected Comments $comments;
 
     protected Viewer $daniel;
 
@@ -80,9 +81,9 @@ abstract class ReviewTestCase extends StudioTestCase
         $this->priya = new Viewer('2');
     }
 
-    protected function comments(): SessionReview
+    protected function comments(): Comments
     {
-        return new SessionReview($this->guard, $this->studio(), $this->layouts, new Layouts, $this->logger());
+        return new Comments($this->guard, $this->studio(), $this->layouts, new Layouts, $this->logger());
     }
 
     protected function site(): LayoutContext
@@ -139,5 +140,31 @@ abstract class ReviewTestCase extends StudioTestCase
         $this->assertNotNull($found);
 
         return $found;
+    }
+
+    /**
+     * Sends comments as one message ([scope, words] each) and returns the session.
+     *
+     * @param  list<array{0: Scope, 1: string}>  $comments
+     */
+    protected function send(Session $session, array $comments, ?Viewer $viewer = null): Session
+    {
+        return $this->comments->apply($session->id, $viewer ?? $this->daniel, array_map(fn (array $comment) => ['scope' => $comment[0], 'body' => $comment[1]], $comments));
+    }
+
+    /**
+     * A sent comment's pin, by number.
+     *
+     * @return array<string, mixed>
+     */
+    protected function pin(Session $session, int $number, ?string $plan = null): array
+    {
+        foreach ($this->comments->pins($this->fresh($session), $plan) as $pin) {
+            if ($pin['number'] === $number) {
+                return $pin;
+            }
+        }
+
+        $this->fail("No comment {$number}.");
     }
 }

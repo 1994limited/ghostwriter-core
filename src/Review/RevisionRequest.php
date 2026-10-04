@@ -10,9 +10,9 @@ use NineteenNinetyFour\Ghostwriter\Core\Studio\Conversation;
 use NineteenNinetyFour\Ghostwriter\Core\Studio\WriterContext;
 
 /**
- * One Apply: the threads in the run, each with what it may change, and
- * what the reviser works from. One call, whatever the number of threads
- * (up to Review::PER_APPLY). Studio::revise() sends it.
+ * One Apply: the comments sent, each with what it may change, and what
+ * the reviser works from. One call, whatever the number of comments (up
+ * to Comments::PER_APPLY). Studio::revise() sends it.
  *
  * The prompt is the current draft, then the comments, the units they may
  * change, the extra items they may change, and the chosen layout.
@@ -20,12 +20,12 @@ use NineteenNinetyFour\Ghostwriter\Core\Studio\WriterContext;
 final class RevisionRequest
 {
     /**
-     * @param  list<Thread>  $threads  In the run, by number.
+     * @param  list<Comment>  $comments  Sent together, by number.
      * @param  Plan|null  $plan  The chosen layout, for context and for a comment that asks to rearrange its block.
      * @param  array<int|string, string>  $names  User id => name, for "By Priya"; optional.
      */
     public function __construct(
-        public readonly array $threads,
+        public readonly array $comments,
         public readonly Units $units,
         public readonly Extras $extras,
         public readonly ?Plan $plan,
@@ -61,22 +61,22 @@ final class RevisionRequest
     }
 
     /**
-     * The units and extra items a thread may change.
+     * The units and extra items a comment may change.
      *
      * @return list<string>
      */
-    public function editable(Thread $thread): array
+    public function editable(Comment $comment): array
     {
-        return $thread->scope->editableUnits($this->units, array_keys($this->extras->items()));
+        return $comment->scope->editableUnits($this->units, array_keys($this->extras->items()));
     }
 
     private function commentLines(): string
     {
         $lines = [];
 
-        foreach ($this->threads as $thread) {
-            $scope = $thread->scope;
-            $ids = array_values(array_filter($this->editable($thread), fn (string $id) => $scope->kind !== ScopeKind::Page));
+        foreach ($this->comments as $comment) {
+            $scope = $comment->scope;
+            $ids = array_values(array_filter($this->editable($comment), fn (string $id) => $scope->kind !== ScopeKind::Page));
             $on = match ($scope->kind) {
                 ScopeKind::Page => 'On the whole page (any unit)',
                 default => 'On '.($scope->label !== null ? '"'.$scope->label.'"' : 'a block').' ('.(count($ids) === 1 ? 'unit ' : 'units ').implode(', ', $ids).')',
@@ -86,18 +86,11 @@ final class RevisionRequest
                 $on .= ', about: "'.$scope->quote->exact.'"';
             }
 
-            $by = $this->names[(string) $thread->startedBy] ?? null;
-            $lines[] = "{$thread->number}. {$on}.".($by !== null ? " By {$by}." : '');
-            $earlier = $thread->lastAnswer();
+            $by = $comment->by !== null ? ($this->names[(string) $comment->by] ?? null) : null;
+            $lines[] = "{$comment->number}. {$on}.".($by !== null ? " By {$by}." : '');
 
-            if ($earlier !== null) {
-                $lines[] = '   '.self::indent('You first said, in reply to: '.$thread->comment()->body);
-                $lines[] = '   '.self::indent('You replied: '.$earlier->body);
-                $lines[] = '   Now:';
-            }
-
-            foreach ($thread->asks() as $note) {
-                $lines[] = '   '.self::indent($note->body);
+            foreach ($comment->asks() as $ask) {
+                $lines[] = '   '.self::indent($ask);
             }
         }
 
@@ -108,8 +101,8 @@ final class RevisionRequest
     {
         $wanted = [];
 
-        foreach ($this->threads as $thread) {
-            foreach ($this->editable($thread) as $id) {
+        foreach ($this->comments as $comment) {
+            foreach ($this->editable($comment) as $id) {
                 $wanted[$id] = true;
             }
         }
@@ -129,8 +122,8 @@ final class RevisionRequest
     {
         $wanted = [];
 
-        foreach ($this->threads as $thread) {
-            foreach ($this->editable($thread) as $id) {
+        foreach ($this->comments as $comment) {
+            foreach ($this->editable($comment) as $id) {
                 $wanted[$id] = true;
             }
         }

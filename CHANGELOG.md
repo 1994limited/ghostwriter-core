@@ -2,6 +2,20 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 it follows semantic versioning: a minor or patch release doesn't break the public API.
 
+## Unreleased
+
+### Changed (breaking for comments, which no addon has shipped)
+
+- **Comments are conversation messages.** The separate review store is gone. Pins not sent yet are the editor's own, in their panel; **Apply** sends them as one message from the editor (`comments.items`: each comment's number, scope, words, author and the hashes of what it may change), claiming the piece as Send does, and the job's one `reviser` call ends in one message from Ghostwriter (`comments.answers` naming the editor's message, `comments.results`: Changed with its before and after, Replied, Refused or Skipped, each with a reply in plain words). Put back and Resolve are noted on that answer. Shared conversations (E7) need nothing more: one run at a time through the session's claim, with no version to compare. See docs/comments.md.
+  - `Review\Comments` replaces `SessionReview`: `apply()`, `revise()`, `fail()`, `resolve()` (and reopen), `putBack()`, `pins()` (every sent comment with its status worked out from the conversation, the blocks holding it in a layout, and whether its words have gone), `where()`, `unanswered()`, `nextNumber()`, `itemsOf()`, `resultsOf()`, `blocksOf()`.
+  - `Comment`, `CommentResult`, `CommentOutcome`, `CommentStatus` (Revising, Changed, Replied, Not applied, Skipped, Resolved, Detached).
+  - `RevisionRequest`, `RevisionValidator::check()`, `Verdict` and `RevisionApplier::apply()` take `Comment`s; `Change::$version` is the index of the editor's message.
+  - `ReviewRules` keeps `mayComment()` and `mayApply()`.
+
+### Removed
+
+- `Session::$review` (and its `review` key), `Review`, `Thread`, `Note`, `NoteKind`, `ThreadStatus`, `SessionReview` and its add, edit, delete, reply, repin and version checks, `beforeData()`, and the re-anchoring in `SessionLayouts::afterEdit()` (a pin follows its unit ids, which `UnitMatcher` carries; one whose words are gone shows Detached).
+
 ## 1.9.0 - 2026-10-04
 
 ### Added

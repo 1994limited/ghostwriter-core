@@ -26,32 +26,35 @@ use Throwable;
 
 /**
  * Applies the reviser's reply to the session, under its lock, with no
- * model (§6.5). For each thread in the run, in number order:
+ * model (§6.5). For each comment in the run (an editor's comments message),
+ * in number order:
  *
  * 1. **Conflicts.** Each unit (or extra item) it touches is compared with
- *    the hash recorded when the run started; one someone changed meanwhile
- *    is skipped, and the thread goes back to Not sent saying so. So is a
- *    unit an earlier comment in the same run rewrote whole.
- * 2. **Checks** (RevisionValidator). A thread that breaks a rule keeps the
- *    draft as it was and goes back to Not sent with a plain reply.
+ *    the hash recorded when it was sent; one someone changed meanwhile is
+ *    skipped, and its result says so. So is a unit an earlier comment in
+ *    the same run rewrote whole.
+ * 2. **Checks** (RevisionValidator). A comment that breaks a rule keeps the
+ *    draft as it was and is Refused, with a plain reason.
  * 3. **The draft and units.** What passes is written with Text\DraftEditor,
  *    unit ids kept by place, extras edited; then SessionLayouts::afterEdit()
- *    re-arranges the layouts and re-anchors the comments (no call).
+ *    re-arranges the layouts (no call).
  * 4. **A new arrangement** a comment asked for replaces its block in the
  *    chosen layout when it passes the layout rules (the writer's own
  *    layout is the draft, so the draft is re-arranged); otherwise the
  *    reply says the layout was kept.
- * 5. **Answers.** Each thread gets Ghostwriter's reply, with a Change
- *    (before and after) per unit it changed: Changed, or Replied.
+ * 5. **The answer.** One assistant message, `comments.answers` naming the
+ *    editor's message, with a CommentResult per comment: Changed (a Change
+ *    per unit, before and after), Replied, Refused or Skipped.
  *
- * Then the chat gets one line summing up, the run's tokens go on the
- * session's usage, and the piece is idle again.
+ * The run's tokens go on the session's usage, and the piece is idle again.
  */
 final class RevisionApplier
 {
     public const CONFLICT = 'Someone changed this block while I was working, so I changed nothing. Apply again to use the new version.';
 
     public const SAME_RUN = 'Another comment in this round rewrote the same text, so I changed nothing for this one. Apply again to use the new version.';
+
+    public const UNREADABLE = 'The draft couldn’t be read, so I changed nothing.';
 
     public const REFUSED = [
         RevisionValidator::SCOPE => 'I couldn’t make this change without touching other parts of the page. Try commenting on the whole section.',
@@ -78,14 +81,14 @@ final class RevisionApplier
     }
 
     /**
-     * Applies the reply to the threads in the run. Call it with the session
-     * read afresh under its lock (SessionGuard::change()).
+     * Applies the reply to the comments of the message at `$run`. Call it
+     * with the session read afresh under its lock (SessionGuard::change()).
+     *
+     * @param  list<Comment>  $comments
      */
-    public function apply(Session $session, RevisionReply $reply, LayoutContext $site, ExtraSources $sources, Usage $usage = new Usage, ?DateTimeInterface $now = null): ApplyOutcome
+    public function apply(Session $session, int $run, array $comments, RevisionReply $reply, LayoutContext $site, ExtraSources $sources, Usage $usage = new Usage, ?DateTimeInterface $now = null): ApplyOutcome
     {
         $now ??= new DateTimeImmutable;
-        $review = Review::fromArray($session->review);
-        $threads = $review->sending();
 
         try {
             $draft = Draft::parse((string) $session->draft);
@@ -93,12 +96,10 @@ final class RevisionApplier
             $draft = null;
         }
 
-        if ($threads === [] || $draft === null) {
-            foreach ($threads as $thread) {
-                $review->sendBack($thread->id, 'The draft couldn’t be read, so I changed nothing.', $now);
-            }
+        if ($comments === [] || $draft === null) {
+            $results = array_map(fn (Comment $comment) => new CommentResult($comment->number, $comment->id, CommentOutcome::Failed, self::UNREADABLE), $comments);
 
-            return $this->finish($session, $review, $usage, new ApplyOutcome(failed: $threads === [] ? null : 'The draft couldn’t be read.', usage: $usage), $now);
+            return $this->finish($session, $run, $results, $usage, new ApplyOutcome(failed: $comments === [] ? null : 'The draft couldn’t be read.', usage: $usage, summary: 'I couldn’t apply the comments: the draft couldn’t be read. Nothing changed.'), $now);
         }
 
         $schema = $site->schema;
@@ -111,32 +112,34 @@ final class RevisionApplier
         $other = array_values(array_filter([$sources->draft, ...array_column($sources->entries, 'text'), ...$sources->conversation], fn (string $text) => trim($text) !== ''));
         $rewritten = [];
         $answers = [];
+        $results = [];
         $refused = [];
         $conflicted = [];
         $touched = [];
 
-        foreach ($threads as $thread) {
-            $item = $reply->item($thread->number);
-            $conflict = $this->conflict($thread, $item, $started, $rewritten);
+        foreach ($comments as $comment) {
+            $item = $reply->item($comment->number);
+            $conflict = $this->conflict($comment, $item, $started, $rewritten);
 
             if ($conflict !== null) {
-                $review->sendBack($thread->id, $conflict, $now);
-                $conflicted[] = $thread->number;
+                $results[$comment->number] = new CommentResult($comment->number, $comment->id, CommentOutcome::Skipped, $conflict);
+                $conflicted[] = $comment->number;
 
                 continue;
             }
 
-            $verdict = $validator->check($thread, $item, $data, $units, $extras, $brief, $other);
+            $verdict = $validator->check($comment, $item, $data, $units, $extras, $brief, $other);
 
             if (! $verdict->passes()) {
-                $review->sendBack($thread->id, self::refusal($verdict), $now);
-                $refused[$thread->number] = $verdict->rules;
-                $this->logger->info("Ghostwriter: comment {$thread->number} was not applied (".implode(', ', $verdict->rules).').', ['agent' => 'reviser', 'rules' => $verdict->rules]);
+                $results[$comment->number] = new CommentResult($comment->number, $comment->id, CommentOutcome::Refused, self::refusal($verdict), rules: $verdict->rules);
+                $refused[$comment->number] = $verdict->rules;
+                $this->logger->info("Ghostwriter: comment {$comment->number} was not applied (".implode(', ', $verdict->rules).').', ['agent' => 'reviser', 'rules' => $verdict->rules]);
 
                 continue;
             }
 
             $changes = [];
+            $quote = null;
 
             foreach ($verdict->units as $id => $after) {
                 $before = $units->get($id)->markdown ?? '';
@@ -145,12 +148,12 @@ final class RevisionApplier
                     continue;
                 }
 
-                $changes[] = new Change($id, $before, $after, $review->version + 1, $verdict->filled[$id] ?? []);
+                $changes[] = new Change($id, $before, $after, $run, $verdict->filled[$id] ?? []);
                 $rewritten[$id] = isset($item->units[$id]) || isset($rewritten[$id]);
                 $touched[$id] = true;
 
-                if ($thread->scope->kind === ScopeKind::Text && $thread->scope->units === [$id]) {
-                    $thread->scope = self::requoted($thread->scope, $before, $after);
+                if ($comment->scope->kind === ScopeKind::Text && $comment->scope->units === [$id]) {
+                    $quote = self::requoted($comment->scope, $before, $after)->quote;
                 }
             }
 
@@ -158,7 +161,7 @@ final class RevisionApplier
                 $old = $extras->item($id);
                 $before = $old === null ? '' : $old->text;
                 $extras = $change === null ? $extras->without($id) : $extras->edit($id, $change['text'], $change['parts'] === [] ? null : $change['parts'] + ($old === null ? [] : $old->parts));
-                $changes[] = new Change($id, $before, $change['text'] ?? '', $review->version + 1, $verdict->filled[$id] ?? [], cut: $change === null);
+                $changes[] = new Change($id, $before, $change['text'] ?? '', $run, $verdict->filled[$id] ?? [], cut: $change === null);
                 $rewritten[$id] = true;
                 $touched[$id] = true;
             }
@@ -168,21 +171,19 @@ final class RevisionApplier
                 $units = $this->units($data, $schema, $units->sidecar());
             }
 
-            $answers[$thread->id] = ['verdict' => $verdict, 'changes' => $changes, 'notes' => self::notes($verdict)];
+            $answers[$comment->number] = ['comment' => $comment, 'verdict' => $verdict, 'changes' => $changes, 'notes' => self::notes($verdict), 'quote' => $quote];
         }
 
         if ($touched !== []) {
             $session->draft = $this->editor->dump($data);
             $session->units = $units->sidecar();
             $session->extras = $extras->toArray();
-            $session->review = $review->toArray();
             $this->sessionLayouts->afterEdit($session, null, $site);
-            $review = Review::fromArray($session->review);
         }
 
         $laidOut = [];
 
-        foreach ($answers as $threadId => $answer) {
+        foreach ($answers as $number => $answer) {
             $verdict = $answer['verdict'];
 
             if ($verdict->layout === null) {
@@ -191,31 +192,36 @@ final class RevisionApplier
 
             $why = null;
 
-            if ($this->layOut($session, $verdict->layout, $review->find($threadId)->scope, $site, $validator, $why)) {
-                $laidOut[] = $verdict->thread->number;
-                $answers[$threadId]['changes'][] = new Change('@layout', '', '', $review->version + 1, layout: true, cut: true);
+            if ($this->layOut($session, $verdict->layout, $answer['comment']->scope, $site, $validator, $why)) {
+                $laidOut[] = $number;
+                $answers[$number]['changes'][] = new Change('@layout', '', '', $run, layout: true, cut: true);
             } else {
-                $answers[$threadId]['notes'][] = 'I kept the layout'.($why !== null ? ": {$why}" : '').'.';
-                $this->logger->info("Ghostwriter: comment {$verdict->thread->number}'s new arrangement was not used ({$why}).", ['agent' => 'reviser']);
+                $answers[$number]['notes'][] = 'I kept the layout'.($why !== null ? ": {$why}" : '').'.';
+                $this->logger->info("Ghostwriter: comment {$number}'s new arrangement was not used ({$why}).", ['agent' => 'reviser']);
             }
         }
 
         $changed = [];
         $replied = [];
 
-        foreach ($answers as $threadId => $answer) {
+        foreach ($answers as $number => $answer) {
             $body = trim(implode(' ', array_filter([$answer['verdict']->reply !== '' ? $answer['verdict']->reply : ($answer['changes'] === [] ? 'I left this as it is.' : 'Done.'), ...$answer['notes']])));
-            $thread = $review->answer($threadId, $body, $answer['changes'], $now);
-            $answer['changes'] === [] ? $replied[] = $thread->number : $changed[] = $thread->number;
+            $outcome = $answer['changes'] === [] ? CommentOutcome::Replied : CommentOutcome::Changed;
+            $results[$number] = new CommentResult($number, $answer['comment']->id, $outcome, $body, $answer['changes'], quote: $answer['quote']);
+            $outcome === CommentOutcome::Changed ? $changed[] = $number : $replied[] = $number;
         }
 
-        $outcome = new ApplyOutcome($changed, $replied, $refused, $conflicted, $laidOut, array_keys($touched), self::summary($review, $changed, $replied, count($refused) + count($conflicted)), null, $usage);
+        ksort($results);
+        sort($changed);
+        sort($replied);
 
-        return $this->finish($session, $review, $usage, $outcome, $now);
+        $outcome = new ApplyOutcome($changed, $replied, $refused, $conflicted, $laidOut, array_keys($touched), self::summary($comments, $changed, $replied, count($refused) + count($conflicted)), null, $usage);
+
+        return $this->finish($session, $run, array_values($results), $usage, $outcome, $now);
     }
 
     /**
-     * Each touched unit's or extra item's hash now, as Review::send() records them.
+     * Each touched unit's or extra item's hash now, as Comments::apply() records them.
      *
      * @return array<string, string>
      */
@@ -235,20 +241,20 @@ final class RevisionApplier
     }
 
     /**
-     * Why a thread can't be applied now: someone changed what it touches
+     * Why a comment can't be applied now: someone changed what it touches
      * since the run started, or an earlier comment rewrote it whole.
      *
      * @param  array<string, string>  $now
      * @param  array<string, bool>  $rewritten
      */
-    private function conflict(Thread $thread, ?RevisionItem $item, array $now, array $rewritten): ?string
+    private function conflict(Comment $comment, ?RevisionItem $item, array $now, array $rewritten): ?string
     {
         if ($item === null) {
             return null;
         }
 
         foreach ($item->touched() as $id) {
-            if (isset($thread->hashes[$id]) && ($now[$id] ?? null) !== $thread->hashes[$id]) {
+            if (isset($comment->hashes[$id]) && ($now[$id] ?? null) !== $comment->hashes[$id]) {
                 return self::CONFLICT;
             }
 
@@ -296,10 +302,12 @@ final class RevisionApplier
         return true;
     }
 
-    private function finish(Session $session, Review $review, Usage $usage, ApplyOutcome $outcome, DateTimeInterface $now): ApplyOutcome
+    /**
+     * @param  list<CommentResult>  $results
+     */
+    private function finish(Session $session, int $run, array $results, Usage $usage, ApplyOutcome $outcome, DateTimeInterface $now): ApplyOutcome
     {
-        $session->review = $review->toArray();
-        $session->addMessage('assistant', $outcome->summary !== '' ? $outcome->summary : 'I couldn’t apply the comments this time. They’re back in the list to send again.', null, ['review' => ['step' => 'revised', 'changed' => $outcome->changed, 'replied' => $outcome->replied, 'refused' => array_keys($outcome->refused), 'conflicted' => $outcome->conflicted]], $now);
+        $session->addMessage('assistant', $outcome->summary !== '' ? $outcome->summary : 'Nothing changed.', null, [Comments::KEY => ['answers' => $run, 'results' => array_map(fn (CommentResult $result) => $result->toArray(), $results)]], $now);
         $session->usage = ['input' => (int) ($session->usage['input'] ?? 0) + $usage->input, 'output' => (int) ($session->usage['output'] ?? 0) + $usage->output] + $session->usage;
         $session->status = Session::IDLE;
         $session->error = null;
@@ -377,7 +385,7 @@ final class RevisionApplier
         $line = self::REFUSED[$rule] ?? self::REFUSED[RevisionValidator::SCOPE];
 
         if ($rule === RevisionValidator::FACTS && $verdict->unsourced !== []) {
-            $line = 'That change needed something I don’t have ('.implode(', ', array_slice($verdict->unsourced, 0, 3)).'). Tell me in a reply and apply again.';
+            $line = 'That change needed something I don’t have ('.implode(', ', array_slice($verdict->unsourced, 0, 3)).'). Say it in a new comment and apply again.';
         }
 
         return $line;
@@ -386,15 +394,16 @@ final class RevisionApplier
     /**
      * The chat's line for the run.
      *
+     * @param  list<Comment>  $comments
      * @param  list<int>  $changed
      * @param  list<int>  $replied
      */
-    private static function summary(Review $review, array $changed, array $replied, int $notApplied): string
+    private static function summary(array $comments, array $changed, array $replied, int $notApplied): string
     {
-        $label = function (int $number) use ($review): string {
-            foreach ($review->all() as $thread) {
-                if ($thread->number === $number) {
-                    return $thread->scope->label ?? ($thread->scope->kind === ScopeKind::Page ? 'the page' : "comment {$number}");
+        $label = function (int $number) use ($comments): string {
+            foreach ($comments as $comment) {
+                if ($comment->number === $number) {
+                    return $comment->scope->label ?? ($comment->scope->kind === ScopeKind::Page ? 'the page' : "comment {$number}");
                 }
             }
 
@@ -411,7 +420,7 @@ final class RevisionApplier
         }
 
         if ($notApplied > 0) {
-            $lines[] = $notApplied.' '.($notApplied === 1 ? 'comment' : 'comments').' couldn’t be applied and '.($notApplied === 1 ? 'is' : 'are').' back to Not sent.';
+            $lines[] = $notApplied.' '.($notApplied === 1 ? 'comment' : 'comments').' couldn’t be applied; '.($notApplied === 1 ? 'its' : 'their').' reason is with '.($notApplied === 1 ? 'it' : 'each').'.';
         }
 
         return $lines === [] ? 'Nothing changed.' : implode(' ', $lines);
