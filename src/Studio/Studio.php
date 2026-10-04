@@ -9,6 +9,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\Image;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Message;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\OutputSchema;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers;
+use NineteenNinetyFour\Ghostwriter\Core\Ai\Structured\JsonReply;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TakesSchemas;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextProvider;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\TextRequest;
@@ -844,7 +845,7 @@ final class Studio
      */
     private function askStructured(string $agent, string $prompt, OutputSchema $schema, Closure $read, string $what, array $context = [], array $images = [], ?string $instructions = null, array $history = []): array
     {
-        $response = $this->ask($agent, $prompt, $history, $images, $instructions, schema: $schema);
+        $response = self::decoded($this->ask($agent, $prompt, $history, $images, $instructions, schema: $schema));
         [$value, $problem, $logged] = $read($response) + [null, null, null];
 
         if ($problem === null) {
@@ -859,7 +860,7 @@ final class Studio
 
         $this->unreadable("{$what} (".($logged ?? $problem).'); asking again once', $agent, $response->text, $context);
 
-        $again = $this->ask($agent, $prompt."\n\nYour last answer to this couldn't be read: {$problem}. Answer again, in full, exactly in the format asked.", $history, $images, $instructions, schema: $schema);
+        $again = self::decoded($this->ask($agent, $prompt."\n\nYour last answer to this couldn't be read: {$problem}. Answer again, in full, exactly in the format asked.", $history, $images, $instructions, schema: $schema));
         [$value, $problem, $logged] = $read($again) + [null, null, null];
 
         if ($problem !== null) {
@@ -867,6 +868,20 @@ final class Studio
         }
 
         return [$again->withUsage($response->usage->plus($again->usage)), $value, $problem];
+    }
+
+    /**
+     * A reply that wasn't held to its schema (a provider refused the format
+     * and was asked again without it) but is JSON anyway, as the structured
+     * prompt asked: decoded, so it is read as one held to it would be.
+     */
+    private static function decoded(TextResponse $response): TextResponse
+    {
+        if ($response->structured !== null || ($data = JsonReply::decode($response->text)) === null) {
+            return $response;
+        }
+
+        return new TextResponse($response->text, $response->stopReason, $response->usage, $response->provider, $response->model, $data, $response->structuredBy);
     }
 
     /** A schema core ships, from resources/schemas. */

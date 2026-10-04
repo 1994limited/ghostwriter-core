@@ -46,8 +46,7 @@ final class PlanSchemaTest extends TestCase
 
         $block = $claude['properties']['plans']['items']['properties']['fields']['items']['properties']['blocks']['items'];
         $this->assertArrayHasKey('children', $block['properties']);
-        $this->assertArrayHasKey('children', $block['properties']['children']['items']['properties']);
-        $this->assertArrayNotHasKey('children', $block['properties']['children']['items']['properties']['children']['items']['properties'], 'Three levels, then no more.');
+        $this->assertArrayNotHasKey('children', $block['properties']['children']['items']['properties'], 'As deep as the site\'s blocks nest (a section of cards), no deeper.');
         $this->assertSame('notes', array_key_first($claude['properties']['plans']['items']['properties']));
         $this->assertContains('hero', $block['properties']['type']['enum']);
         $this->assertContains('card', $block['properties']['type']['enum'], 'Nested sets too.');

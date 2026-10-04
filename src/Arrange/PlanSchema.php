@@ -22,13 +22,16 @@ use NineteenNinetyFour\Ghostwriter\Core\Schema\Schema;
  *       "fields": [{"field": "page_builder",
  *         "blocks": [{"type": "hero", "place": [{"field": "heading", "refs": ["u1"]}],
  *                     "rows": [{"field": "", "cells": [{"column": "question", "ref": "x2.1.question"}]}],
- *                     "transform": "", "level": 0, "transforms": [{"ref": "u4#2", "transform": "lead-in-to-heading"}],
- *                     "children": […]}],
+ *                     "transform": "", "level": 0, "children": […]}],
  *         "constructs": [], "refs": []}]}]}
  *
- * Blocks nest three deep (a block, its children, theirs), which is as
- * deep as the site's page builders go in practice; deeper would need
- * recursion. Block types and field handles are enums of the site's own,
+ * Only what the site's fields need is in it: `rows` where a block has a
+ * rows field, `constructs` where there is rich text, `refs` where there is
+ * a plain field, and blocks nested only as deep as the site's builders go,
+ * at most three (deeper would need recursion). Claude refuses a grammar
+ * that compiles too large, and every level of nesting multiplies it. A
+ * transform is for a whole block; the YAML's per-ref transforms aren't
+ * offered (`transforms`, if a model sends them, is still read). Block types and field handles are enums of the site's own,
  * so a reply can't name a set that doesn't exist; refs stay strings, and
  * PlanValidator checks every one as before.
  */
@@ -42,6 +45,9 @@ final class PlanSchema
         $handles = [];
         $types = [];
         $constructs = ['text', 'p', 'h2', 'h3', 'h4', 'h5', 'h6', 'list', 'quote'];
+        $depth = 0;
+        $rich = false;
+        $plain = false;
 
         foreach ($schema->fields as $field) {
             if (! $field->isWritable()) {
@@ -51,11 +57,14 @@ final class PlanSchema
             if ($field->isBuilder()) {
                 $handles[] = $field->handle;
                 array_push($types, ...self::types($field, 1));
+                $depth = max($depth, self::depth($field, 1));
             } elseif (Plans::isMarkdown($field)) {
                 $handles[] = $field->handle;
+                $rich = true;
                 array_push($constructs, ...array_map(fn ($set) => 'set:'.$set, array_map('strval', array_keys($field->sets))));
             } elseif (in_array($field->kind, [Kind::Text, Kind::LongText, Kind::List], true)) {
                 $handles[] = $field->handle;
+                $plain = true;
             }
         }
 
@@ -65,13 +74,15 @@ final class PlanSchema
         $transform = ['type' => 'string', 'enum' => $transforms, 'description' => 'For the whole block; "" for none.'];
         $block = null;
 
-        for ($depth = self::DEPTH; $depth >= 1; $depth--) {
+        $rows = self::hasRows($schema);
+
+        for ($level = min($depth, self::DEPTH); $level >= 1; $level--) {
             $properties = [
                 'type' => $types !== [] ? ['type' => 'string', 'enum' => $types] : ['type' => 'string'],
                 'place' => ['type' => 'array', 'description' => 'The set\'s fields and what goes in each.', 'items' => [
                     'type' => 'object', 'required' => ['field', 'refs'], 'properties' => ['field' => ['type' => 'string'], 'refs' => $refs],
                 ]],
-                'rows' => ['type' => 'array', 'description' => 'For a rows field, one item per row; `field` is the rows field, "" when the set has one.', 'items' => [
+                'rows' => ! $rows ? null : ['type' => 'array', 'description' => 'For a rows field, one item per row; `field` is the rows field, "" when the set has one.', 'items' => [
                     'type' => 'object', 'required' => ['field', 'cells'], 'properties' => [
                         'field' => ['type' => 'string'],
                         'cells' => ['type' => 'array', 'items' => ['type' => 'object', 'required' => ['column', 'ref'], 'properties' => ['column' => ['type' => 'string'], 'ref' => ['type' => 'string']]]],
@@ -79,10 +90,8 @@ final class PlanSchema
                 ]],
                 'transform' => $transform,
                 'level' => ['type' => 'integer', 'description' => 'With heading-level or lead-in-to-heading: the level; 0 otherwise.'],
-                'transforms' => ['type' => 'array', 'description' => 'A transform for one ref only.', 'items' => [
-                    'type' => 'object', 'required' => ['ref', 'transform'], 'properties' => ['ref' => ['type' => 'string'], 'transform' => ['type' => 'string', 'enum' => array_slice($transforms, 1)]],
-                ]],
             ];
+            $properties = array_filter($properties, fn ($property) => $property !== null);
 
             if ($block !== null) {
                 $properties['children'] = ['type' => 'array', 'description' => 'Blocks inside this one.', 'items' => $block];
@@ -105,25 +114,21 @@ final class PlanSchema
                         'name' => ['type' => 'string', 'description' => 'Two or three words.'],
                         'description' => ['type' => 'string', 'description' => 'One line about the shape, not the words.'],
                         'follows' => ['type' => 'string', 'description' => 'The site pattern followed (p-2), or "".'],
-                        'fields' => ['type' => 'array', 'items' => [
-                            'type' => 'object',
-                            'required' => ['field', 'blocks', 'constructs', 'refs'],
-                            'properties' => [
-                                'field' => $handles !== [] ? ['type' => 'string', 'enum' => $handles] : ['type' => 'string'],
-                                'blocks' => ['type' => 'array', 'description' => 'For a page builder; [] otherwise.', 'items' => $block],
-                                'constructs' => ['type' => 'array', 'description' => 'For rich text; [] otherwise.', 'items' => [
-                                    'type' => 'object',
-                                    'required' => ['type', 'from', 'transform', 'level'],
-                                    'properties' => [
-                                        'type' => ['type' => 'string', 'enum' => array_values(array_unique($constructs))],
-                                        'from' => $refs,
-                                        'transform' => $transform,
-                                        'level' => ['type' => 'integer'],
-                                    ],
-                                ]],
-                                'refs' => $refs + ['description' => 'For a plain field; [] otherwise.'],
-                            ],
-                        ]],
+                        'fields' => ['type' => 'array', 'items' => self::entry(array_filter([
+                            'field' => $handles !== [] ? ['type' => 'string', 'enum' => $handles] : ['type' => 'string'],
+                            'blocks' => $block === null ? null : ['type' => 'array', 'description' => 'For a page builder; [] otherwise.', 'items' => $block],
+                            'constructs' => ! $rich ? null : ['type' => 'array', 'description' => 'For rich text; [] otherwise.', 'items' => [
+                                'type' => 'object',
+                                'required' => ['type', 'from', 'transform', 'level'],
+                                'properties' => [
+                                    'type' => ['type' => 'string', 'enum' => array_values(array_unique($constructs))],
+                                    'from' => $refs,
+                                    'transform' => $transform,
+                                    'level' => ['type' => 'integer'],
+                                ],
+                            ]],
+                            'refs' => ! $plain ? null : $refs + ['description' => 'For a plain field; [] otherwise.'],
+                        ], fn ($property) => $property !== null))],
                     ],
                 ],
             ]],
@@ -225,6 +230,47 @@ final class PlanSchema
     private static function list(mixed $value): array
     {
         return is_array($value) ? array_values(array_filter($value, 'is_array')) : [];
+    }
+
+    /**
+     * @param  array<string, mixed>  $properties
+     * @return array<string, mixed>
+     */
+    private static function entry(array $properties): array
+    {
+        return ['type' => 'object', 'required' => array_keys($properties), 'properties' => $properties];
+    }
+
+    /** How deep the field's blocks nest: 1 for blocks with no blocks inside. */
+    private static function depth(Field $field, int $depth): int
+    {
+        $deepest = $depth;
+
+        foreach ($field->sets as $set) {
+            foreach ($set->fields as $setField) {
+                if ($setField->isBuilder() && $depth < self::DEPTH) {
+                    $deepest = max($deepest, self::depth($setField, $depth + 1));
+                }
+            }
+        }
+
+        return $deepest;
+    }
+
+    /** Whether any block the planner may use has a rows field. */
+    private static function hasRows(Schema $schema): bool
+    {
+        $walk = function (array $fields) use (&$walk): bool {
+            foreach ($fields as $field) {
+                if ($field->kind === Kind::Rows || ($field->isBuilder() && array_filter($field->sets, fn ($set) => $walk($set->fields)) !== [])) {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
+        return $walk($schema->fields);
     }
 
     /**

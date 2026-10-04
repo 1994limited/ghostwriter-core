@@ -154,7 +154,8 @@ final class SchemasTest extends TestCase
         $this->assertSame(['a' => 1], JsonReply::decode(' {"a": 1} '));
         $this->assertSame(['a' => 1], JsonReply::decode("```json\n{\"a\": 1}\n```"));
         $this->assertNull(JsonReply::decode('[1, 2]'));
-        $this->assertNull(JsonReply::decode('<suggestions>{"a": 1}</suggestions>'));
+        $this->assertSame(['a' => 1], JsonReply::decode('<suggestions>{"a": 1}</suggestions>'), 'JSON in the tag a tagged prompt asks for.');
+        $this->assertNull(JsonReply::decode('<a>{"a": 1}</b>'));
         $this->assertNull(JsonReply::decode(''));
     }
 
