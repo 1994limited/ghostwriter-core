@@ -355,6 +355,18 @@ final class EditReviewsTest extends TestCase
         $this->fake->assertNothingSent();
     }
 
+    public function test_new_words_already_inside_the_old_ones_are_not_taken_as_done(): void
+    {
+        $this->ready();
+        $preview = $this->reviews->preview(Northfold::context(), Northfold::ref());
+        $states = array_column($preview['review']['suggestions'] ?? [], 'state', 'category');
+
+        // "Winter care visits" is in "New for 2024: winter care visits", and
+        // the version without "team of 6" is in "team of 6".
+        $this->assertSame('open', $states['out-of-date']);
+        $this->assertSame('open', $states['fact-to-check']);
+    }
+
     public function test_an_edit_in_the_form_makes_a_stored_review_stale_on_preview(): void
     {
         $this->ready();

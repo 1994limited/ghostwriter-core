@@ -13,7 +13,8 @@ use NineteenNinetyFour\Ghostwriter\Core\Anchor\QuoteFinder;
  * model; the content is the truth.
  *
  * For each suggestion still open or accepted:
- * - **Done** when the field has its new words: the replacement, an
+ * - **Done** when the field has its new words (and, where they were in
+ *   the old words already, the old words have gone): the replacement, an
  *   alternative, a version written later, the words the editor put in
  *   (Edit), a Fact to check's template filled with the answer, or its
  *   version without; for a link, the new target; for alt text, the asset's
@@ -75,9 +76,14 @@ final class Reconciler
         }
 
         $haystack = ' '.self::norm($plain).' ';
+        $found = $anchor->quote !== null && $text !== null && $this->quotes->find($anchor->quote, $plain, $anchor->occurrence) !== null;
+        $quote = $anchor->quote !== null ? self::norm($anchor->quote->exact) : '';
 
         foreach ($candidates as $words) {
-            if (str_contains($haystack, ' '.$words.' ')) {
+            // New words that were in the old ones already ("Winter care
+            // visits" in "New for 2024: winter care visits") count only once
+            // the old words have gone, unless they hold them.
+            if (str_contains($haystack, ' '.$words.' ') && (! $found || ($quote !== '' && str_contains(' '.$words.' ', ' '.$quote.' ')))) {
                 return SuggestionState::Done;
             }
         }
@@ -85,8 +91,6 @@ final class Reconciler
         if ($suggestion->replacement === null && $suggestion->link !== null && $text !== null && self::links($text->markdown, $suggestion->link->target)) {
             return SuggestionState::Done;
         }
-
-        $found = $anchor->quote !== null && $text !== null && $this->quotes->find($anchor->quote, $plain, $anchor->occurrence) !== null;
 
         return $found ? null : SuggestionState::Stale;
     }
