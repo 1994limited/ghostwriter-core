@@ -107,7 +107,7 @@ final class FakeOpenRouter implements ConnectsProvider
     public function account(): ProviderAccount
     {
         if (! $this->usesEnvKey() && ! $this->connected()) {
-            throw new NotConfigured('OpenRouter isn\'t connected. Connect with OpenRouter in the settings, or add OPENROUTER_API_KEY to your .env file.', 'openrouter');
+            throw new NotConfigured('OpenRouter isn\'t connected. Connect it in Ghostwriter\'s Connections (or set OPENROUTER_API_KEY in .env).', 'openrouter');
         }
 
         if ($this->refuseKey) {

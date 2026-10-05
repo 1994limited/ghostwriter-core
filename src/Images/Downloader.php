@@ -79,7 +79,7 @@ final class Downloader
             }
 
             throw new PhotoUnavailable(match (true) {
-                $status === 401 || $status === 403 => "{$label} refused the key. Check it in the settings.",
+                $status === 401 || $status === 403 => "{$label} refused the key. Check it in Ghostwriter's Connections.",
                 $status === 404 => 'That photograph could not be found.',
                 $status === 429 => "{$label} has had too many searches. Try again in a minute.",
                 default => "{$label} answered with an error ({$status}).",
@@ -161,7 +161,7 @@ final class Downloader
         }
 
         throw match (true) {
-            $status === 401 || $status === 403 => new NotConnected("{$label} refused the key. Check it in the settings."),
+            $status === 401 || $status === 403 => new NotConnected("{$label} refused the key. Check it in Ghostwriter's Connections."),
             $status === 429 => new PhotoUnavailable("{$label} has had too many requests. Try again in a minute."),
             $purchase && $status === 402 => new InsufficientBalance("{$label} says the account has nothing left to license this with."),
             $purchase => new LicenceRefused("{$label} wouldn't license that photograph ({$status})."),

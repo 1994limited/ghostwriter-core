@@ -4,6 +4,22 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
+### Added (Settings → Connections)
+
+- **`Connections\Connections`**, one resolver for every outside service's key (`Ai\Ports\Credentials`, `Connections\KeySources`): the environment or config first, which always wins, then what was set up on the Connections page, kept encrypted through the new **`Connections\CredentialStore`** port. `status()` (`Status`: connected with the masked ending, not set, set in .env or config, key stopped working, no key needed), `save()`, `forget()`, `adopt()` (for moving older stored keys), `markBroken()`, `markWorking()`.
+- **`Connections\Services`**: every service as the page shows it, in Writing, Images and Stock photos (Anthropic, OpenAI, Gemini, OpenRouter; Unsplash, Pexels, Pixabay, Openverse; Shutterstock), with its key page, fields and environment variables. `withTestServices()` for the end-to-end tests.
+- **`Connections\KeyCheck`** ("Check & save", the `ChecksKeys` port): one cheap live call per service, tried once, with plain reasons (`CheckResult`). `Testing\FakeKeyCheck` for tests.
+- **`Connections\KeyWatch`**: the site's `HttpClients`, watched, so a key a service starts refusing shows as "Key stopped working".
+- `StoredProviderKeys` (Connect with OpenRouter keeps its key on the same card) and `StoredLibraryTokens` (paid libraries' account tokens in the same store). `Mask::ending()`, `Mask::fingerprint()`. `Testing\InMemoryCredentialStore`.
+- **`Tests\Contracts\CredentialStoreContract`** for the addons' stores, including that nothing is kept as plain text.
+- The page's words in English, German, French, Dutch and Spanish: `resources/lang/{en,de,fr,nl,es}/connections.php`, read with `Connections\Strings`.
+- `docs/connections.md`.
+
+### Changed (Settings → Connections)
+
+- Messages about a missing or refused key point to Connections first: "Set it up in Ghostwriter's Connections (or set ANTHROPIC_API_KEY in .env)."
+- `Providers` knows a stored OpenRouter key from any `KeySources` (`ConnectedCredentials` is one now).
+
 ### Added (SEO layer: Finish, Suggest edits and Content to revisit, row 6)
 
 - **Finish this page:** `GapKind::HeadingLong` and **`Detectors\LongHeadings`** ("Shorten a heading": a heading over 70 characters; **Write it for me**, one `gap-filler` call with the new task `shorten-heading` through `GapRequest::shortenHeading()`, or I'll write it), and `GapKind::FewLinks` and **`Detectors\FewLinks`** ("Link to your other pages": 300 words or more and no link to the site; Add a link · Skip). Both in `GapFinder::standard()`; suggestions, never counted, never blocking. `GapContext::$hosts` (the site's own hosts) and `Revisit\Links::of(GapContext)`.

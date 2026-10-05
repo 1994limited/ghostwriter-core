@@ -288,7 +288,7 @@ final class Transport
 
         return match (true) {
             $status === 401, $status === 403 => new AuthenticationFailed(
-                "{$label} didn't accept the API key ({$status}). Check ".(Credentials::ENV[$this->provider] ?? 'the API key').'.',
+                "{$label} didn't accept the API key ({$status}). Check it in Ghostwriter's Connections".(isset(Credentials::ENV[$this->provider]) ? ' (or '.Credentials::ENV[$this->provider].' in .env)' : '').'.',
                 $this->provider,
                 $status,
             ),

@@ -4,6 +4,8 @@ Some paid libraries license only for a person's own signed-in account, through a
 
 Connecting a model provider (OpenRouter) works the same way, through its own port and store: see [below](#connecting-a-model-provider-connect-with-openrouter).
 
+Both now sit inside a card on Settings → Connections ([connections.md](connections.md)), and keep what they get in the same encrypted store: `Connections\StoredProviderKeys` and `Connections\StoredLibraryTokens`.
+
 ## The interface
 
 ```php

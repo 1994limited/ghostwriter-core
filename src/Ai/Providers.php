@@ -2,7 +2,6 @@
 
 namespace NineteenNinetyFour\Ghostwriter\Core\Ai;
 
-use NineteenNinetyFour\Ghostwriter\Core\Ai\Credentials\ConnectedCredentials;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\NotConfigured;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Http\RetryPolicy;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Http\Sleeper;
@@ -16,6 +15,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers\Gemini;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers\OpenAi;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Providers\OpenRouter;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Testing\FakeProvider;
+use NineteenNinetyFour\Ghostwriter\Core\Connections\KeySources;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -210,14 +210,14 @@ final class Providers
     private function noKey(string $handle): NotConfigured
     {
         if ($handle === 'openrouter') {
-            return new NotConfigured('OpenRouter isn\'t connected. Connect with OpenRouter in Ghostwriter\'s settings, or add OPENROUTER_API_KEY to your .env file.', $handle);
+            return new NotConfigured('OpenRouter isn\'t connected. Connect it in Ghostwriter\'s Connections (or set OPENROUTER_API_KEY in .env).', $handle);
         }
 
         if (! isset(self::LABELS[$handle], Credentials::ENV[$handle])) {
             return new NotConfigured("No API key is set for \"{$handle}\".", $handle);
         }
 
-        return new NotConfigured('No API key is set for '.self::LABELS[$handle].'. Add '.Credentials::ENV[$handle].' to your .env file.', $handle);
+        return new NotConfigured('No API key is set for '.self::LABELS[$handle].'. Set it up in Ghostwriter\'s Connections (or set '.Credentials::ENV[$handle].' in .env).', $handle);
     }
 
     private function build(string $handle, string $key): TextProvider
@@ -229,7 +229,7 @@ final class Providers
         $imageModel = $this->imageModel($handle);
 
         return match ($handle) {
-            'openrouter' => new OpenRouter($key, $transport, $textModel, $imageModel, $baseUrl, $timeout, $this->tierModels($handle), $this->credentials instanceof ConnectedCredentials && $this->credentials->source($handle) === 'connected'),
+            'openrouter' => new OpenRouter($key, $transport, $textModel, $imageModel, $baseUrl, $timeout, $this->tierModels($handle), $this->credentials instanceof KeySources && in_array($this->credentials->source($handle), ['connected', 'stored'], true)),
             'openai' => new OpenAi($key, $transport, $textModel, $imageModel, $baseUrl, $timeout),
             'gemini' => new Gemini($key, $transport, $textModel, $imageModel, $baseUrl, $timeout),
             default => new Anthropic($key, $transport, $textModel, $baseUrl, $timeout, $this->settings->anthropicFallbacks()),

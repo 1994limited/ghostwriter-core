@@ -4,16 +4,21 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Ai\Credentials;
 
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Ports\Credentials;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Ports\ProviderKeys;
+use NineteenNinetyFour\Ghostwriter\Core\Connections\KeySources;
 
 /**
  * The keys to call with: the environment's, and for providers a site can
  * connect (OpenRouter), the connected key when the environment has none.
  * A key in the environment always wins.
  *
+ * Connections\Connections does this for every service, with keys pasted
+ * on the Connections page too; the addons use that now. This stays for
+ * hosts that only want Connect with OpenRouter.
+ *
  *     $credentials = new ConnectedCredentials($envCredentials, $providerKeys);
  *     $providers = new Providers($credentials, $http, $settings, $logger);
  */
-final class ConnectedCredentials implements Credentials
+final class ConnectedCredentials implements Credentials, KeySources
 {
     /** Providers whose key can come from Connect. */
     public const CONNECTABLE = ['openrouter'];
