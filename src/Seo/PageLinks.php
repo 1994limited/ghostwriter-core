@@ -166,7 +166,12 @@ final class PageLinks
             }
         }
 
-        $this->logger->info('Ghostwriter: Suggest links proposed '.count($proposals).' '.(count($proposals) === 1 ? 'link' : 'links').'.', ['links' => array_map(fn (LinkProposal $proposal) => "{$proposal->words} → {$proposal->title}", $proposals)]);
+        $this->logger->info('Ghostwriter: Suggest links proposed '.count($proposals).' '.(count($proposals) === 1 ? 'link' : 'links').'.', [
+            'links' => array_map(fn (LinkProposal $proposal) => "{$proposal->words} → {$proposal->title}", $proposals),
+            // What the model made of the page and the candidates, and how many it picked: why none, when none.
+            'picked' => count($result->value->links),
+            'notes' => $result->value->notes,
+        ]);
 
         return $proposals === [] ? LinkProposals::none(LinkProposals::DROPPED, $now) : new LinkProposals($proposals, '', $now);
     }
