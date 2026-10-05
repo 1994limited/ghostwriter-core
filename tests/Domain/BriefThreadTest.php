@@ -332,6 +332,40 @@ final class BriefThreadTest extends TestCase
         $this->assertSame(BriefStage::Writing, BriefThread::stage($editing));
     }
 
+    public function test_a_note_to_the_writer_is_sent_to_it_but_never_shown(): void
+    {
+        $session = new Session($this->format, 'e', 'project', source: 3, editing: true);
+        $session->addNote('This entry already exists on the site. Its content as it stands is the current draft. I will ask for changes to it.', now: $this->now);
+        $session->addMessage('assistant', 'I have the entry as it stands. Tell me what to change.', null, ['editing' => true], $this->now);
+        $session->addMessage('user', 'Make it shorter.', 1, now: $this->now);
+        $session->addMessage('assistant', 'Done.', null, now: $this->now);
+        // Edited again later in the same conversation: the note comes back mid-thread.
+        $session->addNote('Start again from the entry as it stands now.', now: $this->now);
+        $session->addMessage('assistant', 'I have the entry as it stands. Tell me what to change.', null, ['editing' => true], $this->now);
+
+        $this->assertTrue(Session::isNote($session->messages[0]));
+        $this->assertArrayNotHasKey('by', $session->messages[0], 'A note is no one\'s: never "You".');
+        $this->assertSame([1, 2, 3, 5], array_keys(BriefThread::visible($session)));
+
+        $writer = array_map(fn (Message $message) => $message->content, (new Conversation($session->messages))->messages);
+        $this->assertContains('Start again from the entry as it stands now.', $writer, 'The writer still reads the note.');
+        $this->assertStringStartsWith('This entry already exists', $writer[0]);
+    }
+
+    public function test_notes_stored_before_they_were_marked_are_hidden_too(): void
+    {
+        // Statamic and Craft: the person's id on it; Filament: flagged `editing`.
+        foreach ([['by' => 1], ['editing' => true], []] as $extra) {
+            $session = new Session($this->format, 'e', 'project', messages: [
+                ['role' => 'user', 'content' => 'This entry already exists on the site. Its content as it stands is the current draft. I will ask for changes to it.'] + $extra,
+                ['role' => 'assistant', 'content' => 'I have the entry as it stands. Tell me what to change.', 'editing' => true],
+                ['role' => 'user', 'content' => 'Make it shorter.', 'by' => 1],
+            ], source: 3, editing: true);
+
+            $this->assertSame([1, 2], array_keys(BriefThread::visible($session)), json_encode($extra));
+        }
+    }
+
     /**
      * @return iterable<string, array{Format}>
      */

@@ -43,6 +43,13 @@ final class Session
     public const FAILED = 'failed';
 
     /**
+     * The key on a message that is a note to the writer, not something a
+     * person said: sent to the model with the rest, never shown in the
+     * conversation (BriefThread::visible()). See addNote().
+     */
+    public const NOTE = 'note';
+
+    /**
      * @param  array<string, mixed>  $answers
      * @param  array<int, array<string, mixed>>  $messages  Each with `role`, `content` and `at`; a person's with `by`; the writer's may say whether it `asks` (and what, under `asked`: Studio\Asks), and what it did to the `draft`; a person's answers to them are under `answers`.
      * @param  array<string, int>  $usage  Tokens, `input` and `output`.
@@ -172,6 +179,42 @@ final class Session
         }
 
         $this->messages[] = $message + $extra;
+    }
+
+    /**
+     * A note to the writer in the person's turn, such as "This entry already
+     * exists on the site…" when an existing record becomes the draft. The
+     * writer reads it as part of the conversation; the conversation the
+     * person sees leaves it out, and it is no one's (no `by`).
+     *
+     * @param  array<string, mixed>  $extra
+     */
+    public function addNote(string $content, array $extra = [], ?DateTimeInterface $now = null): void
+    {
+        $this->addMessage('user', $content, null, [self::NOTE => true] + $extra, $now);
+    }
+
+    /**
+     * Whether a message is a note to the writer (addNote()). Notes written
+     * before NOTE existed are known too: the person's turn that says an
+     * existing record became the draft, followed by Ghostwriter's reply
+     * flagged `editing` ("I have the entry as it stands…"), which only
+     * ever follows that note.
+     *
+     * @param  array<string, mixed>  $message
+     * @param  array<string, mixed>|null  $next  The message after it, if any.
+     */
+    public static function isNote(array $message, ?array $next = null): bool
+    {
+        if (! empty($message[self::NOTE])) {
+            return true;
+        }
+
+        if (($message['role'] ?? null) !== 'user' || BriefThread::step($message) !== null) {
+            return false;
+        }
+
+        return ($next['role'] ?? null) === 'assistant' && ! empty($next['editing']);
     }
 
     /**
