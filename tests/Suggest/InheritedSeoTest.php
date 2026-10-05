@@ -58,6 +58,20 @@ final class InheritedSeoTest extends TestCase
         $this->assertCount(1, array_filter($report->findings, fn (Finding $finding) => $finding->kind === 'seo-empty'));
     }
 
+    public function test_an_inherited_description_too_short_is_short_not_empty(): void
+    {
+        $short = 'A small back yard where a planted hollow now takes the rain from the roof.';
+        $missing = array_values(array_filter(Findings::standard()->find($this->context($short)), fn (Finding $finding) => $finding->kind === 'seo-missing'));
+
+        $this->assertCount(1, $missing);
+        $this->assertFalse($missing[0]->meta['empty'], 'The page prints the excerpt: it is short, not empty.');
+        $this->assertSame('suggest.finding.seo-missing-short', $missing[0]->message->key);
+
+        $now = new DateTimeImmutable('2026-10-04 10:00:00');
+        $reasons = array_map(fn (RevisitReason $reason) => $reason->kind, (new RevisitScanner)->scan(new EntrySnapshot(new EntryRef('journal', 'rain-garden', 'default'), 'A rain garden', null, $this->context($short, $now)), $now)->reasons);
+        $this->assertNotContains(ReasonKind::SeoMissing, $reasons, 'Not "No SEO description".');
+    }
+
     public function test_an_inherited_description_too_long_is_found_with_its_source(): void
     {
         $long = Findings::standard()->find($this->context(str_repeat('A planted hollow. ', 12)));

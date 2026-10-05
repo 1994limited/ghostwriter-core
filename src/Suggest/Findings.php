@@ -260,7 +260,9 @@ final class Findings
     private function seoMissing(Gap $gap, CheckContext $context): Finding
     {
         $text = $context->textAt($gap->path->toString());
-        $empty = $text === null || trim($text->plain) === '';
+        // Empty as the page prints it: an inherited description is read
+        // from its source, not from the SEO field's own (empty) value.
+        $empty = ! is_int($gap->meta['length'] ?? null) || $gap->meta['length'] === 0;
         $anchor = $text?->fieldAnchor() ?? new Anchor(AnchorScope::Field, $gap->path, $gap->label, fieldHash: Anchor::hash(''), passage: Anchor::hash(''));
         $inherited = ($gap->meta['source'] ?? null) === 'field' && is_string($gap->meta['inheritsFrom'] ?? null);
         $key = match (true) {
