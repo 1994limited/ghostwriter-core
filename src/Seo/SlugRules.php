@@ -2,6 +2,7 @@
 
 namespace NineteenNinetyFour\Ghostwriter\Core\Seo;
 
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\Markers;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\Phrases;
 use NineteenNinetyFour\Ghostwriter\Core\Text\Slug;
 
@@ -11,24 +12,39 @@ use NineteenNinetyFour\Ghostwriter\Core\Text\Slug;
  *
  * 1. Text\Slug::make() on the title: facts still to add left out, counts
  *    still to confirm as the value they mark.
- * 2. The language's stop words taken out (Suggest\Phrases), unless that
- *    leaves fewer than two words. A leading negation stays ("no-dig").
- * 3. A year taken out, unless the group is dated (a journal) or the
+ * 2. A year taken out, unless the group is dated (a journal) or the
  *    address would clash without it: an evergreen page shouldn't carry
  *    "2026" in its address for ever.
- * 4. At most five words and 50 characters, cut between words.
+ * 3. The whole phrase is kept, so a question or a how-to reads as people
+ *    search for it: "What to do in the garden in March" is
+ *    `what-to-do-in-the-garden-in-march`. Only a long title (over
+ *    LONG_TITLE characters) or an address over LONG_SLUG loses the
+ *    language's stop words (Suggest\Phrases), unless that leaves fewer
+ *    than two words, and is then cut to MAX_WORDS words and MAX_LENGTH
+ *    characters, between words. A leading negation stays ("no-dig").
+ * 4. Filler at either end goes (the language's `slug_filler`: articles,
+ *    and prepositions and conjunctions left dangling): "The best roses
+ *    for shade" is `best-roses-for-shade`.
  * 5. Unique among $taken, with `-2`, `-3`…
  *
- *     SlugRules::suggest('How to prune a walled garden in winter', 'en');   // "prune-walled-garden-winter"
+ *     SlugRules::suggest('How to prune a walled garden in winter', 'en');   // "how-to-prune-a-walled-garden-in-winter"
  *
  * Slugs are only ever set on entries never published; nothing here knows
  * or decides that (the addons do).
  */
 final class SlugRules
 {
-    public const MAX_WORDS = 5;
+    /** A title longer than this, in characters, loses its stop words. */
+    public const LONG_TITLE = 60;
 
-    public const MAX_LENGTH = 50;
+    /** An address longer than this loses its stop words too. */
+    public const LONG_SLUG = 75;
+
+    /** A shortened address has at most this many words… */
+    public const MAX_WORDS = 6;
+
+    /** …and this many characters. */
+    public const MAX_LENGTH = 60;
 
     private const NEGATIONS = ['no', 'non', 'not', 'kein', 'keine', 'nicht', 'sans', 'pas', 'geen', 'niet', 'sin'];
 
@@ -43,7 +59,7 @@ final class SlugRules
             return '';
         }
 
-        $words = self::withoutStopWords($words, $language);
+        $long = mb_strlen(Slug::clip(Markers::withoutAsks($title), 1000)) > self::LONG_TITLE;
         $withYears = $words;
 
         if (! $dated) {
@@ -51,15 +67,30 @@ final class SlugRules
             $words = $without !== [] ? $without : $words;
         }
 
-        $slug = self::fit($words);
+        $slug = self::shape($words, $language, $long);
 
         // The year comes back when the address is only free with it.
         if (! $dated && in_array($slug, $taken, true) && $withYears !== $words) {
-            $withYear = self::fit($withYears);
+            $withYear = self::shape($withYears, $language, $long);
             $slug = in_array($withYear, $taken, true) ? $slug : $withYear;
         }
 
         return self::unique($slug, $taken);
+    }
+
+    /**
+     * The whole phrase, or for a long title or address the phrase without
+     * stop words and cut to size; filler off both ends either way.
+     *
+     * @param  list<string>  $words
+     */
+    private static function shape(array $words, string $language, bool $long): string
+    {
+        if (! $long && strlen(implode('-', $words)) <= self::LONG_SLUG) {
+            return implode('-', self::withoutFiller($words, $language));
+        }
+
+        return self::fit(self::withoutFiller(self::withoutStopWords($words, $language), $language));
     }
 
     /**
@@ -128,6 +159,34 @@ final class SlugRules
         }
 
         return count($kept) >= 2 ? $kept : $words;
+    }
+
+    /**
+     * The words without the language's filler (`slug_filler`) at the start
+     * and the end, never fewer than two words. A leading negation stays.
+     *
+     * @param  list<string>  $words
+     * @return list<string>
+     */
+    public static function withoutFiller(array $words, string $language): array
+    {
+        $phrases = Phrases::for($language);
+
+        if ($phrases === null || $phrases->slugFiller === [] || count($words) < 3) {
+            return $words;
+        }
+
+        $filler = array_flip(array_map(fn (string $word) => Slug::make($word), $phrases->slugFiller));
+
+        while (count($words) > 2 && isset($filler[$words[0]]) && ! in_array($words[0], self::NEGATIONS, true)) {
+            array_shift($words);
+        }
+
+        while (count($words) > 2 && isset($filler[$words[count($words) - 1]])) {
+            array_pop($words);
+        }
+
+        return $words;
     }
 
     /**

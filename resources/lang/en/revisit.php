@@ -24,6 +24,11 @@ return [
     'reason.leftover' => 'unfinished',
     'reason.seo-length' => 'SEO text too long',
     'reason.stated-count' => '“:quote”',
+    'reason.seo-missing' => 'No SEO description',
+    'reason.few-links' => 'No internal links',
+    'reason.heading-levels' => 'Heading levels',
+    'reason.competing' => 'Twin of “:quote”',
+    'reason.readability' => 'Long paragraphs',
 
     // Priority words.
     'priority.high' => 'High',

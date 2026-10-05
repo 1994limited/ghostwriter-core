@@ -32,7 +32,8 @@ final class SplittingTest extends TestCase
 
     private static function input(int $wordsPerCall): ReviewInput
     {
-        $body = implode("\n\n", [self::section(1), self::section(2), self::section(3, 'New for 2024: winter visits.')]);
+        // It links to the site, so the only candidate is the out-of-date one.
+        $body = implode("\n\n", [self::section(1, 'See [our services](/services).'), self::section(2), self::section(3, 'New for 2024: winter visits.')]);
         $schema = new Schema([new Field('title', Kind::Text, 'Title'), new Field('intro', Kind::Text, 'Intro'), new Field('body', Kind::RichText, 'Body', type: 'markdown'), new Field('summary', Kind::LongText, 'Summary')]);
         $entry = new EntryData(['title' => 'A long guide', 'intro' => 'Short intro.', 'body' => $body, 'summary' => 'A summary.']);
         $context = new CheckContext(gaps: new GapContext(schema: $schema, entry: $entry, richText: new MarkdownDialect), now: new DateTimeImmutable(Northfold::NOW), updatedAt: new DateTimeImmutable(Northfold::UPDATED));

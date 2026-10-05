@@ -105,7 +105,18 @@ final class Findings
             }
         }
 
+        // An SEO description SeoMissing finds is said once, by it.
+        $missing = [];
+
+        foreach ($gaps->ofKind(GapKind::SeoMissing) as $gap) {
+            $missing[$gap->path->toString()] = true;
+        }
+
         foreach ($gaps->all() as $gap) {
+            if ($gap->kind === GapKind::Expected && isset($missing[$gap->path->toString()])) {
+                continue;
+            }
+
             $finding = $this->fromGap($gap, $context);
 
             if ($finding !== null) {
@@ -157,6 +168,9 @@ final class Findings
             GapKind::MissingAlt => $this->missingAlt($gap),
             GapKind::SeoLength => $this->seoLength($gap, $context),
             GapKind::Expected => $this->emptySeo($gap, $context),
+            GapKind::SeoMissing => $this->seoMissing($gap, $context),
+            GapKind::HeadingLong => $this->longHeading($gap, $context),
+            GapKind::FewLinks => $this->fewLinks($gap, $context),
             default => null,
         };
     }
@@ -235,6 +249,74 @@ final class Findings
             'limit' => $field->limit,
             'source' => $field->source->value,
         ]);
+    }
+
+    /**
+     * An SEO description that's empty or too short to say much (SeoMissing),
+     * one the page could have its own of. A description inherited from a
+     * field that fits never gets here (decision 11). The reviewer writes
+     * one from the page; the validator checks it as any SEO value.
+     */
+    private function seoMissing(Gap $gap, CheckContext $context): Finding
+    {
+        $text = $context->textAt($gap->path->toString());
+        $empty = $text === null || trim($text->plain) === '';
+        $anchor = $text?->fieldAnchor() ?? new Anchor(AnchorScope::Field, $gap->path, $gap->label, fieldHash: Anchor::hash(''), passage: Anchor::hash(''));
+        $inherited = ($gap->meta['source'] ?? null) === 'field' && is_string($gap->meta['inheritsFrom'] ?? null);
+        $key = match (true) {
+            $empty && $inherited => 'suggest.finding.seo-missing-inherited',
+            $empty => 'suggest.finding.seo-missing',
+            default => 'suggest.finding.seo-missing-short',
+        };
+
+        return Finding::make(Category::Seo, 'seo-missing', $anchor, Needs::Words, new Message($key, [
+            'label' => $gap->label,
+            'length' => is_int($gap->meta['length'] ?? null) ? $gap->meta['length'] : 0,
+            'min' => is_int($gap->meta['min'] ?? null) ? $gap->meta['min'] : 0,
+            'max' => is_int($gap->meta['max'] ?? null) ? $gap->meta['max'] : 0,
+            'field' => is_string($gap->meta['inheritsFrom'] ?? null) ? $gap->meta['inheritsFrom'] : '',
+        ]), array_intersect_key($gap->meta, array_flip(['role', 'limit', 'length', 'min', 'max', 'writable', 'inheritsFrom', 'source'])) + ['empty' => $empty]);
+    }
+
+    /**
+     * A heading over 70 characters (LongHeadings), anchored on its words:
+     * the reviewer writes a shorter one in the voice, or drops it.
+     */
+    private function longHeading(Gap $gap, CheckContext $context): ?Finding
+    {
+        $text = $context->textAt($gap->path->toString());
+        $words = (string) $gap->hint;
+        $at = $text === null || $words === '' ? null : $this->nth($text->plain, NormalisedText::string($words, true), $gap->occurrence);
+
+        if ($text === null || $at === null) {
+            return null;
+        }
+
+        $anchor = $text->anchor($at, mb_strlen(NormalisedText::string($words, true)));
+
+        return Finding::make(Category::Seo, 'heading-long', $anchor, Needs::Words, new Message('suggest.finding.heading-long', [
+            'label' => $gap->label,
+            'length' => is_int($gap->meta['length'] ?? null) ? $gap->meta['length'] : mb_strlen($words),
+        ]), ['length' => $gap->meta['length'] ?? mb_strlen($words), 'limit' => $gap->meta['limit'] ?? null, 'heading' => true]);
+    }
+
+    /**
+     * No link to the site's own pages on a long page (FewLinks): not shown
+     * on its own (there's nothing to accept yet), but a candidate for the
+     * reviewer, who is shown pages it could link to (SiteDigest) and
+     * proposes the links as suggestions of its own.
+     */
+    private function fewLinks(Gap $gap, CheckContext $context): Finding
+    {
+        $text = $context->textAt($gap->path->toString());
+        $anchor = $text !== null
+            ? new Anchor(AnchorScope::Field, $gap->path, $gap->label, fieldHash: Anchor::hash($text->plain), passage: Anchor::hash('few-links'))
+            : new Anchor(AnchorScope::Field, $gap->path, $gap->label, passage: Anchor::hash('few-links'));
+
+        return Finding::make(Category::Link, 'few-links', $anchor, Needs::Nothing, new Message('suggest.finding.few-links', [
+            'label' => $gap->label,
+            'words' => is_int($gap->meta['words'] ?? null) ? $gap->meta['words'] : 0,
+        ]), ['words' => $gap->meta['words'] ?? null], alone: false);
     }
 
     /** Where the nth (from 0) occurrence of a string is, in characters. */

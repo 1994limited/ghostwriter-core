@@ -24,7 +24,7 @@ return [
     'speech.fact-to-check' => 'Still true?',
     'speech.link' => 'Dead link',
     'speech.accessibility' => 'No alt text',
-    'speech.seo' => 'Too long',
+    'speech.seo' => 'For search',
     'speech.duplicate' => 'Said before',
 
     // What a free check found.
@@ -43,6 +43,11 @@ return [
     'finding.missing-alt' => ':filename has no alt text.',
     'finding.seo-length' => ':label is :length characters; the limit is :limit.',
     'finding.seo-empty' => ':label is empty. Pages like this fill it in.',
+    'finding.seo-missing' => 'The SEO description is empty, so search engines will pick their own.',
+    'finding.seo-missing-inherited' => 'The SEO description comes from :field, which is empty, so search engines will pick their own.',
+    'finding.seo-missing-short' => 'The SEO description is only :length characters. Aim for :min to :max.',
+    'finding.heading-long' => 'This heading is :length characters. Over 70, it\'s hard to scan and gets cut off in search results.',
+    'finding.few-links' => 'This page doesn\'t link to any of your other pages.',
 
     // Where a suggestion's reason comes from.
     'source.voice-guide' => 'Voice guide: “:heading”',

@@ -72,6 +72,20 @@ enum GapKind: string
      */
     case LinksAdded = 'links-added';
 
+    /**
+     * "Shorten a heading" (SEO layer §12): a heading over 70 characters,
+     * hard to scan and cut off in search results. A suggestion, never
+     * blocking.
+     */
+    case HeadingLong = 'heading-long';
+
+    /**
+     * "Link to your other pages" (SEO layer §12): a page of 300 words or
+     * more with no link to the site's own pages. A suggestion, never
+     * blocking.
+     */
+    case FewLinks = 'few-links';
+
     /** How much it matters, unless a detector says otherwise. */
     public function severity(): Severity
     {

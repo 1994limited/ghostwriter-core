@@ -149,6 +149,7 @@ final class SearchSection
             $action === MetaAction::Leave && $field->source === SeoSource::Template => 'seo.search.template',
             $text !== '' && $action === MetaAction::Suggest && ! $meta->uses(SeoField::DESCRIPTION) => 'seo.search.description-stays',
             $text !== '' && $meta->edited(SeoField::DESCRIPTION) => 'seo.search.edited',
+            $text !== '' && $field->inherited() && trim((string) $field->text) === '' && $field->inheritsFrom !== null => 'seo.search.description-source-empty',
             $text !== '' => 'seo.search.description-new',
             $action === MetaAction::Leave && $field->inherited() => 'seo.search.description-inherits',
             ($meta->dropped[SeoField::DESCRIPTION] ?? []) !== [] => 'seo.search.description-dropped',

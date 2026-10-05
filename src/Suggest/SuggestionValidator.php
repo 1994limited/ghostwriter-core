@@ -13,6 +13,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Arrange\UnitKind;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Markers;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\SeoField;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Walk;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\MetaRange;
 
 /**
  * Decides which of the model's suggestions are kept, with no model. A
@@ -125,6 +126,12 @@ final class SuggestionValidator
 
             if ($finding !== null) {
                 $answered[$finding->id] = true;
+            }
+
+            // "Links to none of its pages" is answered by the links the
+            // model proposes of its own; keeping it adds nothing to accept.
+            if ($finding !== null && $finding->kind === 'few-links' && ! isset($item['drop'])) {
+                continue;
             }
 
             if ($finding !== null && isset($item['drop'])) {
@@ -419,7 +426,7 @@ final class SuggestionValidator
 
         // An SEO value the page inherits (another field's text, a section's
         // default) that fits stays as the site set it up (decision 11).
-        if ($seo !== null && $seo->inherited() && $seo->checkable() && ! $seo->isEmpty() && ! $seo->tooLong()) {
+        if ($seo !== null && $seo->inherited() && $seo->checkable() && ! $seo->isEmpty() && ! $seo->tooLong() && ($seo->role !== SeoField::DESCRIPTION || ! MetaRange::of($seo)->tooShort($seo->text))) {
             return 'inherited';
         }
 

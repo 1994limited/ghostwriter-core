@@ -1451,8 +1451,12 @@ final class Studio
         $text = is_string($text) ? $text : '';
         $text = trim($text, " \t\n\r\0\x0B\"'“”‘’");
 
-        if (in_array($request->task, [GapRequest::SUMMARY, GapRequest::ALT, GapRequest::WRITE_AROUND], true)) {
+        if (in_array($request->task, [GapRequest::SUMMARY, GapRequest::ALT, GapRequest::WRITE_AROUND, GapRequest::SHORTEN_HEADING], true)) {
             $text = trim((string) preg_replace('/\s+/u', ' ', $text));
+        }
+
+        if ($request->task === GapRequest::SHORTEN_HEADING) {
+            $text = rtrim(ltrim($text, "# \t"), ' .');
         }
 
         $failed = 'Ghostwriter\'s answer couldn\'t be used. Try again, or write it yourself.';

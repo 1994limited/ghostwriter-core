@@ -37,9 +37,15 @@ final class FindingReport
         ], true)));
     }
 
-    /** Fields left empty that the CMS requires or most pages like this fill. */
-    public function emptyFields(): int
+    /**
+     * Fields left empty that the CMS requires or most pages like this
+     * fill, but those at $except (paths: an SEO description, which is its
+     * own reason).
+     *
+     * @param  array<int, string>  $except
+     */
+    public function emptyFields(array $except = []): int
     {
-        return count(array_filter($this->gaps->all(), fn ($gap) => in_array($gap->kind, [GapKind::Required, GapKind::Expected, GapKind::ImageEmpty, GapKind::LinkEmpty], true)));
+        return count(array_filter($this->gaps->all(), fn ($gap) => in_array($gap->kind, [GapKind::Required, GapKind::Expected, GapKind::ImageEmpty, GapKind::LinkEmpty], true) && ! in_array($gap->path->toString(), $except, true)));
     }
 }

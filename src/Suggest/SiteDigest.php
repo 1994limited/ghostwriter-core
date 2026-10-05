@@ -6,8 +6,10 @@ use NineteenNinetyFour\Ghostwriter\Core\Anchor\NormalisedText;
 
 /**
  * The site's other entries the review call is shown, numbered e1, e2…:
- * the link candidates of the findings first, then the entries nearest the
- * page (EntryIndex::nearest()), at most LIMIT, each a title, an address
+ * the link candidates of the findings first, then, for a page with no
+ * link to the site (a `few-links` finding), up to RELATED pages it could
+ * link to (LinkIndex::related(), link rows included), then the entries
+ * nearest the page (EntryIndex::nearest()), at most LIMIT, each a title, an address
  * and a short summary (about 1,500 tokens). The model may point a link
  * only at an entry listed here, by its number; core turns the number back
  * into what a link stores.
@@ -15,6 +17,9 @@ use NineteenNinetyFour\Ghostwriter\Core\Anchor\NormalisedText;
 final class SiteDigest
 {
     public const LIMIT = 30;
+
+    /** Pages a page with no links to the site is shown to link to (LinkIndex::related()). */
+    public const RELATED = 10;
 
     /** @var array<string, DigestEntry> By id: "e1"… */
     private readonly array $entries;
@@ -57,9 +62,17 @@ final class SiteDigest
             }
         }
 
-        if ($context->index !== null && $context->entry !== null) {
-            $text = $context->gaps->entry->title()."\n".implode("\n", array_map(fn (CheckText $text) => $text->plain, $context->texts()));
+        $text = $context->gaps->entry->title()."\n".implode("\n", array_map(fn (CheckText $text) => $text->plain, $context->texts()));
 
+        // A page that links to none of the site's pages is shown the ones
+        // it could link to, link-only pages (Contact, About) included.
+        if ($context->index instanceof LinkIndex && $context->entry !== null && array_filter($findings, fn (Finding $finding) => $finding->kind === 'few-links') !== []) {
+            foreach ($context->index->related(mb_substr($text, 0, 4000), $context->entry->group, $context->entry->site, $context->entry, self::RELATED, [], $context->now) as $entry) {
+                $add($entry);
+            }
+        }
+
+        if ($context->index !== null && $context->entry !== null) {
             foreach ($context->index->nearest($context->entry, mb_substr($text, 0, 4000), $limit) as $entry) {
                 $add(new DigestEntry($entry->entry, $entry->title, $entry->url, mb_substr($entry->summary, 0, DigestEntry::SUMMARY), $entry->link, $entry->type));
             }

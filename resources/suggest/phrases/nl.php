@@ -70,4 +70,6 @@ return [
     ],
     // Words photo libraries put in titles that say nothing about the photo: left out of file names (Seo\FilenameRules).
     'filename_noise' => ['stockfoto', 'stock foto', 'stockafbeelding', 'rechtenvrij', 'gratis foto', 'afbeelding van', 'foto van', 'close-up', 'unsplash', 'pexels', 'pixabay', 'shutterstock', 'istock', 'adobe stock'],
+    // Words an address doesn't start or end with: articles, and prepositions and conjunctions left dangling (Seo\SlugRules).
+    'slug_filler' => ['de', 'het', 'een', 'en', 'of', 'maar', 'van', 'te', 'in', 'op', 'aan', 'bij', 'met', 'naar', 'voor', 'over'],
 ];

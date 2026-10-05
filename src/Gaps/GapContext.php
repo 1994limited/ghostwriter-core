@@ -39,6 +39,10 @@ use NineteenNinetyFour\Ghostwriter\Core\Seo\RenderProfile;
  * - `alt` and `seo` (Suggest edits): an asset's alt text and the entry's
  *   SEO values, for MissingAlt and SeoLength. Without them, neither finds
  *   anything.
+ * - `hosts`: the site's own hosts ("northfold.co.uk"), so FewLinks counts
+ *   a full address on the site as a link to it. Links the CMS stores as
+ *   references (`statamic://entry::abc`, `{entry:12@1:url}`) and paths
+ *   (`/contact`) count without them.
  *
  * Use named arguments: the order may grow.
  */
@@ -46,6 +50,7 @@ final class GapContext
 {
     /**
      * @param  array<int, string>  $sources
+     * @param  array<int, string>  $hosts
      */
     public function __construct(
         public readonly Schema $schema,
@@ -63,6 +68,7 @@ final class GapContext
         public readonly ?SeoFields $seo = null,
         public readonly string $group = '',
         public readonly ?RenderProfile $profile = null,
+        public readonly array $hosts = [],
     ) {}
 
     /** The fewest words, outside the title, that make an entry more than untouched. */
