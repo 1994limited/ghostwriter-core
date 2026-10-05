@@ -166,8 +166,9 @@ final class BriefThread
      * `messages`: the ask, the person's reply and the latest brief card
      * (render a message whose step() is `card` as the card, from card(),
      * collapsed to "Show the brief" once agreed), then the conversation.
-     * Left out: earlier cards, "Try again", a plan idea's details, and the
-     * agreed brief's text (the card shows it). For a piece from the old
+     * Left out: earlier cards, "Try again", a plan idea's details, the
+     * agreed brief's text (the card shows it), and notes to the writer
+     * (Session::isNote(): "This entry already exists on the site…"). For a piece from the old
      * brief screen the first message, the brief, is left out as before
      * (show text() behind "Show the brief").
      *
@@ -182,7 +183,9 @@ final class BriefThread
         foreach ($session->messages as $index => $message) {
             $step = self::step($message);
 
-            if (($legacy && $index === 0) || in_array($step, [self::TRY_AGAIN, self::IDEA, self::AGREED], true) || ($step === self::CARD && $index !== $card)) {
+            $next = $session->messages[$index + 1] ?? null;
+
+            if (($legacy && $index === 0) || in_array($step, [self::TRY_AGAIN, self::IDEA, self::AGREED], true) || ($step === self::CARD && $index !== $card) || Session::isNote($message, is_array($next) ? $next : null)) {
                 continue;
             }
 
