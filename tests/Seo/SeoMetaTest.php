@@ -9,8 +9,12 @@ use NineteenNinetyFour\Ghostwriter\Core\Arrange\LayoutContext;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\SessionLayouts;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Format;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Sessions\Session;
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\FieldPath;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\PlainSeoFields;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\SeoField;
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\SeoFields;
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\SeoSource;
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\TitleFormat;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\Layouts;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\Links\StatamicLinks;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\EntryData;
@@ -19,7 +23,10 @@ use NineteenNinetyFour\Ghostwriter\Core\Schema\HeadingLevels;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Kind;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Schema;
 use NineteenNinetyFour\Ghostwriter\Core\Seo\LinkContext;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\MetaAction;
 use NineteenNinetyFour\Ghostwriter\Core\Seo\MetaContext;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\PlainSeoWriter;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\SearchFields;
 use NineteenNinetyFour\Ghostwriter\Core\Seo\SearchSection;
 use NineteenNinetyFour\Ghostwriter\Core\Seo\SeoMetaCheck;
 use NineteenNinetyFour\Ghostwriter\Core\Seo\SeoPass;
@@ -396,5 +403,53 @@ final class SeoMetaTest extends StudioTestCase
         $pass->useMeta($session, SeoField::DESCRIPTION);
         $this->assertTrue(SeoState::of($session)->meta->uses(SeoField::DESCRIPTION));
         $this->assertSame(SeoState::of($session)->toArray(), SeoState::fromArray(SeoState::of($session)->toArray())->toArray(), 'It round-trips.');
+    }
+
+    public function test_a_title_that_inherits_the_page_title_can_be_given_its_own(): void
+    {
+        $this->script();
+        [$session] = $this->firstDraft(self::site(links: false));
+        $fields = new class implements SeoFields
+        {
+            public function __construct(public SeoSource $source = SeoSource::Field, public bool $writable = true) {}
+
+            public function in(Schema $schema, EntryData $entry): array
+            {
+                return [new SeoField(FieldPath::of('seo')->with('title'), SeoField::TITLE, 'SEO title', 60, 'Winter garden care', $this->writable, $this->source === SeoSource::Field ? 'Title' : null, $this->source)];
+            }
+
+            public function noindex(Schema $schema, EntryData $entry): ?bool
+            {
+                return null;
+            }
+
+            public function titleFormat(Schema $schema, EntryData $entry): ?TitleFormat
+            {
+                return null;
+            }
+        };
+        $context = new MetaContext($fields, self::schema(), new EntryData([], group: 'journal'), false);
+
+        $row = (new SearchSection)->of($session, $context)['title'];
+        $this->assertSame([false, 'leave', true, 'seo.search.title-fits'], [$row['own'], $row['action'], $row['editable'], $row['note']['key']], 'It fits, so it inherits; the editor can still give it its own.');
+
+        $applied = (new SearchFields($fields, new PlainSeoWriter))->apply([], self::schema(), new EntryData([]), SeoState::of($session), false);
+        $this->assertSame([], $applied->values, 'Ghostwriter leaves it by itself (decision 12).');
+
+        (new SeoPass(studio: $this->studio()))->editMeta($session, SeoField::TITLE, 'Winter care for established gardens');
+        $row = (new SearchSection)->of($session, $context)['title'];
+        $this->assertSame([true, 'write', 'seo.search.edited'], [$row['own'], $row['action'], $row['note']['key']]);
+
+        $applied = (new SearchFields($fields, new PlainSeoWriter))->apply([], self::schema(), new EntryData([]), SeoState::of($session), false);
+        $this->assertSame(['seo' => ['title' => 'Winter care for established gardens']], $applied->values, 'The editor gave it its own: written.');
+        $this->assertSame(MetaAction::Write, $applied->actions[SeoField::TITLE]);
+        $this->assertTrue($applied->written->isEmpty(), 'The editor\'s, not Ghostwriter\'s.');
+
+        $fields->source = SeoSource::Disabled;
+        $this->assertSame([], (new SearchFields($fields, new PlainSeoWriter))->apply([], self::schema(), new EntryData([]), SeoState::of($session), false)->values, 'Switched off: never.');
+
+        $fields->source = SeoSource::Template;
+        $fields->writable = false;
+        $this->assertSame([], (new SearchFields($fields, new PlainSeoWriter))->apply([], self::schema(), new EntryData([]), SeoState::of($session), false)->values, 'A template the entry can\'t override: never.');
     }
 }

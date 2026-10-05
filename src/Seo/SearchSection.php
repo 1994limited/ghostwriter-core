@@ -63,8 +63,8 @@ final class SearchSection
             }
 
             $range = $this->meta->range($field, $role, $fields['format']);
-            $action = $this->meta->action($field, $context->newEntry, $provenance, $range) ?? MetaAction::Leave;
             $text = $meta->text($role);
+            $action = $this->meta->action($field, $context->newEntry, $provenance, $range, $text !== '' && $meta->edited($role)) ?? MetaAction::Leave;
             $current = $field->source === SeoSource::Custom && trim((string) $field->text) === '' ? null : $field->text;
 
             $row = [
@@ -81,7 +81,7 @@ final class SearchSection
                 'limit' => $range->limit,
                 'min' => $range->min,
                 'max' => $range->max,
-                'editable' => $action !== MetaAction::Leave || $text !== '',
+                'editable' => $action !== MetaAction::Leave || $text !== '' || $this->meta->ownable($field),
             ];
 
             if ($role === SeoField::TITLE) {
