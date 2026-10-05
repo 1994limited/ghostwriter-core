@@ -109,3 +109,41 @@ $layouts->afterWriter($session, $before, $response, $conversation, $writer, $sit
 **Strings.** `resources/lang/en/seo.php`: the notice (`notice.links`, `notice.links-one`, `notice.no-links`), the status (`status.checking`) and the Text tab's (`link.added`, `link.added-long`, `link.remove`, `link.open`, `link.removed`); `gaps.links-added`, `gaps.links-added-one`, `gaps.speech.links-added`, `gaps.fix.keep-link`.
 
 `Tests\Contracts\LinkInsertContract`: a link `inlineHref()` gives for a real page goes through the addon's real apply path into a rich-text field, reads back as a link to the same page with its words and the markers beside it, and renders as the page's address.
+
+## Search title, description, address and file names (row 5)
+
+Where the addon gives `LayoutContext` a `Seo\MetaContext`, the first draft's `seo-editor` call also writes the page's search title and description, and the pass makes its address. Nothing goes into the entry until "Use this draft", and nothing is saved until the editor saves.
+
+```php
+new LayoutContext($schema, …, links: $linkContext, meta: new MetaContext(
+    fields: $seoFields,            // Gaps\SeoFields: SEO Pro, SEOmatic, plain fields…
+    schema: $fullSchema,           // the entry's blueprint, its SEO field included
+    entry: $entryData,             // the values the SEO fields are read from (the entry being edited, or a new one's defaults), with group and site
+    newEntry: true,                // a new entry, or one never published
+    provenance: $provenance,       // SeoProvenance: what Ghostwriter wrote into this entry before (its earlier sessions' SeoState::$written)
+    slug: new SlugContext(settable: true, dated: true, taken: ['…'], current: null, base: 'northfold.garden/journal/'),
+    kind: $contentKind, voice: $voiceGuide, locale: 'en_GB',   // used where there is no LinkContext
+));
+```
+
+| Step | Who | What |
+|---|---|---|
+| What is wanted | `SeoMeta::request()` | The SEO fields as they would read with the draft in (an inherited description reads the draft's excerpt). The description where `MetaPolicy` would write or suggest one; the title only when the page title is too long for the `<title>` once the site name is added (decision 12), or the page has a title of its own; never one an editor wrote in the Search section |
+| How long | `MetaRange` | Title 30 to `limit − 8`, or `limit −` the site name and separator (`TitleFormat::added()`); description 120 to `limit − 5` (`limit − 30` to `limit − 5` under 150) |
+| The call | `Studio::seoEdit(SeoRequest)` | The links call with `SeoRequest::$meta` (a `MetaRequest`): the reply's `title` and `description` (`""` when not wanted). With no links to look for, the call is for them alone. One more ask when `SeoMetaCheck` finds a problem, with it quoted |
+| The checks | `SeoMetaCheck` | In range; nothing the page doesn't say (`SourceCheck` against the draft, the brief and the answers); no marker, and no figure only inside an unresolved `[[check:]]` or `[[ask:]]`; one plain line (no `!`, emoji or capitals); a title isn't the page title word for word. `settle()`: cut at a word when only too long, dropped otherwise (`SearchMeta::$dropped`) |
+| What is kept | `SeoState::$meta` (`SearchMeta`) | `title`, `description`, `slug`, `edited`, `use`, `dropped`, `checked` |
+| Later turns | `SeoPass::afterWriter()` | Written again (one meta-only call) when a writer's turn changed the title or a quarter of the words (`SeoPass::changed()`), for the roles nobody edited |
+| The address | `SlugRules` | From the title, while nobody has typed one: stop words out (a leading negation stays), a year only in a dated group or to avoid a clash, five words and 50 characters, unique among `taken` |
+
+**Never overwriting a person** (`MetaPolicy::decide()`, §9.4): empty, or Ghostwriter's own unchanged text (`SeoProvenance`, hashes by role) is **Write**; a person's text, or an inherited text that's empty or out of range, is **Suggest**; inherited text that fits, a template the entry can't override and anything switched off is **Leave**. On a new entry, an inherited title that's too long is written (decision 12).
+
+**On "Use this draft"** each addon calls `SearchFields::apply($values, $schema, $entryData, $state, $newEntry, $provenance)` with its `SeoFields` and its **`SeoWriter`** (a new port beside `SeoFields`: `write(array $values, SeoField $field, string $text): array`, in the field's own shape; `PlainSeoWriter` for plain fields). It returns `SearchApplied`: the values, what was written (`SeoState::withWritten()`), the action per role and the texts only suggested. The editor's "Use this" in the Search section (`SeoPass::useMeta()`) writes a suggested one after all. The slug is the addon's (`SearchMeta::$slug`), on never-published entries only.
+
+**The Search section** (§9.5, decision 21): `SearchSection::of($session, $metaContext)` gives the rows each addon draws: `title` (`own`, `pageTitle`, `composed`, `length`, `limit`, `min`, `max`, `action`, `current`, `note`), `description` (the same, with `inheritsFrom`, `dropped`), `address` (`slug`, `base`, `editable`, `note`). Notes are `seo.search.*` messages. Edits: `SeoPass::editMeta($session, 'title'|'description'|'slug', $text)` (the editor's from then on), `useMeta()`, and **Try again**, `SeoPass::retryMeta($session, $site)`: one meta-only call, written differently from the texts there now (it throws on a provider failure, for the panel to say so).
+
+**Finish this page:** `GapKind::SeoMissing` and the `SeoMissing` detector (in `GapFinder::standard()`): an SEO description that's empty, or under its range, on a page someone has worked on, with **Use this** (`FixAction::UseText`, the draft's description from `SessionGaps::$meta`) and **I'll write it** (`focus`). Its meta has `step` (`gaps.step.seo-missing`: "Add a description for search"), `role`, `limit`, `length`, `min`, `max`, `text`, `source`. Inherited text that fits, templates and switched-off values are left. A suggestion: never counted, never blocking. An addon passes `seo:` (its `SeoFields`) to `GapContext` for it to run.
+
+**File names** (§11): `Images\Photo::filenameBase($fallback, $max, $alt, $language)` names a photo from the alt text it is given, then the library's description, title and tags, the fallback and the search term, through **`FilenameRules::descriptive()`**: library noise out (`filename_noise` in each language's phrase list: "stock photo", "royalty free", "image of"…), stop words out, at most six words and 50 characters, two words with letters at least; else the next source.
+
+`Tests\Contracts\SeoWriterContract`: written text reads back through the addon's `SeoFields` as custom; an empty description is written on apply; a person's is never written (only suggested); Ghostwriter's own unchanged text is written again; inherited, templated and switched-off descriptions are left.

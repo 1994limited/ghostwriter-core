@@ -68,4 +68,6 @@ return [
         'winkelwagen', 'winkelmand', 'afrekenen', 'bestelling', 'bedankt', 'dankjewel', 'dank-u', 'bevestiging',
         'uitschrijven', 'fout', 'pagina-niet-gevonden', 'sitemap', 'wachtwoord',
     ],
+    // Words photo libraries put in titles that say nothing about the photo: left out of file names (Seo\FilenameRules).
+    'filename_noise' => ['stockfoto', 'stock foto', 'stockafbeelding', 'rechtenvrij', 'gratis foto', 'afbeelding van', 'foto van', 'close-up', 'unsplash', 'pexels', 'pixabay', 'shutterstock', 'istock', 'adobe stock'],
 ];

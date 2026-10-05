@@ -32,6 +32,12 @@ return [
     'placeholder-text' => '“:hint” in :label looks like it\'s waiting for something.',
     'missing-alt' => 'This image in :label has no alt text.',
     'seo-length' => ':label is too long.',
+    'seo-missing' => 'The SEO description is empty, so search engines will pick their own.',
+    'seo-missing.draft' => 'The SEO description is empty, so search engines will pick their own. Here\'s the one from the draft: “:text”',
+    'seo-missing.short' => 'The SEO description is only :length characters. Search results show up to about :limit.',
+    'seo-missing.short-draft' => 'The SEO description is only :length characters. Here\'s the one from the draft: “:text”',
+    'seo-missing.inherited' => 'The SEO description comes from :field, which is empty, so search engines will pick their own.',
+    'seo-missing.inherited-draft' => 'The SEO description comes from :field, which is empty. Here\'s one for this page: “:text”',
     'off-style-image' => 'The image in :label doesn\'t look like the others here.',
     'links-added' => 'Check :count links Ghostwriter added. “:words” goes to :title (:url). Keep it, or remove the link and keep the words.',
     'links-added-one' => 'Check the link Ghostwriter added. “:words” goes to :title (:url). Keep it, or remove the link and keep the words.',
@@ -52,8 +58,12 @@ return [
     'speech.placeholder-text' => 'Fill this in',
     'speech.missing-alt' => 'Describe me',
     'speech.seo-length' => 'Too long',
+    'speech.seo-missing' => 'Empty!',
     'speech.off-style-image' => 'Hmm',
     'speech.links-added' => 'Linked',
+
+    // A step's title in the guide's list, where it isn't the field's label.
+    'step.seo-missing' => 'Add a description for search',
 
     // Fixes.
     'fix.answer' => 'Type it in',
@@ -78,6 +88,7 @@ return [
     'fix.remove' => 'Remove it',
     'fix.dismiss' => 'It\'s fine',
     'fix.keep-link' => 'Keep it',
+    'fix.use-text' => 'Use this',
 
     // The guide.
     'guide.title' => 'Finish this page',

@@ -2,11 +2,15 @@
 
 namespace NineteenNinetyFour\Ghostwriter\Core\Seo;
 
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\SeoField;
+
 /**
  * The `seo-editor` call's answer, read: what the model made of the page
- * (`notes`, for the log), the links it proposes, in its order, and the
- * page it suggests for each of the writer's links to choose (`markers`).
- * Nothing here is checked yet: LinkValidator and SeoLinks do that.
+ * (`notes`, for the log), the links it proposes, in its order, the page it
+ * suggests for each of the writer's links to choose (`markers`), and the
+ * search title and description it wrote ('' where none was wanted).
+ * Nothing here is checked yet: LinkValidator, SeoLinks and SeoMetaCheck do
+ * that.
  */
 final class SeoReply
 {
@@ -18,6 +22,8 @@ final class SeoReply
         public readonly string $notes = '',
         public readonly array $links = [],
         public readonly array $markers = [],
+        public readonly string $title = '',
+        public readonly string $description = '',
     ) {}
 
     /**
@@ -41,6 +47,14 @@ final class SeoReply
             }
         }
 
-        return new self(is_scalar($data['notes'] ?? null) ? trim((string) $data['notes']) : '', $links, $markers);
+        $text = fn (string $key) => is_scalar($data[$key] ?? null) ? trim((string) $data[$key]) : '';
+
+        return new self($text('notes'), $links, $markers, $text('title'), $text('description'));
+    }
+
+    /** The title or the description. */
+    public function text(string $role): string
+    {
+        return $role === SeoField::TITLE ? $this->title : $this->description;
     }
 }

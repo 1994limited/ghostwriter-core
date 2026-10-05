@@ -90,4 +90,6 @@ return [
         'thank-you', 'thanks', 'thankyou', 'confirmation', 'order-confirmation', 'unsubscribe', 'sitemap', 'password',
         'reset-password', 'forgot-password',
     ],
+    // Words photo libraries put in titles that say nothing about the photo: left out of file names (Seo\FilenameRules).
+    'filename_noise' => ['stock photo', 'stock photograph', 'stock image', 'stock picture', 'royalty free', 'royalty-free', 'free photo', 'free image', 'image of', 'photo of', 'picture of', 'photograph of', 'close up', 'close-up', 'high resolution', 'hd', '4k', 'copy space', 'unsplash', 'pexels', 'pixabay', 'shutterstock', 'getty images', 'istock', 'adobe stock', 'openverse'],
 ];

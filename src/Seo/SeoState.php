@@ -40,6 +40,8 @@ final class SeoState
         public readonly ?array $notice = null,
         public readonly ?string $checked = null,
         public readonly array $suggested = [],
+        public readonly SearchMeta $meta = new SearchMeta,
+        public readonly SeoProvenance $written = new SeoProvenance,
     ) {}
 
     public static function of(Session $session): self
@@ -102,6 +104,8 @@ final class SeoState
             $notice,
             is_string($array['checked'] ?? null) ? $array['checked'] : null,
             $suggested,
+            SearchMeta::fromArray(is_array($array['meta'] ?? null) ? $array['meta'] : []),
+            SeoProvenance::fromArray(is_array($array['written'] ?? null) ? $array['written'] : []),
         );
     }
 
@@ -118,6 +122,8 @@ final class SeoState
             'notice' => $this->notice,
             'checked' => $this->checked,
             'suggested' => $this->suggested,
+            'meta' => $this->meta->toArray(),
+            'written' => $this->written->toArray(),
         ], fn ($value) => $value !== null && $value !== []);
     }
 
@@ -139,7 +145,7 @@ final class SeoState
      */
     public function withLinks(array $links, ?array $notice, string $checked, ?array $suggested = null): self
     {
-        return new self(array_values($links), $this->removed, $notice, $checked, array_values($suggested ?? $this->suggested));
+        return new self(array_values($links), $this->removed, $notice, $checked, array_values($suggested ?? $this->suggested), $this->meta, $this->written);
     }
 
     /**
@@ -184,7 +190,7 @@ final class SeoState
         $key = LinkCandidates::linkKey($href) ?? $href;
         $links = array_values(array_filter($this->links, fn (array $link) => (LinkCandidates::linkKey($link['href']) ?? $link['href']) !== $key));
 
-        return new self($links, array_values(array_unique([...$this->removed, $href])), $this->notice, $this->checked, $this->suggested);
+        return new self($links, array_values(array_unique([...$this->removed, $href])), $this->notice, $this->checked, $this->suggested, $this->meta, $this->written);
     }
 
     /**
@@ -203,6 +209,18 @@ final class SeoState
         }
 
         return null;
+    }
+
+    /** With other search meta: the title, description or address. */
+    public function withMeta(SearchMeta $meta): self
+    {
+        return new self($this->links, $this->removed, $this->notice, $this->checked, $this->suggested, $meta, $this->written);
+    }
+
+    /** With the SEO text Ghostwriter has now written into the entry added to what it wrote before. */
+    public function withWritten(SeoProvenance $written): self
+    {
+        return new self($this->links, $this->removed, $this->notice, $this->checked, $this->suggested, $this->meta, $this->written->merge($written));
     }
 
     /** Whether an editor removed a link to this href. */

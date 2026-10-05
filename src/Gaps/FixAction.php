@@ -45,6 +45,12 @@ enum FixAction: string
 
     case Shorten = 'shorten';
 
+    /**
+     * "Use this": put the text in Fix::$value into the field (an SEO
+     * description the draft already has), in the shape the field keeps it.
+     */
+    case UseText = 'use-text';
+
     /** Move focus to the field and select the gap's text. */
     case Focus = 'focus';
 

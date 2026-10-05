@@ -109,7 +109,7 @@ final class SessionLayouts
             $session->extras = $this->studio->extras($response, $conversation, $writer, $site->exampleIds)->toArray();
         }
 
-        if ($first && $site->links !== null && $progress !== null) {
+        if ($first && ($site->links !== null || $site->meta !== null) && $progress !== null) {
             $progress(SeoPass::CHECKING);
         }
 

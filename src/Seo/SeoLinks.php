@@ -82,18 +82,23 @@ final class SeoLinks
 
     /**
      * Links the session's draft to the site's other pages, where $site
-     * says how (LayoutContext::$links). The session's draft and SEO state
-     * are changed in place; the calls' tokens are returned (and not yet
-     * added to the session's usage).
+     * says how (LayoutContext::$links), and writes its search title and
+     * description where $meta asks for them, in the same `seo-editor`
+     * call (§8, §9). The session's draft and SEO state are changed in
+     * place; the calls' tokens are returned (and not yet added to the
+     * session's usage).
+     *
+     * With no links to look for and nothing in $meta, no call is made.
      *
      * @throws ProviderException only from the `seo-editor` call; a failed verifier is logged.
      */
-    public function add(Session $session, LayoutContext $site, ?string $now = null): Usage
+    public function add(Session $session, LayoutContext $site, ?string $now = null, ?MetaRequest $meta = null): Usage
     {
         $context = $site->links;
         $now ??= gmdate('Y-m-d\TH:i:s\Z');
+        $meta = $meta !== null && $meta->wants() ? $meta : null;
 
-        if ($context === null || $session->draft === null || trim($session->draft) === '') {
+        if (($context === null && $meta === null) || $session->draft === null || trim($session->draft) === '') {
             return new Usage;
         }
 
@@ -109,51 +114,111 @@ final class SeoLinks
         $prose = array_values(array_filter($units->all(), fn (Unit $unit) => in_array($unit->kind, [UnitKind::Prose, UnitKind::Section, UnitKind::List], true) && trim($unit->markdown) !== ''));
         $linkable = [];
 
-        foreach ($prose as $unit) {
+        foreach ($context === null ? [] : $prose as $unit) {
             $field = $fields[$unit->path->toString()] ?? null;
 
-            if ($field !== null && self::holdsLinks($field, $context)) {
+            if ($field !== null && $context !== null && self::holdsLinks($field, $context)) {
                 $linkable[$unit->id] = $unit;
             }
         }
 
         $words = array_sum(array_map(fn (Unit $unit) => count(NormalisedText::words($unit->markdown)), $prose));
         $hrefs = self::links($draft->data);
-        $markers = WriterMarker::in($units->all());
+        $markers = $context === null ? [] : WriterMarker::in($units->all());
         $room = $linkable === [] || $words < self::MIN_WORDS ? 0 : max(0, self::target($words) - count($hrefs));
+        $notice = $state->notice;
+        $candidates = [];
 
-        if ($room <= 0 && $markers === []) {
+        if ($context !== null && $room <= 0 && $markers === []) {
             $this->logger->info("Ghostwriter: no internal links looked for ({$words} words of prose, ".count($hrefs).' links already, '.count($linkable).' units that can take one).');
-            $state->withLinks($state->links, $state->notice, $now)->saveTo($session);
+        } elseif ($context !== null) {
+            if ($room <= 0) {
+                $this->logger->info("Ghostwriter: no internal links looked for ({$words} words of prose, ".count($hrefs).' links already, '.count($linkable).' units that can take one); pages are suggested for the writer\'s '.count($markers).' '.(count($markers) === 1 ? 'link' : 'links').' to choose.');
+            }
 
-            return new Usage;
+            $text = $draft->title()."\n\n".implode("\n\n", array_map(fn (Unit $unit) => $unit->markdown, $prose));
+            $candidates = array_values(array_filter(
+                $context->index->related($text, $context->group, $context->site, $context->except, LinkCandidates::LIMIT, array_values(array_unique($hrefs))),
+                fn (DigestEntry $entry) => $context->links->inlineHref($entry) !== null,
+            ));
+
+            if ($candidates === []) {
+                $this->logger->info('Ghostwriter: no page of the site is close enough to this draft to link to.');
+                $notice = $room > 0 ? ['key' => 'seo.notice.no-links', 'params' => []] : $notice;
+            }
         }
 
-        if ($room <= 0) {
-            $this->logger->info("Ghostwriter: no internal links looked for ({$words} words of prose, ".count($hrefs).' links already, '.count($linkable).' units that can take one); pages are suggested for the writer\'s '.count($markers).' '.(count($markers) === 1 ? 'link' : 'links').' to choose.');
+        if ($candidates === []) {
+            $room = 0;
+            $markers = [];
+        }
+
+        if ($candidates === [] && $meta === null) {
+            $state->withLinks($state->links, $notice, $context !== null ? $now : ($state->checked ?? $now))->saveTo($session);
+
+            return new Usage;
         }
 
         $title = $draft->title();
-        $text = $title."\n\n".implode("\n\n", array_map(fn (Unit $unit) => $unit->markdown, $prose));
-        $candidates = array_values(array_filter(
-            $context->index->related($text, $context->group, $context->site, $context->except, LinkCandidates::LIMIT, array_values(array_unique($hrefs))),
-            fn (DigestEntry $entry) => $context->links->inlineHref($entry) !== null,
-        ));
-
-        if ($candidates === []) {
-            $this->logger->info('Ghostwriter: no page of the site is close enough to this draft to link to.');
-            $state->withLinks($state->links, $room > 0 ? ['key' => 'seo.notice.no-links', 'params' => []] : $state->notice, $now)->saveTo($session);
-
-            return new Usage;
-        }
-
-        $request = new SeoRequest($title, $units->all(), array_keys($linkable), $candidates, $room, count($hrefs), $context->kind, $context->voice, $context->locale, $words, $markers);
+        $kind = $context !== null ? $context->kind : $site->meta?->kind;
+        $voice = $context !== null ? $context->voice : (string) $site->meta?->voice;
+        $locale = $context !== null ? $context->locale : ($site->meta->locale ?? 'en');
+        $request = new SeoRequest($title, $units->all(), array_keys($linkable), $candidates, $room, count($hrefs), $kind, $voice, $locale, $words, $markers, $meta);
         $result = $this->studio->seoEdit($request);
         $usage = $result->usage;
+        $added = [];
+        $suggestions = [];
+
+        if ($context !== null && $candidates !== []) {
+            [$data, $added, $suggestions, $usage] = $this->place($draft, $result->value, $request, $linkable, $context, $prose, $usage);
+
+            if ($data !== null) {
+                $session->draft = (new DraftEditor)->dump($data);
+            }
+
+            $notice = $added === []
+                ? ($room > 0 ? ['key' => 'seo.notice.no-links', 'params' => []] : $notice)
+                : ['key' => count($added) === 1 ? 'seo.notice.links-one' : 'seo.notice.links', 'params' => ['count' => count($added), 'titles' => implode(', ', array_map(fn (array $link) => $link['title'], $added))]];
+
+            $this->logger->info('Ghostwriter: linked the draft to '.count($added).' of the site\'s pages.', ['links' => array_map(fn (array $link) => "{$link['words']} → {$link['title']}", $added)]);
+
+            if ($markers !== []) {
+                $this->logger->info('Ghostwriter: suggested pages for '.count($suggestions).' of the writer\'s '.count($markers).' '.(count($markers) === 1 ? 'link' : 'links').' to choose.', ['suggested' => array_map(fn (MarkerSuggestion $suggestion) => "{$suggestion->marker->words} → {$suggestion->target->title}", $suggestions)]);
+            }
+        }
+
+        $state = $state->withLinks([...$state->links, ...$added], $notice, $context !== null ? $now : ($state->checked ?? $now), $candidates !== [] ? array_map(fn (MarkerSuggestion $suggestion) => $suggestion->toArray(), $suggestions) : null);
+
+        if ($meta !== null) {
+            $settled = (new SeoMeta)->settle($state->meta, $result->value, $meta, $now);
+            $state = $state->withMeta($settled);
+            $this->logger->info('Ghostwriter: wrote the search '.implode(' and ', array_keys(array_filter(['title' => $meta->wantsTitle, 'description' => $meta->wantsDescription]))).'.', [
+                'title' => $meta->wantsTitle ? $settled->title : null,
+                'description' => $meta->wantsDescription ? $settled->description : null,
+                'dropped' => $settled->dropped,
+            ]);
+        }
+
+        $state->saveTo($session);
+
+        return $usage;
+    }
+
+    /**
+     * The links the call proposed, checked and verified, written into the
+     * draft's data; the suggestions for the writer's markers kept.
+     *
+     * @param  array<string, Unit>  $linkable
+     * @param  list<Unit>  $prose
+     * @return array{0: array<string, mixed>|null, 1: list<array{unit: string, words: string, href: string, title: string, type: string, url: ?string, why: string}>, 2: list<MarkerSuggestion>, 3: Usage}
+     */
+    private function place(Draft $draft, SeoReply $reply, SeoRequest $request, array $linkable, LinkContext $context, array $prose, Usage $usage): array
+    {
+        $title = $request->title;
         $first = $prose[0]->id ?? null;
-        $validated = $this->validator->validate($result->value->links, $request, $linkable, $context->links, $first, $context->locale);
+        $validated = $this->validator->validate($reply->links, $request, $linkable, $context->links, $first, $context->locale);
         $checked = array_values(array_filter($validated->kept, fn (PlacedLink $link) => $link->target !== null));
-        $suggestions = $this->suggestions($result->value->markers, $request, $context);
+        $suggestions = $this->suggestions($reply->markers, $request, $context);
 
         if ($checked !== [] || $suggestions !== []) {
             try {
@@ -172,7 +237,7 @@ final class SeoLinks
         }
 
         if ($validated->dropped !== []) {
-            $this->logger->info('Ghostwriter: '.count($validated->dropped).' of '.count($result->value->links).' proposed links were dropped.', ['agent' => 'seo-editor', 'dropped' => $validated->rules(), 'notes' => $result->value->notes]);
+            $this->logger->info('Ghostwriter: '.count($validated->dropped).' of '.count($reply->links).' proposed links were dropped.', ['agent' => 'seo-editor', 'dropped' => $validated->rules(), 'notes' => $reply->notes]);
         }
 
         $data = $draft->data;
@@ -201,22 +266,7 @@ final class SeoLinks
             }
         }
 
-        if ($validated->kept !== []) {
-            $session->draft = $editor->dump($data);
-        }
-
-        $notice = $added === []
-            ? ($room > 0 ? ['key' => 'seo.notice.no-links', 'params' => []] : $state->notice)
-            : ['key' => count($added) === 1 ? 'seo.notice.links-one' : 'seo.notice.links', 'params' => ['count' => count($added), 'titles' => implode(', ', array_map(fn (array $link) => $link['title'], $added))]];
-        $state->withLinks([...$state->links, ...$added], $notice, $now, array_map(fn (MarkerSuggestion $suggestion) => $suggestion->toArray(), $suggestions))->saveTo($session);
-
-        $this->logger->info('Ghostwriter: linked the draft to '.count($added).' of the site\'s pages.', ['links' => array_map(fn (array $link) => "{$link['words']} → {$link['title']}", $added)]);
-
-        if ($markers !== []) {
-            $this->logger->info('Ghostwriter: suggested pages for '.count($suggestions).' of the writer\'s '.count($markers).' '.(count($markers) === 1 ? 'link' : 'links').' to choose.', ['suggested' => array_map(fn (MarkerSuggestion $suggestion) => "{$suggestion->marker->words} → {$suggestion->target->title}", $suggestions)]);
-        }
-
-        return $usage;
+        return [$validated->kept !== [] ? $data : null, $added, $suggestions, $usage];
     }
 
     /**

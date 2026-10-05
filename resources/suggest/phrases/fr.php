@@ -68,4 +68,6 @@ return [
         'inscription', 'panier', 'paiement', 'merci', 'confirmation', 'desinscription', 'désinscription',
         'erreur', 'page-introuvable', 'plan-du-site', 'mot-de-passe',
     ],
+    // Words photo libraries put in titles that say nothing about the photo: left out of file names (Seo\FilenameRules).
+    'filename_noise' => ['photo de stock', 'photo stock', 'image de stock', 'banque d images', 'libre de droits', 'photo gratuite', 'image de', 'photo de', 'gros plan', 'unsplash', 'pexels', 'pixabay', 'shutterstock', 'istock', 'adobe stock'],
 ];

@@ -4,6 +4,24 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
+### Added (SEO layer: search title, description, address and file names, row 5)
+
+- **The search title and description** (§9): where the addon gives `LayoutContext` the new **`Seo\MetaContext`** (its `SeoFields`, the full schema, the entry's values, new or not, `SeoProvenance`, a `SlugContext`), the first draft's `seo-editor` call also writes them: `SeoRequest::$meta` (a **`Seo\MetaRequest`**), and `title` and `description` in the reply (`SeoReply`, `seo-editor-reply.json`, the `seo-editor` prompt). With no links to look for, the call runs for them alone; with nothing to write, no call. A writer's turn that changed the title or a quarter of the words writes them again (`SeoPass::changed()`), unless an editor wrote them.
+- **`Seo\SeoMetaCheck`**: in range (`Seo\MetaRange`: title 30 to `limit − 8`, or less the site name from `TitleFormat`; description 120 to `limit − 5`), nothing the page doesn't say (`SourceCheck`), no marker or figure only inside an unresolved `[[check:]]`/`[[ask:]]`, plain text, a title that isn't the page title. A failing reply is asked for once more with the problem quoted; still failing, it's cut at a word (only too long) or dropped.
+- **`Seo\MetaPolicy`** (`MetaAction`: Write, Suggest, Leave) and **`Seo\SeoProvenance`** (hashes of what Ghostwriter wrote, by role): a person's SEO text is never replaced without asking; inherited text that fits is left (decision 11); the SEO title only when the page title is too long (decision 12).
+- **`Seo\SeoWriter`**, a new port beside `SeoFields` (`write($values, $field, $text)`), **`Seo\PlainSeoWriter`**, and **`Seo\SearchFields::apply()`** for "Use this draft" (`SearchApplied`: values, what was written, actions, suggestions).
+- **`Seo\SearchMeta`** on `SeoState::$meta` (title, description, slug, edited, use, dropped, checked) and `SeoState::$written`; `withMeta()`, `withWritten()`.
+- **The Search section**: `Seo\SearchSection::of()` (title, description and address rows with counts, ranges, actions and `seo.search.*` notes); `SeoPass::retryMeta()` (Try again), `editMeta()`, `useMeta()`.
+- **`Seo\SlugRules`** (decision 13) and **`Seo\FilenameRules`**, with `filename_noise` in the five phrase lists (`Phrases::$filenameNoise`).
+- **`GapKind::SeoMissing`** and the **`SeoMissing`** detector ("Add a description for search": empty or too short; **Use this** with the draft's description, `FixAction::UseText`, or I'll write it), `SessionGaps::$meta`. A suggestion: never blocking.
+- **`Tests\Contracts\SeoWriterContract`** for the addons.
+- Strings: `seo.search.*`, `gaps.seo-missing*`, `gaps.speech.seo-missing`, `gaps.step.seo-missing`, `gaps.fix.use-text`. `Gap::message()` passes `text`, `length`, `limit` and `field` from the meta.
+
+### Changed (SEO layer, row 5)
+
+- **Stock and library photos are named from their alt text** (§11): `Photo::filenameBase($fallback, $max, $alt, $language)` takes the alt text first, then the library's description, title and tags, through `FilenameRules` (no "stock photo", no stop words, six words and 50 characters at most). `brown-rocks-during-golden-hour` is now `brown-rocks-golden-hour`.
+- `SessionLayouts::afterWriter()` reports `SeoPass::CHECKING` where the addon gives a `MetaContext` too.
+
 ### Changed (SEO layer: the writer's own links)
 
 - **The writer's links to real pages are kept** (decision 22). `Seo\LinkGuard::guard()` takes the draft's `LinkContext` (passed by `SeoPass`): where its index is a new **`Suggest\LinkLookup`** (`linkRow($href, $site)`, its own port, so an addon without it still loads), an href that points at a row of the draft's site that `Linkable` allows and that isn't the page itself stays a link, written as `InlineLinks::inlineHref()` gives it. Anything else still becomes a `#gw-link:` marker. `guard()` returns the kept links as a third value. **`LinkCandidates::rowFor()`** matches by `linkKey()`, and an absolute address only on the row's own host. `MemoryEntryIndex` implements `LinkLookup`, and `LinkIndexContract` checks it where an index does.

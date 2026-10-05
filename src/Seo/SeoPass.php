@@ -4,8 +4,10 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Seo;
 
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Exceptions\ProviderException;
 use NineteenNinetyFour\Ghostwriter\Core\Ai\Usage;
+use NineteenNinetyFour\Ghostwriter\Core\Anchor\NormalisedText;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\LayoutContext;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Sessions\Session;
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\SeoField;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Field;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\HeadingLevels;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Kind;
@@ -37,6 +39,13 @@ use Throwable;
  *   draft" alike.
  * - **removeLink()**: an editor's "Remove link" on a link the pass added:
  *   the words stay, the link goes, and LinkGuard won't let it back.
+ * - **The search title, description and address** (§9, §10), where the
+ *   addon gives LayoutContext a MetaContext: written by the first draft's
+ *   `seo-editor` call (with the links; SeoMeta says which are wanted), and
+ *   again after a writer's turn that changed the title or a quarter of the
+ *   words, unless an editor wrote them. The address follows the title
+ *   (SlugRules) until someone types one. retryMeta() is the Search
+ *   section's Try again; editMeta() and useMeta() its edits.
  *
  * Everything but the first draft's links is deterministic and idempotent.
  */
@@ -44,6 +53,9 @@ final class SeoPass
 {
     /** What the panel says while ① runs on a first draft: "Checking headings and links…". */
     public const CHECKING = 'checking';
+
+    /** The share of a draft's words a writer's turn must change for the title and description to be written again (§5.2). */
+    public const CHANGED = 0.25;
 
     private readonly LoggerInterface $logger;
 
@@ -55,6 +67,7 @@ final class SeoPass
         ?LoggerInterface $logger = null,
         private readonly ?Studio $studio = null,
         private readonly LinkGuard $guard = new LinkGuard,
+        private readonly SeoMeta $meta = new SeoMeta,
     ) {
         $this->logger = $logger ?? new NullLogger;
         $this->spent = new Usage;
@@ -113,20 +126,181 @@ final class SeoPass
             $session->draft = (new DraftEditor)->dump($data);
         }
 
-        if ($first && $site->links !== null && $this->studio !== null && SeoState::of($session)->checked === null) {
+        if ($first && ($site->links !== null || $site->meta !== null) && $this->studio !== null && SeoState::of($session)->checked === null) {
+            $meta = $site->meta !== null ? $this->meta->request($session, $site->meta, self::sources($session)) : null;
+
             try {
-                $this->spent = (new SeoLinks($this->studio, $this->logger))->add($session, $site);
+                $this->spent = (new SeoLinks($this->studio, $this->logger))->add($session, $site, null, $meta);
             } catch (ProviderException $exception) {
-                $this->logger->warning("Ghostwriter: the draft wasn't linked to the site's other pages, as the call failed: {$exception->getMessage()}", ['agent' => 'seo-editor']);
+                $this->logger->warning("Ghostwriter: the draft wasn't linked to the site's other pages, and has no search title or description, as the call failed: {$exception->getMessage()}", ['agent' => 'seo-editor']);
                 SeoState::of($session)->withLinks(SeoState::of($session)->links, null, gmdate('Y-m-d\TH:i:s\Z'))->saveTo($session);
             }
+        } elseif ($writer && ! $first && $site->meta !== null && $this->studio !== null && SeoState::of($session)->meta->checked !== null && self::changed($before, $session->draft)) {
+            // A writer's turn that changed the title, or a quarter of the words: the title and description follow, unless an editor wrote them (§5.2).
+            $meta = $this->meta->request($session, $site->meta, self::sources($session));
 
-            if ($this->spent->input > 0 || $this->spent->output > 0) {
-                $session->usage = ['input' => (int) ($session->usage['input'] ?? 0) + $this->spent->input, 'output' => (int) ($session->usage['output'] ?? 0) + $this->spent->output] + $session->usage;
+            if ($meta !== null) {
+                $this->spent = $this->writeMeta($session, $site, $meta);
             }
         }
 
+        if ($this->spent->input > 0 || $this->spent->output > 0) {
+            $session->usage = ['input' => (int) ($session->usage['input'] ?? 0) + $this->spent->input, 'output' => (int) ($session->usage['output'] ?? 0) + $this->spent->output] + $session->usage;
+        }
+
+        if ($site->meta !== null) {
+            $this->fitSlug($session, $site->meta);
+        }
+
         return $changes;
+    }
+
+    /**
+     * "Try again" in the Search section: one `seo-editor` call, for the
+     * title and description only, written differently from the ones there
+     * now. The editor's own are asked for again too: they asked. Returns
+     * the call's tokens (added to the session's usage); none when the page
+     * has no SEO field Ghostwriter writes or suggests.
+     *
+     * @throws ProviderException
+     */
+    public function retryMeta(Session $session, LayoutContext $site): Usage
+    {
+        if ($site->meta === null || $this->studio === null) {
+            return new Usage;
+        }
+
+        $request = $this->meta->request($session, $site->meta, self::sources($session), force: true);
+
+        if ($request === null) {
+            return new Usage;
+        }
+
+        $state = SeoState::of($session);
+        $meta = $state->meta;
+
+        foreach ([SeoField::TITLE, SeoField::DESCRIPTION] as $role) {
+            if ($request->wanted($role)) {
+                $meta = $meta->with($role, $meta->text($role));
+            }
+        }
+
+        $state->withMeta($meta)->saveTo($session);
+        $usage = $this->writeMeta($session, $site, $request, rethrow: true);
+        $session->usage = ['input' => (int) ($session->usage['input'] ?? 0) + $usage->input, 'output' => (int) ($session->usage['output'] ?? 0) + $usage->output] + $session->usage;
+
+        return $usage;
+    }
+
+    /**
+     * An editor's text in the Search section: the title (empty to use the
+     * page title again: "Use the page title"), the description, or the
+     * address (empty: made from the title again). Theirs from now on: no
+     * later turn rewrites it. Nothing is checked: it is theirs.
+     */
+    public function editMeta(Session $session, string $role, string $text, ?LayoutContext $site = null): void
+    {
+        $state = SeoState::of($session);
+
+        if ($role === 'slug') {
+            $slug = SlugRules::clean($text);
+            $state->withMeta($state->meta->withSlug($slug !== '' ? $slug : null, $slug !== ''))->saveTo($session);
+
+            if ($slug === '' && $site?->meta !== null) {
+                $this->fitSlug($session, $site->meta);
+            }
+
+            return;
+        }
+
+        if (! in_array($role, [SeoField::TITLE, SeoField::DESCRIPTION], true)) {
+            return;
+        }
+
+        $text = trim((string) preg_replace('/\s+/u', ' ', $text));
+        $state->withMeta($state->meta->with($role, $text, edited: true))->saveTo($session);
+    }
+
+    /**
+     * "Use this" beside an SEO value of the entry's own that stays: the
+     * draft's text goes in on "Use this draft" after all ($use), or not.
+     */
+    public function useMeta(Session $session, string $role, bool $use = true): void
+    {
+        $state = SeoState::of($session);
+        $state->withMeta($state->meta->using($role, $use))->saveTo($session);
+    }
+
+    /**
+     * The `seo-editor` call for the title and description alone (no
+     * links), checked into the session's meta.
+     *
+     * @throws ProviderException when $rethrow; otherwise a failure is logged and nothing changes.
+     */
+    private function writeMeta(Session $session, LayoutContext $site, MetaRequest $request, bool $rethrow = false): Usage
+    {
+        $alone = new LayoutContext($site->schema, $site->pattern, $site->entries, $site->defaults, $site->exampleIds, $site->profile, null, $site->meta);
+
+        try {
+            return (new SeoLinks($this->studio ?? throw new ProviderException('No studio.', 'seo'), $this->logger))->add($session, $alone, null, $request);
+        } catch (ProviderException $exception) {
+            if ($rethrow) {
+                throw $exception;
+            }
+
+            $this->logger->warning("Ghostwriter: the search title and description weren't written again, as the call failed: {$exception->getMessage()}", ['agent' => 'seo-editor']);
+
+            return new Usage;
+        }
+    }
+
+    /** The address follows the title while nobody has typed one. */
+    private function fitSlug(Session $session, MetaContext $context): void
+    {
+        $state = SeoState::of($session);
+        $slug = $this->meta->slug($session, $context);
+
+        if ($slug !== $state->meta->slug) {
+            $state->withMeta($state->meta->withSlug($slug, $state->meta->edited('slug')))->saveTo($session);
+        }
+    }
+
+    /**
+     * Whether a writer's turn changed the page enough for its search title
+     * and description to be written again: the title changed, or a quarter
+     * of the words did (§5.2).
+     */
+    public static function changed(?string $before, ?string $after): bool
+    {
+        $a = self::data($before);
+        $b = self::data($after);
+
+        if ($a === null || $b === null) {
+            return false;
+        }
+
+        $title = fn (array $data) => trim(is_scalar($data['title'] ?? null) ? (string) $data['title'] : '');
+
+        if ($title($a) !== $title($b)) {
+            return true;
+        }
+
+        $words = fn (array $data) => array_count_values(NormalisedText::words(mb_strtolower(SeoMeta::text($data))));
+        $x = $words($a);
+        $y = $words($b);
+        $total = array_sum($x) + array_sum($y);
+
+        if ($total === 0) {
+            return false;
+        }
+
+        $differ = 0;
+
+        foreach ($x + $y as $word => $_) {
+            $differ += abs(($x[$word] ?? 0) - ($y[$word] ?? 0));
+        }
+
+        return $differ / $total >= self::CHANGED;
     }
 
     /** The tokens the last afterWriter() spent on links (none on most turns). */

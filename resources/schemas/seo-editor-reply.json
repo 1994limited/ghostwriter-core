@@ -2,9 +2,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/1994limited/ghostwriter-core/resources/schemas/seo-editor-reply.json",
   "title": "Ghostwriter seo-editor reply (structured output)",
-  "description": "The links chosen from a new page to other pages of its site, and the page suggested for each link the writer left for the editor to choose. The unit, target and marker enums are filled for each call.",
+  "description": "The links chosen from a new page to other pages of its site, the page suggested for each link the writer left for the editor to choose, and the page's search title and description. The unit, target and marker enums are filled for each call.",
   "type": "object",
-  "required": ["notes", "links", "markers"],
+  "required": ["notes", "links", "markers", "title", "description"],
   "additionalProperties": false,
   "properties": {
     "notes": {"type": "string", "maxLength": 600, "description": "First: one or two sentences for yourself on what the page is about, who reads it, and which of the site's pages are genuinely related. Never shown to the editor."},
@@ -39,6 +39,8 @@
           "why": {"type": "string", "maxLength": 200, "description": "One short sentence on why that page, or why none fits."}
         }
       }
-    }
+    },
+    "title": {"type": "string", "maxLength": 400, "description": "The search title, when one is asked for; otherwise empty. Plain text, without the site's name."},
+    "description": {"type": "string", "maxLength": 400, "description": "The search description, when one is asked for; otherwise empty. One or two plain sentences, only what the page says."}
   }
 }

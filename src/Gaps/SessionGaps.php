@@ -23,7 +23,9 @@ use NineteenNinetyFour\Ghostwriter\Core\Seo\SeoState;
  * (Seo\SeoState::$links), so Finish this page can ask the editor to check
  * them (Detectors\AddedLinks), and the pages it suggested for the writer's
  * own links to choose (Seo\SeoState::$suggested), so their steps offer the
- * suggestion first (Detectors\LinkMarkers).
+ * suggestion first (Detectors\LinkMarkers), and the draft's search title
+ * and description (Seo\SeoState::$meta), so "Add a description for search"
+ * can offer the draft's (Detectors\SeoMissing).
  */
 final class SessionGaps
 {
@@ -42,16 +44,21 @@ final class SessionGaps
     /** @var list<array{hint: string, words: string, id: string, title: string, type: string, url: ?string, href: string, why: string}> The pages suggested for the writer's links to choose. */
     public readonly array $suggested;
 
+    /** @var array<string, string> The draft's search title and description (Seo\SearchMeta), by role, where it has them. */
+    public readonly array $meta;
+
     /**
      * @param  array<int, mixed>  $entries
      * @param  array<int, mixed>  $links  Seo\SeoState::$links.
      * @param  array<int, mixed>  $suggested  Seo\SeoState::$suggested.
+     * @param  array<string, mixed>  $meta  The draft's search title and description, by role (Seo\SearchMeta::toArray() is read too).
      */
-    public function __construct(array $entries = [], array $links = [], array $suggested = [])
+    public function __construct(array $entries = [], array $links = [], array $suggested = [], array $meta = [])
     {
-        $seo = SeoState::fromArray(['links' => $links, 'suggested' => $suggested]);
+        $seo = SeoState::fromArray(['links' => $links, 'suggested' => $suggested, 'meta' => $meta]);
         $this->links = $seo->links;
         $this->suggested = $seo->suggested;
+        $this->meta = array_filter(['title' => $seo->meta->title, 'description' => $seo->meta->description], fn (string $text) => $text !== '');
 
         $clean = [];
 
@@ -76,7 +83,7 @@ final class SessionGaps
     {
         $seo = SeoState::of($session);
 
-        return new self($session->gaps, $seo->links, $seo->suggested);
+        return new self($session->gaps, $seo->links, $seo->suggested, $seo->meta->toArray());
     }
 
     /**
@@ -187,7 +194,7 @@ final class SessionGaps
 
     public function isEmpty(): bool
     {
-        return $this->entries === [] && $this->links === [] && $this->suggested === [];
+        return $this->entries === [] && $this->links === [] && $this->suggested === [] && $this->meta === [];
     }
 
     /**
