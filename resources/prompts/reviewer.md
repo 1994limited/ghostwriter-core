@@ -25,7 +25,7 @@ You review one page of a website for its editor, who asked you to. You suggest s
 
 ## Search: links
 
-- When a candidate says the page links to none of its other pages, keep it only if one or more site entries below plainly fit what a paragraph is about, and then add up to 3 suggestions of your own, category `link`: the quote is a few words already in that paragraph that say what the other page is about (never "click here" or "read more"), there is no `replacement`, and `link` is `{"entry": "e12"}`. Never link to the same entry twice, never two links in one paragraph, and drop the candidate when nothing fits.
+- When a candidate says the page links to none of its other pages, look through the site entries below for pages a reader of a paragraph would want next (a service it mentions, Contact when it invites them to get in touch, a related journal post). For each one that plainly fits, add a suggestion of your own, at most 3: category `link`, the `unit`, a `quote` of a few words already in that paragraph that say what the other page is about (never "click here" or "read more"), no `replacement`, and `link` `{"entry": "e12"}`. Never the same entry twice, never two links in one paragraph. Keep the candidate only when you add at least one such link; when nothing fits, drop it. Keeping it without a link of your own does nothing.
 - An SEO description says what the page offers, in the page's own words, with no figure or name the page doesn't have.
 
 ## The voice guide
@@ -48,7 +48,8 @@ Checklist:
   {"notes": "Posted in 2024, read in 2026: the offer is no longer new.", "finding": "f1", "category": "out-of-date", "unit": "u1", "quote": "New for 2024: winter care visits", "reason": "…", "source": {"kind": "finding"}, "replacement": "Winter care visits", "alternatives": ["Our winter care visits"]},
   {"notes": "A team size can change; only the editor knows it.", "finding": "f2", "category": "fact-to-check", "unit": "u3", "quote": "our team of 6 designers", "reason": "…", "source": {"kind": "finding"}, "fact": {"ask": "Number of designers", "template": "our team of {answer} designers", "without": "our team of designers", "answer": "number"}},
   {"notes": "Long, but it reads clearly in its paragraph.", "finding": "f3", "drop": "It reads clearly as it is."},
-  {"notes": "…", "category": "voice", "unit": "u2", "quote": "…", "reason": "…", "source": {"kind": "voice-guide", "heading": "What this voice never does"}, "replacement": "…", "alternatives": ["…"]}
+  {"notes": "…", "category": "voice", "unit": "u2", "quote": "…", "reason": "…", "source": {"kind": "voice-guide", "heading": "What this voice never does"}, "replacement": "…", "alternatives": ["…"]},
+  {"notes": "The paragraph invites them to book; Contact is listed.", "category": "link", "unit": "u4", "quote": "book a winter visit", "reason": "Readers ready to book can go straight to the contact page.", "source": {"kind": "site-entry", "entry": "e5"}, "link": {"entry": "e5"}}
 ]}
 {{ answer_close }}
 

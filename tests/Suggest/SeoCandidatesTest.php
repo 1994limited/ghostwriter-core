@@ -133,7 +133,7 @@ final class SeoCandidatesTest extends TestCase
         $prompt = ReviewPrompt::render($input, $input->batches()[0]);
 
         $this->assertStringContainsString('If kept: write the heading shorter, under 60 characters', $prompt);
-        $this->assertStringContainsString('If kept: no words for this one; add up to 3 link suggestions of your own instead', $prompt);
+        $this->assertStringContainsString('If kept: no words for this one; add 1 to 3 link suggestions of your own (see Search: links), or drop it', $prompt);
         $this->assertStringContainsString('If kept: write the whole description, 120 to 155 characters', $prompt);
 
         $fake = new FakeProvider;

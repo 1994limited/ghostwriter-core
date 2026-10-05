@@ -14,6 +14,8 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ### Changed (SEO layer, row 6)
 
+- **The reviewer is told plainly to propose the links** for a page with none ("Search: links"): which pages to look for, the shape of a link suggestion (with an example in the answer format), and to drop the candidate rather than keep it without a link of its own. A real review of a Journal post had kept it and proposed none.
+
 - **An inherited SEO description that's too short is short, not empty**: Suggest edits' `seo-missing` finding reads emptiness from what the page prints (the gap's `length`), so a Journal post whose description comes from a short excerpt says "only 48 characters", not "comes from Excerpt, which is empty", and isn't Content to revisit's "No SEO description".
 
 - **Addresses keep the whole phrase** (decision 13, revised): "What to do in the garden in March" is `what-to-do-in-the-garden-in-march`. Only a title over 60 characters or an address over 75 loses its stop words, and is then cut to six words and 60 characters; filler (the new `slug_filler` phrase list in five languages, `Phrases::$slugFiller`) comes off both ends either way. `SlugRules::withoutFiller()`.

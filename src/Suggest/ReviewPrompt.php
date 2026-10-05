@@ -210,7 +210,7 @@ final class ReviewPrompt
         }
 
         if ($finding->kind === 'few-links') {
-            return $line.' If kept: no words for this one; add up to 3 link suggestions of your own instead (see Search: links).';
+            return $line.' If kept: no words for this one; add 1 to 3 link suggestions of your own (see Search: links), or drop it.';
         }
 
         if ($finding->kind === 'seo-missing') {
