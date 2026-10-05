@@ -21,6 +21,7 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 - **Stock and library photos are named from their alt text** (§11): `Photo::filenameBase($fallback, $max, $alt, $language)` takes the alt text first, then the library's description, title and tags, through `FilenameRules` (no "stock photo", no stop words, six words and 50 characters at most). `brown-rocks-during-golden-hour` is now `brown-rocks-golden-hour`.
 - `SessionLayouts::afterWriter()` reports `SeoPass::CHECKING` where the addon gives a `MetaContext` too.
+- **"Give it its own" for a title that inherits the page title**: the Search section's title row is editable wherever the SEO field takes a custom value (`MetaPolicy::ownable()`: writable, not switched off), also when the title fits and is left inheriting (SEO Pro's `@seo:title`). Text the editor wrote there is written on "Use this draft" (`SeoMeta::action(..., $edited)`); decision 12 governs only what Ghostwriter writes unasked.
 
 ### Changed (SEO layer: the writer's own links)
 

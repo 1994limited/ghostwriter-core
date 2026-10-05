@@ -60,7 +60,7 @@ final class SearchFields
                 continue;
             }
 
-            $action = $this->meta->action($field, $newEntry, $known, $this->meta->range($field, $role, $format)) ?? MetaAction::Leave;
+            $action = $this->meta->action($field, $newEntry, $known, $this->meta->range($field, $role, $format), $state->meta->edited($role)) ?? MetaAction::Leave;
             $actions[$role] = $action;
 
             if ($action === MetaAction::Write || ($action === MetaAction::Suggest && $state->meta->uses($role))) {

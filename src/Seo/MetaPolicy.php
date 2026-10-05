@@ -60,6 +60,17 @@ final class MetaPolicy
     }
 
     /**
+     * Whether an editor can give the page text of its own in this field
+     * (the Search section's "Give it its own"), whatever Ghostwriter would
+     * write by itself: the field takes a custom value, and isn't switched
+     * off. Decision 12 governs only what Ghostwriter writes unasked.
+     */
+    public function ownable(SeoField $field): bool
+    {
+        return $field->writable && $field->source !== SeoSource::Disabled;
+    }
+
+    /**
      * Whether the page gets an SEO title of its own: only when the page
      * title is too long for the `<title>` once the site name is added
      * (decision 12; phase 2 adds a missing keyphrase), or the editor gave

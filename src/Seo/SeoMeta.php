@@ -55,6 +55,12 @@ final class SeoMeta
         ];
     }
 
+    /** Whether an editor can give the page text of its own in this field (MetaPolicy::ownable()). */
+    public function ownable(SeoField $field): bool
+    {
+        return $this->policy->ownable($field);
+    }
+
     /** The range a role's text should be in. */
     public function range(?SeoField $field, string $role, ?TitleFormat $format): MetaRange
     {
@@ -66,14 +72,21 @@ final class SeoMeta
      * title's own rule on a new entry: a page title too long for search is
      * replaced by a title of the page's own even where the field inherits
      * it (decision 12), as nobody wrote that title for this page.
+     * - $edited: the editor wrote this text in the Search section ("Give
+     *   it its own"): it is written where the field takes a custom value,
+     *   even where Ghostwriter would leave the field inheriting.
      */
-    public function action(?SeoField $field, bool $newEntry, SeoProvenance $provenance, MetaRange $range): ?MetaAction
+    public function action(?SeoField $field, bool $newEntry, SeoProvenance $provenance, MetaRange $range, bool $edited = false): ?MetaAction
     {
         if ($field === null) {
             return null;
         }
 
         $action = $this->policy->decide($field, $provenance, $newEntry, $range);
+
+        if ($action === MetaAction::Leave && $edited && $this->policy->ownable($field)) {
+            return MetaAction::Write;
+        }
 
         if ($action === MetaAction::Suggest && $field->role === SeoField::TITLE && $newEntry && $field->source === SeoSource::Field) {
             return MetaAction::Write;
