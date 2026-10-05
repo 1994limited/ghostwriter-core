@@ -37,6 +37,7 @@ return [
     'search.give-own' => 'Give it its own',
     'search.use-page-title' => 'Use the page title',
     'search.description-new' => 'Only what the page says.',
+    'search.description-source-empty' => 'It came from :field, which is empty, so this page gets its own. Only what the page says.',
     'search.description-stays' => 'Your SEO description stays. Suggested instead:',
     'search.description-inherits' => 'Uses :field. It fits, so your SEO settings keep using it.',
     'search.description-dropped' => 'I couldn\'t write one from what the page says. Try again, or write your own.',

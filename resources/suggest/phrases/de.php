@@ -74,4 +74,6 @@ return [
     ],
     // Words photo libraries put in titles that say nothing about the photo: left out of file names (Seo\FilenameRules).
     'filename_noise' => ['stockfoto', 'stockbild', 'stock foto', 'lizenzfrei', 'lizenzfreies bild', 'kostenloses foto', 'bild von', 'foto von', 'nahaufnahme', 'unsplash', 'pexels', 'pixabay', 'shutterstock', 'istock', 'adobe stock'],
+    // Words an address doesn't start or end with: articles, and prepositions and conjunctions left dangling (Seo\SlugRules).
+    'slug_filler' => ['der', 'die', 'das', 'den', 'dem', 'des', 'ein', 'eine', 'einer', 'eines', 'einem', 'einen', 'und', 'oder', 'aber', 'von', 'vom', 'zu', 'zum', 'zur', 'in', 'im', 'an', 'am', 'auf', 'bei', 'mit', 'für', 'über'],
 ];

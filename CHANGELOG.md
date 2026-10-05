@@ -4,6 +4,20 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
+### Added (SEO layer: Finish, Suggest edits and Content to revisit, row 6)
+
+- **Finish this page:** `GapKind::HeadingLong` and **`Detectors\LongHeadings`** ("Shorten a heading": a heading over 70 characters; **Write it for me**, one `gap-filler` call with the new task `shorten-heading` through `GapRequest::shortenHeading()`, or I'll write it), and `GapKind::FewLinks` and **`Detectors\FewLinks`** ("Link to your other pages": 300 words or more and no link to the site; Add a link · Skip). Both in `GapFinder::standard()`; suggestions, never counted, never blocking. `GapContext::$hosts` (the site's own hosts) and `Revisit\Links::of(GapContext)`.
+- **Suggest edits:** `seo-missing`, `heading-long` and `few-links` findings (`Suggest\Findings`). A page with no links is shown up to 10 pages it could link to (`SiteDigest::RELATED`, `LinkIndex::related()`), and the reviewer proposes the links; the reviewer prompt has "Search: headings" and "Search: links" sections and candidate lines for the three.
+- **Content to revisit:** `ReasonKind::SeoMissing` (6), `FewLinks` (5), `HeadingLevels` (3, `Seo\HeadingLevelCheck`), and `Competing` (10) and `Readability` (2) for phase 2; `ReasonKind::isSeo()` and `Priority::SEO_CAP` (25 for all SEO reasons together). `FindingReport::emptyFields($except)`.
+- **German, French, Dutch and Spanish** for every SEO string (decision 18): `resources/lang/{de,fr,nl,es}/{seo,gaps,suggest,revisit}.php`, `Message::translations()`, `Message::TRANSLATED`.
+- Strings: `gaps.heading-long`, `gaps.few-links`, their speech labels and steps, `gaps.fix.add-links`, `gaps.fix.skip`, `suggest.finding.seo-missing*`, `suggest.finding.heading-long`, `suggest.finding.few-links`, `revisit.reason.{seo-missing,few-links,heading-levels,competing,readability}`, `seo.search.description-source-empty`.
+
+### Changed (SEO layer, row 6)
+
+- **Addresses keep the whole phrase** (decision 13, revised): "What to do in the garden in March" is `what-to-do-in-the-garden-in-march`. Only a title over 60 characters or an address over 75 loses its stop words, and is then cut to six words and 60 characters; filler (the new `slug_filler` phrase list in five languages, `Phrases::$slugFiller`) comes off both ends either way. `SlugRules::withoutFiller()`.
+- **A description inherited from an empty field is written** (decision 11): `MetaPolicy` gives **Write**, not Suggest, when the field a description inherits from is empty or missing, as the page prints nothing. The Search section says "It came from Excerpt, which is empty, so this page gets its own." instead of "Your SEO description stays".
+- The validator lets a new SEO description replace an inherited one that's too short. A missing SEO description is Content to revisit's `seo-missing` reason, no longer an empty field. `suggest.speech.seo` is "For search".
+
 ### Added (SEO layer: search title, description, address and file names, row 5)
 
 - **The search title and description** (§9): where the addon gives `LayoutContext` the new **`Seo\MetaContext`** (its `SeoFields`, the full schema, the entry's values, new or not, `SeoProvenance`, a `SlugContext`), the first draft's `seo-editor` call also writes them: `SeoRequest::$meta` (a **`Seo\MetaRequest`**), and `title` and `description` in the reply (`SeoReply`, `seo-editor-reply.json`, the `seo-editor` prompt). With no links to look for, the call runs for them alone; with nothing to write, no call. A writer's turn that changed the title or a quarter of the words writes them again (`SeoPass::changed()`), unless an editor wrote them.

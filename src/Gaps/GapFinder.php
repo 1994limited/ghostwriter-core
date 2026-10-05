@@ -10,8 +10,10 @@ use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\CheckMarkers;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\EmptyImages;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\EmptyLinks;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\ExpectedFields;
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\FewLinks;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\LeftoverTokens;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\LinkMarkers;
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\LongHeadings;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\MissingAlt;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\PlaceholderImages;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\PlaceholderText;
@@ -71,6 +73,8 @@ final class GapFinder
             new SeoLength,
             new SeoMissing,
             new AddedLinks,
+            new LongHeadings,
+            new FewLinks,
         ]);
     }
 

@@ -15,6 +15,7 @@
  * - link_text: link words that say nothing out of context.
  * - long_sentence: words in a sentence before it counts as long.
  * - stop_words: words too common to match link targets on (Seo\LinkCandidates).
+ * - slug_filler: words an address doesn't start or end with (Seo\SlugRules).
  * - utility_slugs: address segments of pages never offered as link targets
  *   (Seo\Linkable): search, login, cart, thank-you…; every language's list applies.
  */
@@ -92,4 +93,6 @@ return [
     ],
     // Words photo libraries put in titles that say nothing about the photo: left out of file names (Seo\FilenameRules).
     'filename_noise' => ['stock photo', 'stock photograph', 'stock image', 'stock picture', 'royalty free', 'royalty-free', 'free photo', 'free image', 'image of', 'photo of', 'picture of', 'photograph of', 'close up', 'close-up', 'high resolution', 'hd', '4k', 'copy space', 'unsplash', 'pexels', 'pixabay', 'shutterstock', 'getty images', 'istock', 'adobe stock', 'openverse'],
+    // Words an address doesn't start or end with: articles, and prepositions and conjunctions left dangling (Seo\SlugRules).
+    'slug_filler' => ['a', 'an', 'the', 'and', 'or', 'but', 'of', 'to', 'in', 'on', 'at', 'by', 'for', 'with', 'from', 'into', 'about', 'as'],
 ];

@@ -74,7 +74,9 @@ final class InheritedSeoTest extends TestCase
         $reasons = fn (?string $excerpt) => array_map(fn (RevisitReason $reason) => $reason->kind, (new RevisitScanner)->scan(new EntrySnapshot(new EntryRef('journal', 'rain-garden', 'default'), 'A rain garden', null, $this->context($excerpt, $now)), $now)->reasons);
 
         $this->assertNotContains(ReasonKind::EmptyField, $reasons(self::EXCERPT));
-        $this->assertContains(ReasonKind::EmptyField, $reasons(''));
+        $this->assertNotContains(ReasonKind::SeoMissing, $reasons(self::EXCERPT));
+        $this->assertContains(ReasonKind::SeoMissing, $reasons(''), 'Inherited from an empty field: the page prints no description.');
+        $this->assertNotContains(ReasonKind::EmptyField, $reasons(''), 'Said once, as its own reason.');
     }
 
     /**

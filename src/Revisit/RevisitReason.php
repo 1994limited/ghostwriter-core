@@ -30,7 +30,7 @@ final class RevisitReason
             ReasonKind::Age => ($months = (int) ($this->meta['months'] ?? 0)) >= 24
                 ? new Message('revisit.reason.age-years', ['years' => intdiv($months, 12)])
                 : new Message('revisit.reason.age-months', ['months' => $months]),
-            ReasonKind::PastYear, ReasonKind::StatedCount => new Message('revisit.reason.'.$this->kind->value, ['quote' => $this->quote]),
+            ReasonKind::PastYear, ReasonKind::StatedCount, ReasonKind::Competing => new Message('revisit.reason.'.$this->kind->value, ['quote' => $this->quote]),
             ReasonKind::RelativeTime => new Message('revisit.reason.relative-time', ['quote' => $this->quote, 'year' => $this->meta['year'] ?? null]),
             ReasonKind::BrokenLink => new Message($count === 1 ? 'revisit.reason.broken-link-one' : 'revisit.reason.broken-link-many', ['count' => $count]),
             ReasonKind::ExternalLink => new Message($count === 1 ? 'revisit.reason.external-link-one' : 'revisit.reason.external-link-many', ['count' => $count]),

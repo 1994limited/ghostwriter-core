@@ -18,6 +18,16 @@ You review one page of a website for its editor, who asked you to. You suggest s
 - A link may point only at a site entry shown, as `entry:e12`. Keep the other link targets you see (`link:3`) as they are.
 - Write your reasons in {{ reply_language }}. Write replacements in the page's own language.
 {{ part }}
+## Search: headings
+
+- A heading a reader can scan is under about 60 characters. Shorten one only when it is a candidate, or when it is plainly too long to scan; keep its meaning and the words a reader would look for.
+- Don't change a heading's level, and don't turn a paragraph into a heading or a heading into a paragraph. Headings are fitted to the page template without you.
+
+## Search: links
+
+- When a candidate says the page links to none of its other pages, keep it only if one or more site entries below plainly fit what a paragraph is about, and then add up to 3 suggestions of your own, category `link`: the quote is a few words already in that paragraph that say what the other page is about (never "click here" or "read more"), there is no `replacement`, and `link` is `{"entry": "e12"}`. Never link to the same entry twice, never two links in one paragraph, and drop the candidate when nothing fits.
+- An SEO description says what the page offers, in the page's own words, with no figure or name the page doesn't have.
+
 ## The voice guide
 
 {{ voice }}

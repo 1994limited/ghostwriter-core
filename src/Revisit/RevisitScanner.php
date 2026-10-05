@@ -3,6 +3,8 @@
 namespace NineteenNinetyFour\Ghostwriter\Core\Revisit;
 
 use DateTimeImmutable;
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\FewLinks;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\HeadingLevelCheck;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\CheckContext;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\CheckText;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\Finding;
@@ -23,6 +25,8 @@ final class RevisitScanner
 
     private readonly Priority $priority;
 
+    private readonly HeadingLevelCheck $headings;
+
     /**
      * @param  array<int, string>  $ownHosts  The site's own hosts: links to them aren't "other sites".
      */
@@ -34,6 +38,7 @@ final class RevisitScanner
     ) {
         $this->findings = ($findings ?? Findings::standard())->without('overlap');
         $this->priority = $priority ?? new Priority;
+        $this->headings = new HeadingLevelCheck;
     }
 
     /**
@@ -51,7 +56,8 @@ final class RevisitScanner
             $external[$url] = $previous->external[$url] ?? $context->external[$url] ?? new LinkResult($url, LinkStatus::Unknown);
         }
 
-        $reasons = $this->reasons($report->findings, $report->leftovers(), $report->emptyFields(), $external);
+        $seo = array_values(array_unique(array_map(fn (Finding $finding) => $finding->anchor->path->toString(), self::missingSeo($report->findings))));
+        $reasons = [...$this->reasons($report->findings, $report->leftovers(), $report->emptyFields($seo), $external), ...$this->seoReasons($context, $report->findings, $links['internal'])];
         $updatedAt = $context->updatedAt;
 
         if (($age = $this->ageReason($updatedAt, $now)) !== null) {
@@ -131,7 +137,7 @@ final class RevisitScanner
             $reasons[] = new RevisitReason(ReasonKind::RelativeTime, $count('relative-time'), $quote('relative-time'), ['year' => is_string($written) ? (int) substr($written, 0, 4) : null]);
         }
 
-        if (($emptyFields = $empty + $count('seo-empty')) > 0) {
+        if (($emptyFields = $empty) > 0) {
             $reasons[] = new RevisitReason(ReasonKind::EmptyField, $emptyFields);
         }
 
@@ -142,6 +148,48 @@ final class RevisitScanner
         }
 
         return $reasons;
+    }
+
+    /**
+     * The SEO layer's reasons (§13.3), light on purpose: no description
+     * the page prints (an empty one of its own, or one inherited from an
+     * empty field), no link to the site's own pages on a page of 300
+     * words or more (a link to any indexed page or path counts, link rows
+     * included), and heading levels the fixer would move. Priority caps
+     * them together.
+     *
+     * @param  list<Finding>  $findings
+     * @param  list<string>  $internal  The entry's links to its own site (Links::in()).
+     * @return list<RevisitReason>
+     */
+    private function seoReasons(CheckContext $context, array $findings, array $internal): array
+    {
+        $reasons = [];
+        if (self::missingSeo($findings) !== []) {
+            $reasons[] = new RevisitReason(ReasonKind::SeoMissing, 1);
+        }
+
+        if ($internal === [] && FewLinks::words($context->gaps)[0] >= FewLinks::MIN_WORDS) {
+            $reasons[] = new RevisitReason(ReasonKind::FewLinks, 1);
+        }
+
+        if (($levels = count($this->headings->fields($context->gaps))) > 0) {
+            $reasons[] = new RevisitReason(ReasonKind::HeadingLevels, $levels);
+        }
+
+        return $reasons;
+    }
+
+    /**
+     * The findings that say the page prints no SEO description: an empty
+     * one (`seo-empty`), or SeoMissing's when it's empty rather than short.
+     *
+     * @param  list<Finding>  $findings
+     * @return list<Finding>
+     */
+    private static function missingSeo(array $findings): array
+    {
+        return array_values(array_filter($findings, fn (Finding $finding) => $finding->kind === 'seo-empty' || ($finding->kind === 'seo-missing' && ($finding->meta['empty'] ?? false) === true)));
     }
 
     private function ageReason(?DateTimeImmutable $updatedAt, DateTimeImmutable $now): ?RevisitReason

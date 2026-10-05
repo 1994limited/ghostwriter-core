@@ -32,6 +32,7 @@ final class Phrases
      * @param  list<string>  $stopWords  Words too common to match pages on (articles, prepositions…), lower case.
      * @param  list<string>  $utilitySlugs  Address segments of pages never linked to (search, cart, thank-you…).
      * @param  list<string>  $filenameNoise  What photo libraries put in titles that says nothing about the photo ("stock photo", "royalty free"), lower case.
+     * @param  list<string>  $slugFiller  Words an address doesn't start or end with (articles, and prepositions and conjunctions left dangling), lower case: Seo\SlugRules.
      */
     public function __construct(
         public readonly string $language,
@@ -47,6 +48,7 @@ final class Phrases
         public readonly array $stopWords = [],
         public readonly array $utilitySlugs = [],
         public readonly array $filenameNoise = [],
+        public readonly array $slugFiller = [],
     ) {}
 
     /**
@@ -150,6 +152,7 @@ final class Phrases
             array_map('mb_strtolower', $strings('stop_words')),
             array_map('mb_strtolower', $strings('utility_slugs')),
             array_map('mb_strtolower', $strings('filename_noise')),
+            array_map('mb_strtolower', $strings('slug_filler')),
         );
     }
 }

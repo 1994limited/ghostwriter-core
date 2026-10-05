@@ -71,4 +71,6 @@ return [
     ],
     // Words photo libraries put in titles that say nothing about the photo: left out of file names (Seo\FilenameRules).
     'filename_noise' => ['foto de stock', 'imagen de stock', 'foto de archivo', 'libre de derechos', 'foto gratis', 'imagen de', 'foto de', 'primer plano', 'unsplash', 'pexels', 'pixabay', 'shutterstock', 'istock', 'adobe stock'],
+    // Words an address doesn't start or end with: articles, and prepositions and conjunctions left dangling (Seo\SlugRules).
+    'slug_filler' => ['el', 'la', 'los', 'las', 'lo', 'un', 'una', 'unos', 'unas', 'y', 'e', 'o', 'u', 'pero', 'de', 'del', 'a', 'al', 'en', 'con', 'por', 'para', 'sobre'],
 ];

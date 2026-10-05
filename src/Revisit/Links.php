@@ -2,6 +2,7 @@
 
 namespace NineteenNinetyFour\Ghostwriter\Core\Revisit;
 
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\GapContext;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Markers;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Walk;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\CheckContext;
@@ -22,6 +23,17 @@ final class Links
      * @return array{internal: list<string>, external: list<string>}
      */
     public static function in(CheckContext $context, array $ownHosts = []): array
+    {
+        return self::of($context->gaps, $ownHosts);
+    }
+
+    /**
+     * The same for Finish this page's context: what FewLinks counts.
+     *
+     * @param  array<int, string>  $ownHosts
+     * @return array{internal: list<string>, external: list<string>}
+     */
+    public static function of(GapContext $context, array $ownHosts = []): array
     {
         $own = array_map(fn (string $host) => self::host($host), $ownHosts);
         $internal = [];
@@ -46,8 +58,8 @@ final class Links
             $internal[$target] = true;
         };
 
-        foreach (Walk::entry($context->gaps->schema, $context->gaps->entry) as $visit) {
-            if ($context->gaps->links->holdsLinks($visit->field)) {
+        foreach (Walk::entry($context->schema, $context->entry) as $visit) {
+            if ($context->links->holdsLinks($visit->field)) {
                 $values = is_array($visit->value) ? $visit->value : [$visit->value];
                 array_walk_recursive($values, function ($item) use ($add): void {
                     if (is_string($item) && (str_contains($item, '::') || str_contains($item, '{') || preg_match('/^(?:https?:\/\/|\/)/i', $item) === 1)) {
@@ -58,7 +70,7 @@ final class Links
                 continue;
             }
 
-            $text = Walk::text($visit, $context->gaps->richText);
+            $text = Walk::text($visit, $context->richText);
 
             if ($text !== null && preg_match_all(self::INLINE, $text, $matches) > 0) {
                 foreach ($matches[1] as $href) {

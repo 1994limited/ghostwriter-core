@@ -71,6 +71,32 @@ final class Message
         return self::$english[$namespace];
     }
 
+    /** The languages core ships translations of its SEO strings in (decision 18), beside English. */
+    public const TRANSLATED = ['de', 'fr', 'nl', 'es'];
+
+    /**
+     * Core's translations of a namespace's strings into a language
+     * (`resources/lang/{de,fr,nl,es}/{namespace}.php`), by key without the
+     * prefix: only the SEO layer's strings are translated so far, so a key
+     * that isn't here falls back to English. Empty for a language core
+     * has none for.
+     *
+     * @return array<string, string>
+     */
+    public static function translations(string $namespace, string $language): array
+    {
+        $language = strtolower(substr($language, 0, 2));
+
+        if (! in_array($language, self::TRANSLATED, true)) {
+            return [];
+        }
+
+        $file = dirname(__DIR__, 2).'/resources/lang/'.$language.'/'.$namespace.'.php';
+        $strings = is_file($file) ? require $file : [];
+
+        return is_array($strings) ? array_filter($strings, 'is_string') : [];
+    }
+
     public static function stringsFile(string $namespace = 'gaps'): string
     {
         return dirname(__DIR__, 2).'/resources/lang/en/'.$namespace.'.php';

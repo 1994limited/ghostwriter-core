@@ -313,7 +313,7 @@ final class SeoMetaTest extends StudioTestCase
         $this->assertSame(['writer', 'seo-editor'], $this->agents(), 'The title changed: the meta follows.');
         $this->assertStringContainsString('No links are wanted this time', $this->fake->prompted('seo-editor')[0]->prompt);
         $this->assertStringStartsWith('Winter care for established borders', SeoState::of($session)->meta->description);
-        $this->assertSame('winter-care-borders', SeoState::of($session)->meta->slug, 'The address follows the title.');
+        $this->assertSame('winter-care-for-borders', SeoState::of($session)->meta->slug, 'The address follows the title.');
     }
 
     public function test_an_editors_text_is_never_rewritten_by_a_turn(): void

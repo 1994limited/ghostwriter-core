@@ -14,6 +14,8 @@ use NineteenNinetyFour\Ghostwriter\Core\Gaps\GapRefused;
  *
  * - `summary`: a one-line blurb from the page's own text;
  * - `shorten`: the given text within a limit;
+ * - `shorten-heading`: a heading over 70 characters (Gaps\Detectors\LongHeadings),
+ *   shorter, with the same meaning and nothing added;
  * - `write-around`: a sentence holding `[[ask: …]]` rewritten without the
  *   fact, adding nothing;
  * - `alt`: alt text for an image (vision), refused for images the
@@ -30,6 +32,8 @@ final class GapRequest
     public const SHORTEN = 'shorten';
 
     public const WRITE_AROUND = 'write-around';
+
+    public const SHORTEN_HEADING = 'shorten-heading';
 
     public const ALT = 'alt';
 
@@ -49,6 +53,7 @@ final class GapRequest
         public readonly ?AssetRef $asset = null,
         public readonly ?string $filename = null,
         public readonly ?Gap $gap = null,
+        public readonly ?string $around = null,
     ) {}
 
     /**
@@ -73,6 +78,24 @@ final class GapRequest
         self::refuseFacts($gap);
 
         return new self(self::SHORTEN, $label, $text, max(20, $limit), gap: $gap);
+    }
+
+    /**
+     * A long heading (a `heading-long` gap), shorter: within the gap's
+     * target (60 characters), the same meaning, in the page's words. The
+     * text around it is given for context only.
+     *
+     * @throws GapRefused unless the gap is a long heading.
+     */
+    public static function shortenHeading(Gap $gap, string $context = ''): self
+    {
+        if ($gap->kind !== GapKind::HeadingLong || trim((string) $gap->hint) === '') {
+            throw GapRefused::fact();
+        }
+
+        $target = is_int($gap->meta['target'] ?? null) ? $gap->meta['target'] : 60;
+
+        return new self(self::SHORTEN_HEADING, $gap->label, trim((string) $gap->hint), $target, gap: $gap, around: trim($context) !== '' ? trim(mb_substr($context, 0, 1500)) : null);
     }
 
     /**
@@ -122,10 +145,13 @@ final class GapRequest
         $name = match ($this->task) {
             self::WRITE_AROUND => 'sentence',
             self::SHORTEN => 'text',
+            self::SHORTEN_HEADING => 'heading',
             default => 'page',
         };
 
-        return implode("\n", $lines)."\n\n<{$name}>\n".trim($this->text)."\n</{$name}>";
+        $around = $this->around !== null ? "\n\n<around>\n{$this->around}\n</around>" : '';
+
+        return implode("\n", $lines)."\n\n<{$name}>\n".trim($this->text)."\n</{$name}>".$around;
     }
 
     private static function refuseFacts(?Gap $gap): void

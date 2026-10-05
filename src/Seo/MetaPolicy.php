@@ -16,9 +16,16 @@ use NineteenNinetyFour\Ghostwriter\Core\Gaps\SeoSource;
  * | A value Ghostwriter wrote, unchanged since (SeoProvenance)          | Write   |
  * | A value anyone else wrote, or Ghostwriter's changed by a person    | Suggest |
  * | Inherited (another field, a default), text inside the range        | Leave   |
- * | Inherited, text empty or out of range                              | Suggest |
+ * | Inherited description whose source is empty (it prints nothing)   | Write   |
+ * | Inherited, text out of range (or an empty title)                   | Suggest |
  * | A template core can evaluate nowhere, where the entry can override | new entry: Write the description, Leave the title; existing: Suggest |
  * | A template the entry can't override, switched off, not writable    | Leave   |
+ *
+ * A description inherited from a field that is empty, or missing from
+ * the page's blueprint (SEO Pro's `@seo:excerpt` on a page with no
+ * excerpt), is written like an empty one: the page prints nothing, there
+ * is no text anyone chose to keep, and decision 11 keeps only inherited
+ * text that fits. The rule that inherits stays for every other page.
  *
  * The SEO title has one more rule (decision 12): it is only given text of
  * its own when the page title won't do (MetaRange::pageTitleTooLong()).
@@ -43,6 +50,10 @@ final class MetaPolicy
         }
 
         if ($field->inherited()) {
+            if ($field->role === SeoField::DESCRIPTION && $field->writable && trim((string) $field->text) === '') {
+                return MetaAction::Write;
+            }
+
             return $range->fits($field->text) || ($field->role === SeoField::TITLE && ! $range->tooLong($field->text) && trim((string) $field->text) !== '')
                 ? MetaAction::Leave
                 : ($field->writable ? MetaAction::Suggest : MetaAction::Leave);

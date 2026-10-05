@@ -205,6 +205,21 @@ final class ReviewPrompt
             return $line.($finding->needs === Needs::Nothing ? ' If kept: the link alone, no words.' : ' If kept: write only if the words name the old page.');
         }
 
+        if ($finding->kind === 'heading-long') {
+            return $line.' If kept: write the heading shorter, under 60 characters, with the same meaning and no full stop.';
+        }
+
+        if ($finding->kind === 'few-links') {
+            return $line.' If kept: no words for this one; add up to 3 link suggestions of your own instead (see Search: links).';
+        }
+
+        if ($finding->kind === 'seo-missing') {
+            $min = is_int($finding->meta['min'] ?? null) ? $finding->meta['min'] : 120;
+            $max = is_int($finding->meta['max'] ?? null) ? $finding->meta['max'] : 155;
+
+            return $line." If kept: write the whole description, {$min} to {$max} characters, from what the page says.";
+        }
+
         if ($finding->kind === 'long-sentence') {
             return $line.' Keep only if it reads badly here; then write.';
         }

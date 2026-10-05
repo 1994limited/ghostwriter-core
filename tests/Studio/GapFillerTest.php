@@ -133,6 +133,21 @@ class GapFillerTest extends StudioTestCase
         $this->assertStringStartsWith('Capacitor puts the web product', $result->value);
     }
 
+    public function test_a_long_heading_is_shortened_with_its_section_for_context_only(): void
+    {
+        $heading = 'What to do in a walled garden in late winter, before the first warm weekend arrives';
+        $gap = Gap::make(GapKind::HeadingLong, FieldPath::of('body'), 'Body', $heading, $heading, meta: ['target' => 60]);
+        $this->fake->respond('gap-filler', self::reply('<result>## Walled garden jobs for late winter.</result>'));
+
+        $result = $this->studio()->fillGap(GapRequest::shortenHeading($gap, 'Cut back the grasses and mulch the borders.'));
+
+        $this->assertSame('Walled garden jobs for late winter', $result->value);
+        $this->assertSame("Task: shorten-heading\nField: Body\nLimit: 60 characters\n\n<heading>\n{$heading}\n</heading>\n\n<around>\nCut back the grasses and mulch the borders.\n</around>", $this->sent('gap-filler')->prompt);
+
+        $this->expectException(GapRefused::class);
+        GapRequest::shortenHeading(Gap::make(GapKind::Ask, FieldPath::of('body'), 'Body', 'price'));
+    }
+
     public function test_alt_text_sees_the_image_unless_the_guard_refuses_it(): void
     {
         $png = new Image(base64_decode(FakeProvider::PNG), 'image/png');
