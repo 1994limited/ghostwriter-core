@@ -16,7 +16,7 @@ final class TranslationsTest extends TestCase
     /** Which keys of each namespace are the SEO layer's. */
     private const SEO = [
         'seo' => '/./',
-        'gaps' => '/^(seo-|links-added|heading-long|few-links|speech\.(seo-|links-added|heading-long|few-links)|step\.|fix\.(keep-link|use-text|add-links|skip))/',
+        'gaps' => '/^(seo-|links-added|heading-long|few-links|link-proposed|speech\.(seo-|links-added|heading-long|few-links|link-proposed)|step\.|fix\.(keep-link|use-text|add-links|skip|suggest-links|link-it|suggesting-links))/',
         'suggest' => '/^(category\.seo|speech\.seo|finding\.(seo-|heading-long|few-links))/',
         'revisit' => '/^reason\.(seo-|few-links|heading-levels|competing|readability)/',
     ];

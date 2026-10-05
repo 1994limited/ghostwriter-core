@@ -46,6 +46,13 @@ enum FixAction: string
     case Shorten = 'shorten';
 
     /**
+     * "Suggest links" on a page that links to none of the site's pages: one
+     * `seo-editor` and one `seo-verifier` call (SeoPass::suggestLinksFor()),
+     * each link it finds then a step of its own (GapKind::LinkProposed).
+     */
+    case SuggestLinks = 'suggest-links';
+
+    /**
      * "Use this": put the text in Fix::$value into the field (an SEO
      * description the draft already has), in the shape the field keeps it.
      */

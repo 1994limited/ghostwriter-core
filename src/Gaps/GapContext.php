@@ -10,6 +10,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Layout\Pattern;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\RichTextDialect;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\EntryData;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Schema;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\LinkProposals;
 use NineteenNinetyFour\Ghostwriter\Core\Seo\RenderProfile;
 
 /**
@@ -43,6 +44,10 @@ use NineteenNinetyFour\Ghostwriter\Core\Seo\RenderProfile;
  *   a full address on the site as a link to it. Links the CMS stores as
  *   references (`statamic://entry::abc`, `{entry:12@1:url}`) and paths
  *   (`/contact`) count without them.
+ * - `proposals`: what Finish's **Suggest links** found for this page in
+ *   this page view (Seo\LinkProposals, kept by the addon), so each link
+ *   still to make is a step (ProposedLinks) and "Link to your other pages"
+ *   says when none was found (FewLinks). Null until it has been pressed.
  *
  * Use named arguments: the order may grow.
  */
@@ -69,6 +74,7 @@ final class GapContext
         public readonly string $group = '',
         public readonly ?RenderProfile $profile = null,
         public readonly array $hosts = [],
+        public readonly ?LinkProposals $proposals = null,
     ) {}
 
     /** The fewest words, outside the title, that make an entry more than untouched. */

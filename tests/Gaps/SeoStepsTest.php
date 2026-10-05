@@ -77,8 +77,11 @@ final class SeoStepsTest extends TestCase
 
         $this->assertCount(1, $gaps, 'Links to other sites and links still to choose don\'t count.');
         $this->assertSame('body', $gaps[0]->path->toString(), 'On the field with the most words.');
-        $this->assertSame(['focus', 'dismiss'], array_map(fn ($fix) => $fix->action->value, $gaps[0]->fixes));
-        $this->assertSame(['gaps.fix.add-links', 'gaps.fix.skip'], array_map(fn ($fix) => $fix->label->key, $gaps[0]->fixes));
+        $this->assertSame(['suggest-links', 'focus', 'dismiss'], array_map(fn ($fix) => $fix->action->value, $gaps[0]->fixes));
+        $this->assertSame(['gaps.fix.suggest-links', 'gaps.fix.add-links', 'gaps.fix.skip'], array_map(fn ($fix) => $fix->label->key, $gaps[0]->fixes));
+        $this->assertSame(['model', 'free', 'free'], array_map(fn ($fix) => $fix->cost->value, $gaps[0]->fixes), 'Suggest links uses Ghostwriter.');
+        $this->assertTrue($gaps[0]->fixes[0]->primary);
+        $this->assertSame('gaps.fix.suggesting-links', $gaps[0]->meta['running'], 'What the button says while it runs.');
         $this->assertSame(Severity::Suggestion, $gaps[0]->severity);
         $this->assertSame(1, $report->count(), 'Only the link to choose is counted.');
     }

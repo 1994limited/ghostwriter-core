@@ -30,4 +30,11 @@ return [
     'fix.use-text' => 'Usar este texto',
     'fix.add-links' => 'Añadir un enlace',
     'fix.skip' => 'Omitir',
+    'few-links.none' => 'No hay páginas lo bastante cercanas para enlazar. Añada un enlace a mano donde encaje, u omita este paso.',
+    'link-proposed' => '¿Enlazar «:words» con :title? :why',
+    'speech.link-proposed' => '¿Enlazar?',
+    'step.link-proposed' => '¿Enlazar «:words» con :title?',
+    'fix.suggest-links' => 'Sugerir enlaces',
+    'fix.link-it' => 'Enlazar',
+    'fix.suggesting-links' => 'Buscando páginas que enlazar…',
 ];

@@ -4,6 +4,14 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
+### Added (SEO layer: Suggest links in Finish this page)
+
+- **`SeoPass::suggestLinksFor(GapContext, LinkContext, ?title)`** and **`Seo\PageLinks`**: Finish's **Suggest links** on an existing page with no link to the site. One `seo-editor` call (links only) and one `seo-verifier` call on the page's current text, by a first draft's rules (one per 250 words, 2–5, descriptive anchors, not in headings, one a unit), candidates from `LinkIndex::related()` without the page itself or pages it links to. Returns **`Seo\LinkProposals`** of **`Seo\LinkProposal`** (field, `TextQuote`, words, href via `inlineHref()`, target, why); nothing is written.
+- **`GapKind::LinkProposed`** (`link-proposed`) and **`Detectors\ProposedLinks`**: one suggestion step per proposal still to make, **Link it** (`FixAction::Link` with the href) · **Skip**. `GapContext::$proposals` carries what Suggest links found.
+- **`FixAction::SuggestLinks`** (`suggest-links`, model): the `few-links` step's primary button, before Add a link and Skip; `meta.running` names its running label. With proposals to make, `few-links` isn't shown; with none found it reads `gaps.few-links.none` ("No pages close enough to link to…") with Add a link · Skip.
+- **`Tests\Contracts\ProposedLinksContract`** for the addons' Finish contexts.
+- Strings, in English, German, French, Dutch and Spanish: `gaps.few-links.none`, `gaps.link-proposed`, `gaps.speech.link-proposed`, `gaps.step.link-proposed`, `gaps.fix.suggest-links`, `gaps.fix.link-it`, `gaps.fix.suggesting-links`. `Gap::message()` passes `why` from the meta.
+
 ### Added (Settings → Connections)
 
 - **`Connections\Connections`**, one resolver for every outside service's key (`Ai\Ports\Credentials`, `Connections\KeySources`): the environment or config first, which always wins, then what was set up on the Connections page, kept encrypted through the new **`Connections\CredentialStore`** port. `status()` (`Status`: connected with the masked ending, not set, set in .env or config, key stopped working, no key needed), `save()`, `forget()`, `adopt()` (for moving older stored keys), `markBroken()`, `markWorking()`.
