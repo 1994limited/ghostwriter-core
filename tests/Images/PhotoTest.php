@@ -35,18 +35,24 @@ class PhotoTest extends TestCase
         $this->assertLessThanOrEqual(30, mb_strlen($this->photo(title: str_repeat('wörd ', 20))->assetTitle(max: 30)));
     }
 
-    public function test_the_filename_is_a_slug_of_the_title_falling_back_to_the_term(): void
+    public function test_the_filename_describes_the_photo_from_its_alt_text_then_the_librarys_words(): void
     {
-        $this->assertSame('brown-rocks-during-golden-hour', $this->photo(title: 'Brown rocks during golden hour')->filenameBase());
-        $this->assertSame('creme-brulee-on-a-plate', $this->photo(description: 'Crème brûlée on a plate')->filenameBase());
+        $this->assertSame('brown-rocks-golden-hour', $this->photo(title: 'Brown rocks during golden hour')->filenameBase());
+        $this->assertSame('creme-brulee-plate', $this->photo(description: 'Crème brûlée on a plate', title: 'Dessert 4471 stock photo')->filenameBase(), 'The description (the alt text) first; stop words out.');
+        $this->assertSame('walled-garden-frost', $this->photo(title: 'Woman gardening in autumn stock photo')->filenameBase(alt: 'A walled garden in frost'), 'The alt text Ghostwriter gave it wins over the library\'s title.');
+        $this->assertSame('woman-gardening-autumn', $this->photo(title: 'Woman gardening in autumn, royalty free stock photo')->filenameBase(), 'Library noise is left out.');
         $this->assertSame('tree-sunset-clouds', $this->photo(tags: ['tree', 'sunset', 'clouds', 'sky'])->filenameBase());
         $this->assertSame('mended-pottery', $this->photo(title: '🙂🙂', term: 'mended pottery')->filenameBase());
+        $this->assertSame('mended-pottery', $this->photo(title: 'IMG 2231', term: 'mended pottery')->filenameBase(), 'One word is no name: the next source.');
         $this->assertSame('hero-image', $this->photo(term: '')->filenameBase('Hero image'));
+        $this->assertSame('roses', $this->photo(term: 'roses')->filenameBase(), 'Nothing gives two words: the first as a plain slug.');
         $this->assertSame('photo', $this->photo(term: '')->filenameBase());
+        $this->assertSame('baum-sonnenuntergang', $this->photo(title: 'Ein Baum bei Sonnenuntergang, Stockfoto')->filenameBase(language: 'de'));
 
         $long = $this->photo(description: str_repeat('a bowl of soup on an old wooden table ', 5))->filenameBase(max: 40);
         $this->assertLessThanOrEqual(40, strlen($long));
         $this->assertMatchesRegularExpression('/^[a-z0-9]+(-[a-z0-9]+)*$/', $long);
+        $this->assertLessThanOrEqual(50, strlen($this->photo(description: str_repeat('lavender ', 20))->filenameBase()));
         $this->assertMatchesRegularExpression('/^[a-z0-9-]+$/', $this->photo(title: '東京の夜景')->filenameBase());
     }
 

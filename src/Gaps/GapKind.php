@@ -56,6 +56,13 @@ enum GapKind: string
 
     case SeoLength = 'seo-length';
 
+    /**
+     * "Add a description for search" (SEO layer §12): the page's SEO
+     * description is empty, or too short to say much, where Ghostwriter
+     * could give it one. A suggestion, never blocking.
+     */
+    case SeoMissing = 'seo-missing';
+
     case OffStyleImage = 'off-style-image';
 
     /**

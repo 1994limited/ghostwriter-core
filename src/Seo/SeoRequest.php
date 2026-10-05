@@ -37,6 +37,7 @@ final class SeoRequest
      * @param  int  $linkTarget  How many links to add, at most (§7.2); 0: none wanted.
      * @param  int  $existing  Links the draft has already, the writer's markers not counted.
      * @param  list<WriterMarker>  $markers  The writer's links to choose, m1…
+     * @param  MetaRequest|null  $meta  The search title and description wanted (§9); null: none.
      */
     public function __construct(
         public readonly string $title,
@@ -50,7 +51,14 @@ final class SeoRequest
         public readonly string $language = 'en',
         public readonly int $words = 0,
         public readonly array $markers = [],
+        public readonly ?MetaRequest $meta = null,
     ) {}
+
+    /** Whether the call asks for links or suggestions at all, rather than only the title and description. */
+    public function wantsLinks(): bool
+    {
+        return ($this->linkTarget > 0 && $this->candidates !== []) || ($this->markers !== [] && $this->candidates !== []);
+    }
 
     /**
      * The candidates by id: e1, e2…
@@ -74,22 +82,26 @@ final class SeoRequest
         $kind = $this->kind !== null ? " ({$this->kind->title})" : '';
         $lines = [
             "The page: \"{$this->title}\"{$kind}, about {$this->words} words.",
-            $this->linkTarget > 0
-                ? "Links it has already: {$this->existing}. Add at most {$this->linkTarget}, and fewer, or none, when nothing fits."
-                : "Links it has already: {$this->existing}. It has enough: add none, and give `\"links\": []`.",
+            match (true) {
+                $this->linkTarget > 0 && $this->candidates !== [] => "Links it has already: {$this->existing}. Add at most {$this->linkTarget}, and fewer, or none, when nothing fits.",
+                $this->candidates === [] && $this->meta !== null => 'No links are wanted this time: give `"links": []` and `"markers": []`.',
+                default => "Links it has already: {$this->existing}. It has enough: add none, and give `\"links\": []`.",
+            },
             '',
             '## The page, by unit',
-            '',
-            'Only units marked "links allowed" can take a link.',
         ];
+
+        if ($this->candidates !== []) {
+            array_push($lines, '', 'Only units marked "links allowed" can take a link.');
+        }
 
         foreach ($this->units as $unit) {
             if ($unit->kind === UnitKind::Media || trim($unit->markdown) === '') {
                 continue;
             }
 
-            $allowed = in_array($unit->id, $this->linkable, true) ? 'links allowed' : 'no links here';
-            array_push($lines, '', "[{$unit->id}] ({$unit->kind->value}, {$allowed})", trim($unit->markdown));
+            $allowed = $this->candidates === [] ? '' : (in_array($unit->id, $this->linkable, true) ? ', links allowed' : ', no links here');
+            array_push($lines, '', "[{$unit->id}] ({$unit->kind->value}{$allowed})", trim($unit->markdown));
         }
 
         if ($this->markers !== []) {
@@ -101,7 +113,9 @@ final class SeoRequest
             }
         }
 
-        array_push($lines, '', '## The site\'s pages you may link to', '');
+        if ($this->candidates !== []) {
+            array_push($lines, '', '## The site\'s pages you may link to', '');
+        }
 
         foreach ($this->byId() as $id => $candidate) {
             $type = $candidate->type !== '' ? " ({$candidate->type})" : '';
@@ -113,6 +127,10 @@ final class SeoRequest
             if ($summary !== '') {
                 $lines[] = "    {$summary}";
             }
+        }
+
+        if ($this->meta !== null) {
+            array_push($lines, '', $this->meta->prompt());
         }
 
         return implode("\n", $lines);

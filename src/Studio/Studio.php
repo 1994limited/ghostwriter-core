@@ -924,8 +924,12 @@ final class Studio
      * site's other pages (SeoRequest's candidates, e1…). The units and the
      * targets are enums in the schema, so nothing else can be named. It
      * also suggests a page for each of the writer's own links to choose
-     * (`markers`, m1…, decision 24). The reply is read, not trusted:
-     * Seo\LinkValidator checks every pick, Seo\SeoLinks every suggestion.
+     * (`markers`, m1…, decision 24). Where SeoRequest::$meta asks, it
+     * writes the search title and description too (§9): a reply whose
+     * title or description fails Seo\SeoMetaCheck is asked for once more,
+     * with the problem quoted. The reply is read, not trusted:
+     * Seo\LinkValidator checks every pick, Seo\SeoLinks every suggestion,
+     * Seo\SeoMeta::settle() the title and description.
      *
      * The instructions (the rules and the voice guide) are the same for
      * every call on a site, so they are cached (Agents::CACHED). A reply
@@ -938,14 +942,20 @@ final class Studio
     public function seoEdit(SeoRequest $request): Result
     {
         $schema = $request->schema(self::schema('seo', 'seo-editor-reply.json'));
-        $prompt = $request->prompt()."\n\nWrite `notes` and each `why` in ".self::languageName($request->language).'.';
+        $language = self::languageName($request->language);
+        $prompt = $request->prompt()."\n\nWrite `notes` and each `why` in {$language}".($request->meta?->wants() ? ", and the title and description in {$language}." : '.');
 
-        [$response, $reply] = $this->askStructured('seo-editor', $prompt, $schema, function (TextResponse $response): array {
+        [$response, $reply] = $this->askStructured('seo-editor', $prompt, $schema, function (TextResponse $response) use ($request): array {
             $data = $response->structured ?? self::taggedJson($response->text, 'seo');
 
-            return is_array($data) && is_array($data['links'] ?? null)
-                ? [SeoReply::fromArray($data), null]
-                : [new SeoReply, $response->structured !== null ? 'there was no "links" list' : 'there was no <seo> with a "links" list'];
+            if (! is_array($data) || ! is_array($data['links'] ?? null)) {
+                return [new SeoReply, $response->structured !== null ? 'there was no "links" list' : 'there was no <seo> with a "links" list'];
+            }
+
+            $reply = SeoReply::fromArray($data);
+            $problems = $request->meta?->problems($reply);
+
+            return [$reply, $problems === null ? null : "its search title or description won't do. {$problems}"];
         }, "the seo-editor's reply couldn't be read", instructions: $this->seoEditorInstructions($request->voice, $schema));
 
         return new Result($reply instanceof SeoReply ? $reply : new SeoReply, $response->usage);

@@ -3,6 +3,7 @@
 namespace NineteenNinetyFour\Ghostwriter\Core\Images;
 
 use NineteenNinetyFour\Ghostwriter\Core\Images\Libraries\Offer;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\FilenameRules;
 use NineteenNinetyFour\Ghostwriter\Core\Text\Slug;
 
 /**
@@ -121,14 +122,25 @@ final class Photo
     }
 
     /**
-     * A file name without its extension: the asset title as a slug
-     * ("brown-rocks-at-golden-hour"), at most $max characters, falling back
-     * to $fallback, the search term and then "photo". Add your own suffix
-     * if names must be unique.
+     * A file name without its extension, descriptive for search (SEO layer
+     * §11, Seo\FilenameRules): from the alt text the image is given ($alt,
+     * else alt()'s own: the library's description), then the library's
+     * title, its first tags, $fallback and the search term, the first that
+     * leaves two words once library noise ("stock photo", "royalty free")
+     * and stop words are out: "walled-garden-winter-frost". At most $max
+     * characters (and 50). Where none does, the first of them as a plain
+     * slug, else "photo". Add your own suffix if names must be unique.
      */
-    public function filenameBase(?string $fallback = null, int $max = 60): string
+    public function filenameBase(?string $fallback = null, int $max = 60, ?string $alt = null, string $language = 'en'): string
     {
-        foreach ([$this->title, $this->description, $this->tagList(3), $fallback, $this->term] as $text) {
+        $sources = [$alt, $this->description, $this->title, $this->tagList(3), $fallback, $this->term];
+        $name = FilenameRules::first($sources, $language, $max);
+
+        if ($name !== '') {
+            return $name;
+        }
+
+        foreach ($sources as $text) {
             $slug = $text === null ? '' : Slug::make($text, $max);
 
             if ($slug !== '') {

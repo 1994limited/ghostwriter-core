@@ -72,4 +72,6 @@ return [
         'warenkorb', 'kasse', 'danke', 'vielen-dank', 'bestaetigung', 'bestätigung', 'abmeldung',
         'newsletter-abmelden', 'fehler', 'seite-nicht-gefunden', 'sitemap', 'passwort',
     ],
+    // Words photo libraries put in titles that say nothing about the photo: left out of file names (Seo\FilenameRules).
+    'filename_noise' => ['stockfoto', 'stockbild', 'stock foto', 'lizenzfrei', 'lizenzfreies bild', 'kostenloses foto', 'bild von', 'foto von', 'nahaufnahme', 'unsplash', 'pexels', 'pixabay', 'shutterstock', 'istock', 'adobe stock'],
 ];

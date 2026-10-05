@@ -69,4 +69,6 @@ return [
         'finalizar-compra', 'gracias', 'muchas-gracias', 'confirmacion', 'confirmación',
         'darse-de-baja', 'error', 'pagina-no-encontrada', 'mapa-del-sitio', 'contrasena', 'contraseña',
     ],
+    // Words photo libraries put in titles that say nothing about the photo: left out of file names (Seo\FilenameRules).
+    'filename_noise' => ['foto de stock', 'imagen de stock', 'foto de archivo', 'libre de derechos', 'foto gratis', 'imagen de', 'foto de', 'primer plano', 'unsplash', 'pexels', 'pixabay', 'shutterstock', 'istock', 'adobe stock'],
 ];

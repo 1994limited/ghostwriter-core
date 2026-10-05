@@ -6,6 +6,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Layout\Pattern;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\EntryData;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Schema;
 use NineteenNinetyFour\Ghostwriter\Core\Seo\LinkContext;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\MetaContext;
 use NineteenNinetyFour\Ghostwriter\Core\Seo\RenderProfile;
 
 /**
@@ -16,7 +17,9 @@ use NineteenNinetyFour\Ghostwriter\Core\Seo\RenderProfile;
  * template prints headings (Seo\RenderProfile::resolve(); null for the
  * default: the title is the H1), and, where the addon links drafts to the
  * site's other pages, what the SEO pass needs for it (Seo\LinkContext;
- * null: no links are added).
+ * null: no links are added), and, where the addon writes the search title,
+ * description and address, what the pass needs for those (Seo\MetaContext;
+ * null: none are written).
  */
 final class LayoutContext
 {
@@ -33,5 +36,6 @@ final class LayoutContext
         public readonly array $exampleIds = [],
         public readonly ?RenderProfile $profile = null,
         public readonly ?LinkContext $links = null,
+        public readonly ?MetaContext $meta = null,
     ) {}
 }
