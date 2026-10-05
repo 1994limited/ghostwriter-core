@@ -14,6 +14,8 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ### Changed (SEO layer, row 6)
 
+- **An inherited SEO description that's too short is short, not empty**: Suggest edits' `seo-missing` finding reads emptiness from what the page prints (the gap's `length`), so a Journal post whose description comes from a short excerpt says "only 48 characters", not "comes from Excerpt, which is empty", and isn't Content to revisit's "No SEO description".
+
 - **Addresses keep the whole phrase** (decision 13, revised): "What to do in the garden in March" is `what-to-do-in-the-garden-in-march`. Only a title over 60 characters or an address over 75 loses its stop words, and is then cut to six words and 60 characters; filler (the new `slug_filler` phrase list in five languages, `Phrases::$slugFiller`) comes off both ends either way. `SlugRules::withoutFiller()`.
 - **A description inherited from an empty field is written** (decision 11): `MetaPolicy` gives **Write**, not Suggest, when the field a description inherits from is empty or missing, as the page prints nothing. The Search section says "It came from Excerpt, which is empty, so this page gets its own." instead of "Your SEO description stays".
 - The validator lets a new SEO description replace an inherited one that's too short. A missing SEO description is Content to revisit's `seo-missing` reason, no longer an empty field. `suggest.speech.seo` is "For search".
