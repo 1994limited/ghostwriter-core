@@ -86,6 +86,14 @@ enum GapKind: string
      */
     case FewLinks = 'few-links';
 
+    /**
+     * "Link “winter care” to Winter care visits?" (SEO layer §12): one of
+     * the links Finish's **Suggest links** found for a page with none
+     * (Seo\PageLinks), while its words are still on the page and not
+     * linked. **Link it** · **Skip**. A suggestion, never blocking.
+     */
+    case LinkProposed = 'link-proposed';
+
     /** How much it matters, unless a detector says otherwise. */
     public function severity(): Severity
     {

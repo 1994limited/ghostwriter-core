@@ -7,6 +7,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Ai\Usage;
 use NineteenNinetyFour\Ghostwriter\Core\Anchor\NormalisedText;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\LayoutContext;
 use NineteenNinetyFour\Ghostwriter\Core\Domain\Sessions\Session;
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\GapContext;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\SeoField;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\Field;
 use NineteenNinetyFour\Ghostwriter\Core\Schema\HeadingLevels;
@@ -37,6 +38,9 @@ use Throwable;
  *   (lead-in-to-heading, heading-level). Nothing is stored: a plan is
  *   fixed whenever it is built, for the preview, the cards and "Use this
  *   draft" alike.
+ * - **suggestLinksFor()**: Finish's "Suggest links" on an existing page
+ *   with no link to the site (PageLinks): the same two calls, proposed as
+ *   steps rather than made.
  * - **removeLink()**: an editor's "Remove link" on a link the pass added:
  *   the words stay, the link goes, and LinkGuard won't let it back.
  * - **The search title, description and address** (§9, §10), where the
@@ -303,7 +307,35 @@ final class SeoPass
         return $differ / $total >= self::CHANGED;
     }
 
-    /** The tokens the last afterWriter() spent on links (none on most turns). */
+    /**
+     * Finish's **Suggest links** on an existing page that links to none of
+     * the site's pages (`few-links`, SEO layer §12): one `seo-editor` call,
+     * links only, and one `seo-verifier` call on the page's current text
+     * ($page: the form's values, or the saved entry's), by the first
+     * draft's rules (PageLinks). Nothing is written: each link it returns
+     * is a step for the editor to take or skip (GapContext::$proposals).
+     * The calls' tokens are given by spent().
+     *
+     * @throws ProviderException from the `seo-editor` call.
+     */
+    public function suggestLinksFor(GapContext $page, LinkContext $links, ?string $title = null): LinkProposals
+    {
+        $this->spent = new Usage;
+
+        if ($this->studio === null) {
+            return LinkProposals::none(LinkProposals::NO_CANDIDATES);
+        }
+
+        $finder = new PageLinks($this->studio, $this->logger);
+
+        try {
+            return $finder->find($page, $links, $title);
+        } finally {
+            $this->spent = $finder->spent();
+        }
+    }
+
+    /** The tokens the last afterWriter() or suggestLinksFor() spent (none on most turns). */
     public function spent(): Usage
     {
         return $this->spent;

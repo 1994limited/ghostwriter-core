@@ -30,4 +30,11 @@ return [
     'fix.use-text' => 'Deze gebruiken',
     'fix.add-links' => 'Een link toevoegen',
     'fix.skip' => 'Overslaan',
+    'few-links.none' => 'Geen pagina’s die dicht genoeg in de buurt komen om naar te linken. Voeg zelf een link toe waar die past, of sla dit over.',
+    'link-proposed' => '‘:words’ naar :title linken? :why',
+    'speech.link-proposed' => 'Linken?',
+    'step.link-proposed' => '‘:words’ naar :title linken?',
+    'fix.suggest-links' => 'Links voorstellen',
+    'fix.link-it' => 'Linken',
+    'fix.suggesting-links' => 'Pagina’s zoeken om naar te linken…',
 ];

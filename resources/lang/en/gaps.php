@@ -40,6 +40,8 @@ return [
     'seo-missing.inherited-draft' => 'The SEO description comes from :field, which is empty. Here\'s one for this page: “:text”',
     'heading-long' => 'This heading in :label is :length characters. Over 70, it\'s hard to scan and gets cut off in search results.',
     'few-links' => 'This page doesn\'t link to any of your other pages. A couple of links help readers, and search engines, find related pages.',
+    'few-links.none' => 'No pages close enough to link to. Add a link by hand where one fits, or skip this.',
+    'link-proposed' => 'Link “:words” to :title? :why',
     'off-style-image' => 'The image in :label doesn\'t look like the others here.',
     'links-added' => 'Check :count links Ghostwriter added. “:words” goes to :title (:url). Keep it, or remove the link and keep the words.',
     'links-added-one' => 'Check the link Ghostwriter added. “:words” goes to :title (:url). Keep it, or remove the link and keep the words.',
@@ -65,11 +67,13 @@ return [
     'speech.links-added' => 'Linked',
     'speech.heading-long' => 'Too long',
     'speech.few-links' => 'Link me',
+    'speech.link-proposed' => 'Link this?',
 
     // A step's title in the guide's list, where it isn't the field's label.
     'step.seo-missing' => 'Add a description for search',
     'step.heading-long' => 'Shorten a heading',
     'step.few-links' => 'Link to your other pages',
+    'step.link-proposed' => 'Link “:words” to :title?',
 
     // Fixes.
     'fix.answer' => 'Type it in',
@@ -96,6 +100,9 @@ return [
     'fix.keep-link' => 'Keep it',
     'fix.use-text' => 'Use this',
     'fix.add-links' => 'Add a link',
+    'fix.suggest-links' => 'Suggest links',
+    'fix.link-it' => 'Link it',
+    'fix.suggesting-links' => 'Finding pages to link to…',
     'fix.skip' => 'Skip',
 
     // The guide.

@@ -30,4 +30,11 @@ return [
     'fix.use-text' => 'Utiliser ce texte',
     'fix.add-links' => 'Ajouter un lien',
     'fix.skip' => 'Passer',
+    'few-links.none' => 'Aucune page assez proche pour y renvoyer. Ajoutez un lien à la main là où il a sa place, ou passez cette étape.',
+    'link-proposed' => 'Lier « :words » à :title ? :why',
+    'speech.link-proposed' => 'Un lien ?',
+    'step.link-proposed' => 'Lier « :words » à :title ?',
+    'fix.suggest-links' => 'Proposer des liens',
+    'fix.link-it' => 'Créer le lien',
+    'fix.suggesting-links' => 'Recherche de pages à lier…',
 ];

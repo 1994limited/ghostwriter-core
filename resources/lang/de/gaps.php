@@ -30,4 +30,11 @@ return [
     'fix.use-text' => 'Übernehmen',
     'fix.add-links' => 'Einen Link setzen',
     'fix.skip' => 'Überspringen',
+    'few-links.none' => 'Keine Seite passt gut genug für einen Link. Setzen Sie einen Link von Hand, wo einer passt, oder überspringen Sie das.',
+    'link-proposed' => '„:words“ auf :title verlinken? :why',
+    'speech.link-proposed' => 'Verlinken?',
+    'step.link-proposed' => '„:words“ auf :title verlinken?',
+    'fix.suggest-links' => 'Links vorschlagen',
+    'fix.link-it' => 'Verlinken',
+    'fix.suggesting-links' => 'Suche Seiten zum Verlinken…',
 ];

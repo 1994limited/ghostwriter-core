@@ -17,6 +17,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\LongHeadings;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\MissingAlt;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\PlaceholderImages;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\PlaceholderText;
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\ProposedLinks;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\SeoLength;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\SeoMissing;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Detectors\UnlicensedStock;
@@ -75,6 +76,7 @@ final class GapFinder
             new AddedLinks,
             new LongHeadings,
             new FewLinks,
+            new ProposedLinks,
         ]);
     }
 
