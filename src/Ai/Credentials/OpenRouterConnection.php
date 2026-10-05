@@ -159,7 +159,7 @@ final class OpenRouterConnection implements ConnectsProvider
         $key = $env ?? ($this->connected() ? trim((string) $this->keys->get('openrouter')) : null);
 
         if ($key === null) {
-            throw new NotConfigured('OpenRouter isn\'t connected. Connect with OpenRouter in the settings, or add OPENROUTER_API_KEY to your .env file.', 'openrouter');
+            throw new NotConfigured('OpenRouter isn\'t connected. Connect it in Ghostwriter\'s Connections (or set OPENROUTER_API_KEY in .env).', 'openrouter');
         }
 
         $connected = $env === null;

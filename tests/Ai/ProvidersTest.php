@@ -53,7 +53,7 @@ class ProvidersTest extends ProviderTestCase
             $this->providers->text();
             $this->fail('Expected NotConfigured.');
         } catch (NotConfigured $exception) {
-            $this->assertSame('No API key is set for OpenAI. Add OPENAI_API_KEY to your .env file.', $exception->getMessage());
+            $this->assertSame('No API key is set for OpenAI. Set it up in Ghostwriter\'s Connections (or set OPENAI_API_KEY in .env).', $exception->getMessage());
         }
 
         // Images go to whichever image provider has a key, unless one is chosen.
@@ -204,7 +204,7 @@ class ProvidersTest extends ProviderTestCase
             $this->providers->text();
             $this->fail('Expected NotConfigured.');
         } catch (NotConfigured $exception) {
-            $this->assertSame('No API key is set for Anthropic. Add ANTHROPIC_API_KEY to your .env file.', $exception->getMessage());
+            $this->assertSame('No API key is set for Anthropic. Set it up in Ghostwriter\'s Connections (or set ANTHROPIC_API_KEY in .env).', $exception->getMessage());
         }
 
         // A text key but no image key.

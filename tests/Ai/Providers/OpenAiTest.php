@@ -119,7 +119,7 @@ class OpenAiTest extends ProviderTestCase
             $this->openai()->text($this->request());
             $this->fail('Expected the key to be refused.');
         } catch (AuthenticationFailed $exception) {
-            $this->assertSame("OpenAI didn't accept the API key (401). Check OPENAI_API_KEY.", $exception->getMessage());
+            $this->assertSame("OpenAI didn't accept the API key (401). Check it in Ghostwriter's Connections (or OPENAI_API_KEY in .env).", $exception->getMessage());
         }
 
         $this->assertCount(1, $this->http->requests);

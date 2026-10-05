@@ -207,7 +207,7 @@ class OpenRouterConnectionTest extends ProviderTestCase
             $this->connection()->account();
             $this->fail('Expected NotConfigured.');
         } catch (NotConfigured $exception) {
-            $this->assertStringContainsString('Connect with OpenRouter', $exception->getMessage());
+            $this->assertStringContainsString('Connections', $exception->getMessage());
         }
 
         $this->keys->put('openrouter', self::KEY);
@@ -236,7 +236,7 @@ class OpenRouterConnectionTest extends ProviderTestCase
             $providers->text();
             $this->fail('Expected NotConfigured.');
         } catch (NotConfigured $exception) {
-            $this->assertSame('OpenRouter isn\'t connected. Connect with OpenRouter in Ghostwriter\'s settings, or add OPENROUTER_API_KEY to your .env file.', $exception->getMessage());
+            $this->assertSame('OpenRouter isn\'t connected. Connect it in Ghostwriter\'s Connections (or set OPENROUTER_API_KEY in .env).', $exception->getMessage());
         }
 
         $this->keys->put('openrouter', self::KEY);
