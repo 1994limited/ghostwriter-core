@@ -12,6 +12,13 @@ use NineteenNinetyFour\Ghostwriter\Core\Arrange\Extras\Extras;
  * - **A removed unit** (or a piece or lead-in that is no longer there, or
  *   an extra item the editor deleted) is taken out of its placements. A
  *   placement left empty goes, and so does a block left with nothing.
+ * - **A unit rewritten in place** (a heading reworded past what
+ *   UnitMatcher carries, so it has a new id) takes the old one's place:
+ *   when the writer's layout before the edit and after it have the same
+ *   block (same type, sharing a unit that is still there) and one of its
+ *   fields went from only removed units to only new ones, the new ones
+ *   go wherever the old ones were. A reworded hero heading stays in the
+ *   hero rather than opening a hero of its own.
  * - **A new unit** goes after the unit before it in the draft: into the
  *   same placement when that field holds the same kind of value as the
  *   unit's own, otherwise in a new block of the writer's type for it,
@@ -22,13 +29,17 @@ use NineteenNinetyFour\Ghostwriter\Core\Arrange\Extras\Extras;
  */
 final class PlanRepair
 {
-    public function repair(Plan $plan, Units $units, Extras $extras, Plan $writer): Plan
+    /**
+     * @param  Plan|null  $was  The writer's layout before the edit, to find the units rewritten in place.
+     */
+    public function repair(Plan $plan, Units $units, Extras $extras, Plan $writer, ?Plan $was = null): Plan
     {
         $content = new Content($units, $extras);
+        $rewritten = $was === null ? [] : $this->rewritten($was, $writer, $units);
         $fields = [];
 
         foreach ($plan->fields as $handle => $blocks) {
-            $fields[$handle] = $this->prune($blocks, $content);
+            $fields[$handle] = $this->prune($rewritten === [] ? $blocks : $this->substitute($blocks, $rewritten), $content);
         }
 
         $placed = [];
@@ -93,6 +104,122 @@ final class PlanRepair
         }
 
         return $out;
+    }
+
+    /**
+     * The units rewritten in place: each removed unit's id, with the new
+     * units that took its place in the writer's layout.
+     *
+     * @return array<string, list<string>>
+     */
+    private function rewritten(Plan $was, Plan $writer, Units $units): array
+    {
+        $now = array_fill_keys($units->ids(), true);
+        $before = array_fill_keys(self::unitsOf($was->refs()), true);
+        $map = [];
+
+        foreach ($writer->fields as $handle => $blocks) {
+            $old = self::flatten($was->fields[$handle] ?? []);
+
+            foreach (self::flatten($blocks) as $block) {
+                $kept = array_filter(self::unitsOf($block->refs()), fn (string $id) => isset($before[$id]) && isset($now[$id]));
+                $match = null;
+
+                foreach ($old as $candidate) {
+                    if ($candidate->type === $block->type && array_intersect($kept, self::unitsOf($candidate->refs())) !== []) {
+                        $match = $candidate;
+
+                        break;
+                    }
+                }
+
+                if ($match === null) {
+                    continue;
+                }
+
+                foreach ($block->placements as $placement) {
+                    $previous = $match->placement($placement->field);
+
+                    // Whole units only: pieces and extras are left to the rules below.
+                    if ($previous === null || ! self::whole($previous->from) || ! self::whole($placement->from)) {
+                        continue;
+                    }
+
+                    $gone = array_filter($previous->from, fn (string $ref) => ! isset($now[$ref]));
+                    $new = array_filter($placement->from, fn (string $ref) => isset($now[$ref]) && ! isset($before[$ref]));
+
+                    if (count($gone) === count($previous->from) && count($new) === count($placement->from)) {
+                        $map[$previous->from[0]] = array_values($placement->from);
+                    }
+                }
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * A plan's blocks with each rewritten unit's ref swapped for the units
+     * that took its place.
+     *
+     * @param  list<PlanBlock>  $blocks
+     * @param  array<string, list<string>>  $rewritten
+     * @return list<PlanBlock>
+     */
+    private function substitute(array $blocks, array $rewritten): array
+    {
+        return array_map(fn (PlanBlock $block) => $block->with(
+            array_map(function (Placement $placement) use ($rewritten): Placement {
+                $from = [];
+
+                foreach ($placement->from as $ref) {
+                    array_push($from, ...($rewritten[$ref] ?? [$ref]));
+                }
+
+                return $placement->with(array_values(array_unique($from)));
+            }, $block->placements),
+            array_map(fn (array $nested) => $this->substitute($nested, $rewritten), $block->children),
+        ), $blocks);
+    }
+
+    /**
+     * @param  list<string>  $refs
+     * @return list<string>
+     */
+    private static function unitsOf(array $refs): array
+    {
+        return array_values(array_filter(array_map(fn (string $ref) => Content::parse($ref)['unit'] ?? null, $refs)));
+    }
+
+    /**
+     * Whether every ref is a whole unit (not a piece of one, or an extra), and there is one.
+     *
+     * @param  list<string>  $refs
+     */
+    private static function whole(array $refs): bool
+    {
+        return $refs !== [] && self::unitsOf($refs) === $refs;
+    }
+
+    /**
+     * A field's blocks and every block nested in them.
+     *
+     * @param  list<PlanBlock>  $blocks
+     * @return list<PlanBlock>
+     */
+    private static function flatten(array $blocks): array
+    {
+        $all = [];
+
+        foreach ($blocks as $block) {
+            $all[] = $block;
+
+            foreach ($block->children as $nested) {
+                array_push($all, ...self::flatten($nested));
+            }
+        }
+
+        return $all;
     }
 
     /**

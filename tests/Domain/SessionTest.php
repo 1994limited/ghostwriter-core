@@ -132,11 +132,12 @@ final class SessionTest extends TestCase
         $this->assertSame(Session::IDLE, $session->status);
         $this->assertSame("title: Bulbs\nbody: Plant them now.", $session->draft);
         $this->assertSame(['input' => 100, 'output' => 40], $session->usage);
-        $this->assertSame(['change' => 'written', 'words' => 6, 'was' => null], $session->lastMessage()['draft'] ?? null);
+        // The writing's words, as the draft pane counts them: not the field names.
+        $this->assertSame(['change' => 'written', 'words' => 4, 'was' => null], $session->lastMessage()['draft'] ?? null);
         $this->assertFalse($session->lastMessage()['asks'] ?? null);
 
         $session->answer('Shorter.', "title: Bulbs\nbody: Plant.", 10, 5, self::now());
-        $this->assertSame(['change' => 'updated', 'words' => 4, 'was' => 6], $session->lastMessage()['draft'] ?? null);
+        $this->assertSame(['change' => 'updated', 'words' => 2, 'was' => 4], $session->lastMessage()['draft'] ?? null);
         $this->assertSame(['input' => 110, 'output' => 45], $session->usage);
     }
 
@@ -145,7 +146,7 @@ final class SessionTest extends TestCase
         $session = Session::start(Format::Filament, 'any:posts', [], 1);
         $session->answer('', "title: Bulbs\nbody: Plant them now.");
 
-        $this->assertSame(['change' => 'written', 'words' => 6], $session->lastMessage()['draft'] ?? null);
+        $this->assertSame(['change' => 'written', 'words' => 4], $session->lastMessage()['draft'] ?? null);
         $this->assertSame('I have updated the draft.', $session->lastMessage()['content'] ?? null);
     }
 

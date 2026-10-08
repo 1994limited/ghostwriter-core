@@ -359,10 +359,11 @@ final class Session
 
         // What this turn did to the draft, for the conversation's log.
         if ($document !== null && $document !== $before) {
-            $extra['draft'] = ['change' => $before === null ? 'written' : 'updated', 'words' => str_word_count($document)];
+            // Counted as the draft pane counts them: the writing, not the YAML's field names.
+            $extra['draft'] = ['change' => $before === null ? 'written' : 'updated', 'words' => Draft::wordsIn($document)];
 
             if ($this->format !== Format::Filament) {
-                $extra['draft']['was'] = $before === null ? null : str_word_count($before);
+                $extra['draft']['was'] = $before === null ? null : Draft::wordsIn($before);
             }
         }
 
