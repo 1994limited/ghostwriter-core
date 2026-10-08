@@ -140,6 +140,32 @@ trait LinkIndexContract
         $this->assertFalse($this->hasRevisitRow($entries['contact']));
     }
 
+    public function test_the_list_is_filled_beyond_pages_sharing_words_with_the_draft(): void
+    {
+        $entries = $this->linkEntries();
+        $site = $entries['design']->site;
+        $keys = array_map(fn (DigestEntry $entry) => $entry->entry?->key(), $this->linkIndex()->related("Opening hours\n\nWe are closed on Mondays.", $this->draftGroup(), $site));
+
+        $this->assertContains($entries['about']->key(), $keys, 'No word in common: offered all the same, for the model to judge.');
+        $this->assertContains($entries['contact']->key(), $keys);
+
+        foreach (['draft', 'scheduled', 'noindex', 'search', 'home', 'other'] as $name) {
+            if ($entries[$name] !== null) {
+                $this->assertNotContains($entries[$name]->key(), $keys, "Filling never offers the {$name} page.");
+            }
+        }
+    }
+
+    public function test_words_are_matched_by_their_stem_best_first(): void
+    {
+        $entries = $this->linkEntries();
+        $keys = array_values(array_filter(array_map(fn (DigestEntry $entry) => $entry->entry?->key(), $this->linkIndex()->related("Studios\n\nWhat our studios do.", $this->draftGroup(), $entries['design']->site))));
+
+        $this->assertContains($entries['about']->key(), $keys);
+        $this->assertContains($entries['contact']->key(), $keys);
+        $this->assertLessThan(array_search($entries['contact']->key(), $keys, true), array_search($entries['about']->key(), $keys, true), '"Studios" meets "studio" in About\'s title.');
+    }
+
     public function test_a_save_writes_the_row_again(): void
     {
         $entries = $this->linkEntries();

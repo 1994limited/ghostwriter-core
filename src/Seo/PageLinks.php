@@ -171,6 +171,8 @@ final class PageLinks
             // What the model made of the page and the candidates, and how many it picked: why none, when none.
             'picked' => count($result->value->links),
             'notes' => $result->value->notes,
+            // The pages it was offered, best first (LinkIndex::related()).
+            'candidates' => array_map(fn (DigestEntry $entry) => $entry->title, $candidates),
         ]);
 
         return $proposals === [] ? LinkProposals::none(LinkProposals::DROPPED, $now) : new LinkProposals($proposals, '', $now);
