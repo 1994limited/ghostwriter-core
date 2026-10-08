@@ -18,7 +18,8 @@ final class IndexRowTest extends TestCase
 
         $this->assertSame('Contact us', $row->title);
         $this->assertLessThanOrEqual(DigestEntry::SUMMARY, mb_strlen($row->summary));
-        $this->assertSame(['conta'], $row->stemsOf('title'));
+        $this->assertSame(['contact'], $row->stemsOf('title'));
+        $this->assertSame(IndexRow::STEMS, $row->stemsVersion());
         $this->assertSame(['get', 'touch'], $row->stemsOf('slug'), '"in" is a stop word.');
         $this->assertSame(['book', 'visit'], $row->stemsOf('summary'));
         $this->assertSame('get-in-touch', $row->slug());
@@ -34,8 +35,36 @@ final class IndexRowTest extends TestCase
         $old = IndexRow::fromArray(['entry' => ['group' => 'pages', 'id' => 'a', 'site' => 'default'], 'title' => 'Garden design', 'url' => '/garden-design', 'summary' => '', 'paragraphs' => [[1, 2]]]);
         $this->assertNotNull($old);
         $this->assertSame(IndexScope::Full, $old->scope);
-        $this->assertSame(['garde', 'desig'], $old->stemsOf('title'));
+        $this->assertSame(['garde', 'desig'], $old->stemsOf('title'), 'No language: the first five letters.');
         $this->assertNull(IndexRow::fromArray(['title' => 'No entry']));
+    }
+
+    public function test_rows_stemmed_before_the_stemmer_keep_their_stems_and_say_so(): void
+    {
+        $stored = ['entry' => ['group' => 'journal', 'id' => 'a', 'site' => 'default'], 'scope' => 'link', 'title' => 'Why we leave the seedheads standing', 'url' => '/journal/seedheads', 'stems' => ['title' => ['leave', 'seedh', 'stand'], 'slug' => ['seedh'], 'summary' => []]];
+        $old = IndexRow::fromArray($stored, 'en');
+
+        $this->assertNotNull($old);
+        $this->assertSame(1, $old->stemsVersion(), 'Matched by their start until a full refresh writes them again.');
+        $this->assertSame(['leave', 'seedh', 'stand'], $old->stemsOf('title'));
+        $this->assertArrayNotHasKey('v', $old->toArray()['stems']);
+
+        $new = IndexRow::fromArray([...$stored, 'stems' => null], 'en');
+        $this->assertSame(['leav', 'seedhead', 'stand'], $new?->stemsOf('title'), 'A row with no stems is stemmed again.');
+        $this->assertSame(IndexRow::STEMS, $new?->toArray()['stems']['v']);
+        $this->assertSame(IndexRow::STEMS, IndexRow::fromArray((array) $new?->toArray())?->stemsVersion());
+    }
+
+    public function test_terms_and_links_are_kept_and_round_trip(): void
+    {
+        $row = IndexRow::make(new EntryRef('journal', 'a', 'default'), IndexScope::Full, 'Meadows', '/journal/meadows', link: 'entry::a', locale: 'en', terms: ['tags::meadows', 'tags::meadows', ''], links: ['statamic://entry::b', 'entry::b', '{entry:12@1:url||https://x.test/a}', '/Contact/', 'mailto:a@b.test', '#gw-link:contact']);
+
+        $this->assertSame(['tags::meadows'], $row->terms);
+        $this->assertSame(['entry::b', 'entry:12', 'path:/contact'], $row->links);
+        $this->assertEquals($row, IndexRow::fromArray($row->toArray()));
+        $this->assertSame(['category:5'], $row->withRelations(terms: ['category:5'])->terms);
+        $this->assertSame(['entry::b', 'entry:12', 'path:/contact'], $row->withRelations(terms: [])->links, 'Null keeps them.');
+        $this->assertSame(['tags::meadows'], $row->withScope(IndexScope::Link)->withIndexed('2026-10-08')->terms);
     }
 
     public function test_the_digest_shows_the_type(): void

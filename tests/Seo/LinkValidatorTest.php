@@ -50,6 +50,16 @@ final class LinkValidatorTest extends TestCase
         ], $room);
     }
 
+    public function test_the_first_candidates_show_their_whole_summary_and_the_rest_a_short_one(): void
+    {
+        $summary = 'A planting plan for every border: what to grow, where, and how to keep it looking right through the year, season by season.';
+        $candidates = array_map(fn (int $i) => new DigestEntry(new EntryRef('journal', "p{$i}"), "Page {$i}", "/p{$i}", $summary, "entry::p{$i}", 'Journal'), range(1, SeoRequest::FULL_SUMMARIES + 2));
+        $prompt = (new SeoRequest('Winter garden care', array_values(self::units()), ['u2'], $candidates, 2))->prompt();
+
+        $this->assertStringContainsString("e10. Page 10 (Journal) · /p10\n    {$summary}", $prompt);
+        $this->assertStringContainsString("e11. Page 11 (Journal) · /p11\n    A planting plan for every border: what to grow, where, and how to keep it…\n", $prompt);
+    }
+
     /**
      * @param  list<LinkPick>  $picks
      * @return array<string, string>

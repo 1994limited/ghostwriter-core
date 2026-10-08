@@ -79,7 +79,7 @@ final class SeoLinksTest extends StudioTestCase
 
     private static function index(): MemoryEntryIndex
     {
-        $index = new MemoryEntryIndex;
+        $index = new MemoryEntryIndex('en');
         $index->put(IndexRow::make(new EntryRef('services', 'plans', 'default'), IndexScope::Link, 'Planting plans', '/garden-services/planting-plans', 'A planting plan for every border: what to grow, where, and how to keep it looking right through the year.', 'Garden services', link: 'entry::plans', locale: 'en'));
         $index->put(IndexRow::make(new EntryRef('pages', 'contact', 'default'), IndexScope::Link, 'Contact us', '/contact', 'Tell us about your garden and book a first visit from our team in Northumberland.', 'Pages', key: true, link: 'entry::contact', locale: 'en'));
         $index->put(IndexRow::make(new EntryRef('journal', 'october', 'default'), IndexScope::Full, 'What to do in the garden in October', '/journal/october', 'Leave seed heads standing, plant bulbs and mulch the borders before winter.', 'Journal', link: 'entry::october', locale: 'en'));
@@ -141,9 +141,9 @@ final class SeoLinksTest extends StudioTestCase
         $this->fake->respond('writer', self::reply(self::WRITER, 900, 700));
         // Units, as SeoRequest numbers them: u1 the title, u2 the lead, u3 "Cutting back"… u6 "Booking a visit".
         $this->fake->respond('seo-editor', self::json(['notes' => 'Winter care for established gardens; plans and contact fit.', 'links' => [
-            ['unit' => 'u3', 'exact' => 'planting plan we drew for you', 'prefix' => '', 'target' => 'e2', 'hint' => '', 'why' => 'The sentence is about following a plan.'],
+            ['unit' => 'u3', 'exact' => 'planting plan we drew for you', 'prefix' => '', 'target' => 'e1', 'hint' => '', 'why' => 'The sentence is about following a plan.'],
             ['unit' => 'u6', 'exact' => 'tell us about your garden', 'prefix' => '', 'target' => 'e3', 'hint' => '', 'why' => 'An invitation to get in touch.'],
-            ['unit' => 'u4', 'exact' => 'click here', 'prefix' => '', 'target' => 'e1', 'hint' => '', 'why' => 'Vague.'],
+            ['unit' => 'u4', 'exact' => 'click here', 'prefix' => '', 'target' => 'e2', 'hint' => '', 'why' => 'Vague.'],
         ]], 1200, 300));
         $this->fake->respond('seo-verifier', self::json(['verdicts' => [
             ['notes' => 'Right page.', 'id' => 'l1', 'verdict' => 'keep', 'reason' => 'Fits.'],
@@ -186,12 +186,12 @@ final class SeoLinksTest extends StudioTestCase
         $this->assertStringContainsString('Add at most 2, and fewer', $request->prompt, 'About one per 250 words, and at least two.');
         $this->assertStringContainsString('[u1] (text, no links here)', $request->prompt);
         $this->assertStringContainsString('[u6] (section, links allowed)', $request->prompt);
-        $this->assertStringContainsString("e1. What to do in the garden in October (Journal) · /journal/october\n    Leave seed heads standing", $request->prompt);
-        $this->assertStringContainsString('e2. Planting plans (Garden services) · /garden-services/planting-plans', $request->prompt);
+        $this->assertStringContainsString('e1. Planting plans (Garden services) · /garden-services/planting-plans', $request->prompt);
+        $this->assertStringContainsString("e2. What to do in the garden in October (Journal) · /journal/october\n    Leave seed heads standing", $request->prompt);
         $this->assertStringContainsString('Write `notes` and each `why` in English.', $request->prompt);
-        $this->assertStringNotContainsString('Summer watering', $request->prompt, 'Below the floor: not a candidate.');
+        $this->assertStringContainsString('e4. Summer watering (Journal)', $request->prompt, 'Few words in common, but the list is filled: the model decides.');
         $this->assertSame(['u2', 'u3', 'u4', 'u5', 'u6'], $request->schema?->schema['properties']['links']['items']['properties']['unit']['enum']);
-        $this->assertSame(['e1', 'e2', 'e3', ''], $request->schema?->schema['properties']['links']['items']['properties']['target']['enum']);
+        $this->assertSame(['e1', 'e2', 'e3', 'e4', ''], $request->schema?->schema['properties']['links']['items']['properties']['target']['enum']);
         $this->assertStringContainsString('Plain and warm.', $request->instructions, 'The voice guide is in the cached instructions.');
         $this->assertStringNotContainsString('Winter garden care', $request->instructions, 'Nothing about the page is in the instructions.');
 
@@ -374,7 +374,7 @@ final class SeoLinksTest extends StudioTestCase
     private function scriptWriterLinks(): void
     {
         $this->fake->respond('writer', self::reply(self::writerWithLinks(), 900, 700));
-        // e1 Planting plans, e2 Contact us: October is linked already.
+        // e1 Planting plans, e2 Contact us, e3 Summer watering: October is linked already.
         $this->fake->respond('seo-editor', self::json(['notes' => 'Winter care; plans fit, and the call to get in touch suits Contact.', 'links' => [
             ['unit' => 'u3', 'exact' => 'planting plan we drew for you', 'prefix' => '', 'target' => 'e1', 'hint' => '', 'why' => 'The sentence is about following a plan.'],
         ], 'markers' => [
@@ -407,7 +407,7 @@ final class SeoLinksTest extends StudioTestCase
         $this->assertStringNotContainsString('What to do in the garden in October', $request->prompt, 'A page linked already isn\'t a candidate.');
         $markers = $request->schema?->schema['properties']['markers'];
         $this->assertSame(['m1', 'm2', 'm3'], $markers['items']['properties']['marker']['enum'], 'The one LinkGuard made and the writer\'s two.');
-        $this->assertSame(['e1', 'e2', ''], $markers['items']['properties']['target']['enum']);
+        $this->assertSame(['e1', 'e2', 'e3', ''], $markers['items']['properties']['target']['enum']);
         $this->assertSame(3, $markers['maxItems']);
     }
 

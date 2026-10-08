@@ -30,6 +30,12 @@ final class SeoRequest
     /** Characters of a candidate's summary shown. */
     public const SUMMARY = 160;
 
+    /** Candidates shown with their whole summary; the rest (the list's tail, filled to LinkCandidates::LIMIT) with SHORT_SUMMARY characters, to keep the call small. */
+    public const FULL_SUMMARIES = 10;
+
+    /** Characters of a summary shown below the first FULL_SUMMARIES candidates. */
+    public const SHORT_SUMMARY = 80;
+
     /**
      * @param  list<Unit>  $units  The draft's text units, in reading order.
      * @param  list<string>  $linkable  The ids of the units that may take a link.
@@ -117,12 +123,14 @@ final class SeoRequest
             array_push($lines, '', '## The site\'s pages you may link to', '');
         }
 
+        $shown = 0;
+
         foreach ($this->byId() as $id => $candidate) {
             $type = $candidate->type !== '' ? " ({$candidate->type})" : '';
             $url = $candidate->url !== null && $candidate->url !== '' ? " · {$candidate->url}" : '';
             $lines[] = "{$id}. {$candidate->title}{$type}{$url}";
 
-            $summary = trim((string) preg_replace('/\s+/u', ' ', mb_substr($candidate->summary, 0, self::SUMMARY)));
+            $summary = self::summary($candidate->summary, $shown++ < self::FULL_SUMMARIES ? self::SUMMARY : self::SHORT_SUMMARY);
 
             if ($summary !== '') {
                 $lines[] = "    {$summary}";
@@ -152,5 +160,20 @@ final class SeoRequest
         unset($marker);
 
         return new OutputSchema($base->name, $schema, $base->description);
+    }
+
+    /** A summary on one line, cut at a word to at most $length characters. */
+    private static function summary(string $summary, int $length): string
+    {
+        $summary = trim((string) preg_replace('/\s+/u', ' ', $summary));
+
+        if (mb_strlen($summary) <= $length) {
+            return $summary;
+        }
+
+        $cut = mb_substr($summary, 0, $length);
+        $space = mb_strrpos($cut, ' ');
+
+        return rtrim($space !== false && $space > $length / 2 ? mb_substr($cut, 0, $space) : $cut, ' ,;:.-').'…';
     }
 }

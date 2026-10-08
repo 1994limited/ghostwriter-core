@@ -29,6 +29,11 @@ final class MemoryEntryIndex implements EntryIndex, LinkIndex, LinkLookup
     private array $entries = [];
 
     /**
+     * @param  string|null  $locale  The site's language, as the addons' indexes read it: stop words and stems for related().
+     */
+    public function __construct(private readonly ?string $locale = null) {}
+
+    /**
      * A full row: a page of one of Ghostwriter's own groups.
      *
      * @param  array<int, string>  $paragraphs
@@ -122,7 +127,7 @@ final class MemoryEntryIndex implements EntryIndex, LinkIndex, LinkLookup
 
     public function related(string $text, string $group, int|string|null $site = null, ?EntryRef $except = null, int $limit = LinkCandidates::LIMIT, array $linked = [], ?DateTimeImmutable $now = null): array
     {
-        return LinkCandidates::rank(array_map(fn (array $entry) => $entry['row'], $this->entries), $text, $group, $site, $except, $limit, $linked, $now);
+        return LinkCandidates::rank(array_map(fn (array $entry) => $entry['row'], $this->entries), $text, $group, $site, $except, $limit, $linked, $now, $this->locale);
     }
 
     public function linkRow(string $href, int|string|null $site = null): ?IndexRow

@@ -66,7 +66,7 @@ final class PageLinksTest extends StudioTestCase
 
     private static function index(): MemoryEntryIndex
     {
-        $index = new MemoryEntryIndex;
+        $index = new MemoryEntryIndex('en');
         $index->put(IndexRow::make(new EntryRef('services', 'plans', 'default'), IndexScope::Link, 'Planting plans', '/garden-services/planting-plans', 'A planting plan for every border: what to grow, where, and how to keep it looking right through the year.', 'Garden services', link: 'entry::plans', locale: 'en'));
         $index->put(IndexRow::make(new EntryRef('pages', 'contact', 'default'), IndexScope::Link, 'Contact us', '/contact', 'Tell us about your garden and book a first visit from our team in Northumberland.', 'Pages', key: true, link: 'entry::contact', locale: 'en'));
         $index->put(IndexRow::make(new EntryRef('journal', 'october', 'default'), IndexScope::Full, 'What to do in the garden in October', '/journal/october', 'Leave seed heads standing, plant bulbs and mulch the borders before winter.', 'Journal', link: 'entry::october', locale: 'en'));
@@ -92,9 +92,9 @@ final class PageLinksTest extends StudioTestCase
     {
         // Units, as SeoRequest numbers them: u1 the title, u2 the lead, u3 "Cutting back"… u6 "Booking a visit".
         $this->fake->respond('seo-editor', self::json(['notes' => 'Winter care; plans and contact fit.', 'links' => [
-            ['unit' => 'u3', 'exact' => 'planting plan we drew for you', 'prefix' => '', 'target' => 'e2', 'hint' => '', 'why' => 'The sentence is about following a plan.'],
+            ['unit' => 'u3', 'exact' => 'planting plan we drew for you', 'prefix' => '', 'target' => 'e1', 'hint' => '', 'why' => 'The sentence is about following a plan.'],
             ['unit' => 'u6', 'exact' => 'tell us about your garden', 'prefix' => '', 'target' => 'e3', 'hint' => '', 'why' => 'An invitation to get in touch.'],
-            ['unit' => 'u4', 'exact' => 'click here', 'prefix' => '', 'target' => 'e1', 'hint' => '', 'why' => 'Vague.'],
+            ['unit' => 'u4', 'exact' => 'click here', 'prefix' => '', 'target' => 'e2', 'hint' => '', 'why' => 'Vague.'],
         ], 'markers' => [], 'title' => '', 'description' => ''], 1200, 300));
         $this->fake->respond('seo-verifier', self::json(['verdicts' => [
             ['notes' => 'Right page.', 'id' => 'l1', 'verdict' => 'keep', 'reason' => 'Fits.'],
@@ -177,10 +177,12 @@ final class PageLinksTest extends StudioTestCase
         $this->pass()->suggestLinksFor(self::page(), self::links());
     }
 
-    public function test_no_page_close_enough_makes_no_call(): void
+    public function test_no_page_to_link_to_makes_no_call(): void
     {
-        $index = new MemoryEntryIndex;
-        $index->put(IndexRow::make(new EntryRef('journal', 'summer', 'default'), IndexScope::Full, 'Summer watering', '/journal/summer-watering', 'How often to water pots in a heatwave.', 'Journal', link: 'entry::summer', locale: 'en'));
+        // The page itself and a page search engines are told to skip: nothing the list can offer.
+        $index = new MemoryEntryIndex('en');
+        $index->put(IndexRow::make(new EntryRef('journal', 'winter', 'default'), IndexScope::Full, 'Winter garden care', '/journal/winter-garden-care', 'Winter care for established gardens.', 'Journal', link: 'entry::winter', locale: 'en'));
+        $index->put(IndexRow::make(new EntryRef('journal', 'summer', 'default'), IndexScope::Full, 'Summer watering', '/journal/summer-watering', 'How often to water pots in a heatwave.', 'Journal', noindex: true, link: 'entry::summer', locale: 'en'));
 
         $found = $this->pass()->suggestLinksFor(self::page(), self::links($index));
 
@@ -205,7 +207,7 @@ final class PageLinksTest extends StudioTestCase
         $body = str_replace('planting plan we drew for you', 'planting plan we <em>drew</em> for you', self::BODY);
         $this->fake->reset('seo-editor');
         $this->fake->respond('seo-editor', self::json(['notes' => '…', 'links' => [
-            ['unit' => 'u3', 'exact' => 'planting plan we *drew* for you', 'prefix' => '', 'target' => 'e2', 'hint' => '', 'why' => 'A plan.'],
+            ['unit' => 'u3', 'exact' => 'planting plan we *drew* for you', 'prefix' => '', 'target' => 'e1', 'hint' => '', 'why' => 'A plan.'],
             ['unit' => 'u6', 'exact' => 'tell us about your garden', 'prefix' => '', 'target' => 'e3', 'hint' => '', 'why' => 'Contact.'],
         ], 'markers' => [], 'title' => '', 'description' => '']));
 
