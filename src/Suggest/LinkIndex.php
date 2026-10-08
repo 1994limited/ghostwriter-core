@@ -21,8 +21,10 @@ interface LinkIndex
     /**
      * Published pages of the site that could be linked from a page about
      * $text, best first, at most $limit (LinkCandidates::LIMIT, 25): the
-     * draft's title, headings and first 200 words are matched against each
-     * row's title, slug and summary (LinkCandidates::score()). Never another
+     * draft's title, headings and first 200 words are matched by stem
+     * against each row's title, slug and summary, related pages and key
+     * pages ranking higher, and the list filled for the model to judge
+     * (LinkCandidates::rank()). Never another
      * site's pages, the page itself ($except), pages $text already links to
      * ($linked: hrefs as the draft stores them), or pages Seo\Linkable
      * leaves out on $now (drafts, scheduled before their day, expired, no
