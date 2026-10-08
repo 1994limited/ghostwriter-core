@@ -27,9 +27,10 @@ use NineteenNinetyFour\Ghostwriter\Core\Suggest\Phrases;
  * - key pages (navigation, level 1 of a structure) are always offered,
  *   up to KEY_PAGES, outside their group's cap, as the page a reader may
  *   want next ("tell us about your garden");
- * - then the rest fill the list up to LIMIT (25), at most PER_GROUP (5)
- *   from one group and LISTINGS (2) terms or categories, so a big
- *   Journal doesn't crowd out Services;
+ * - then the rest by score, at most PER_GROUP (5) from one group and
+ *   LISTINGS (2) terms or categories, so a big Journal doesn't crowd out
+ *   Services; when every group is at its cap and there's room, the rest
+ *   fill the tail, best first, up to LIMIT (25);
  * - ties: a key page, then not a listing, then the newer page.
  *
  * Full rows and link rows score alike; rows stemmed before Seo\Stemmer
@@ -75,6 +76,9 @@ final class LinkCandidates
     public const SLUG = 2;
 
     public const SUMMARY = 1;
+
+    /** A stem of the draft's title or headings counts this many times one of its body's. */
+    public const TOPIC = 2;
 
     /** A term or category the page is filed under, or shares with it. */
     public const SHARED_TERM = 4;
@@ -122,6 +126,17 @@ final class LinkCandidates
      */
     public static function draftStems(string $text, ?string $locale = null, int $version = IndexRow::STEMS): array
     {
+        return array_map('strval', array_keys(self::draftWeights($text, $locale, $version)));
+    }
+
+    /**
+     * The draft's stems with how much each says about it: TOPIC for its
+     * title's and headings', 1 for its body's.
+     *
+     * @return array<string, int>
+     */
+    public static function draftWeights(string $text, ?string $locale = null, int $version = IndexRow::STEMS): array
+    {
         $lines = preg_split('/\R/u', trim($text)) ?: [];
         $title = '';
         $headings = [];
@@ -150,12 +165,17 @@ final class LinkCandidates
         }
 
         $words = preg_split('/\s+/u', (string) preg_replace('/\]\([^)]*\)|<[^>]*>/u', ' ', implode(' ', $body)), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $weights = [];
 
-        return array_values(array_unique(array_merge(
-            self::stems($title, $locale, $version),
-            self::stems(implode("\n", $headings), $locale, $version),
-            self::stems(implode(' ', array_slice($words, 0, self::DRAFT_WORDS)), $locale, $version),
-        )));
+        foreach ([...self::stems($title, $locale, $version), ...self::stems(implode("\n", $headings), $locale, $version)] as $stem) {
+            $weights[$stem] = self::TOPIC;
+        }
+
+        foreach (self::stems(implode(' ', array_slice($words, 0, self::DRAFT_WORDS)), $locale, $version) as $stem) {
+            $weights[$stem] ??= 1;
+        }
+
+        return $weights;
     }
 
     /**
@@ -226,11 +246,11 @@ final class LinkCandidates
      *
      * @param  array<string, mixed>  $draft  The draft's stems, as keys.
      * @param  array{terms?: array<string, mixed>, here?: array<string, mixed>, linked?: array<string, mixed>}  $related  The page's terms, the keys a link to it has, and the keys of the pages it links to, as keys.
-     * @return array{0: int, 1: int}
+     * @return array{0: int|float, 1: int}
      */
     public static function score(IndexRow $row, array $draft, string $group = '', array $related = []): array
     {
-        $lookup = self::lookup($draft);
+        $lookup = self::lookup(array_fill_keys(array_map('strval', array_keys($draft)), 1));
 
         return [self::words($row, $lookup) + self::related($row, $group, $related), ($row->key ? 1 : 0) - ($row->kind->isListing() ? 1 : 0)];
     }
@@ -255,7 +275,7 @@ final class LinkCandidates
         ?DateTimeImmutable $now = null,
         ?string $locale = null,
     ): array {
-        $draft = self::draftStems($text, $locale);
+        $draft = self::draftWeights($text, $locale);
 
         if ($draft === [] || $limit <= 0) {
             return [];
@@ -304,14 +324,15 @@ final class LinkCandidates
             'linked' => $linkedKeys + array_flip($own === null ? [] : $own->links),
         ];
         // Rows stemmed before Seo\Stemmer are matched against the draft's words cut the same way.
-        $lookups = [IndexRow::STEMS => self::lookup(array_flip($draft))];
+        $lookups = [IndexRow::STEMS => self::lookup($draft)];
+        $rarity = self::rarity($eligible);
         $scored = [];
 
         foreach ($eligible as $row) {
             $version = $row->stemsVersion() > 1 ? IndexRow::STEMS : 1;
-            $lookups[$version] ??= self::lookup(array_flip(self::draftStems($text, $locale, $version)));
+            $lookups[$version] ??= self::lookup(self::draftWeights($text, $locale, $version));
             $tie = ($row->key ? 1 : 0) - ($row->kind->isListing() ? 1 : 0);
-            $scored[] = [self::words($row, $lookups[$version]) + self::related($row, $group, $related), $tie, $row->updated, $row];
+            $scored[] = [self::words($row, $lookups[$version], $rarity) + self::related($row, $group, $related), $tie, $row->updated, $row];
         }
 
         usort($scored, fn (array $a, array $b) => [$b[0], $b[1], $b[2], $a[3]->title] <=> [$a[0], $a[1], $a[2], $b[3]->title]);
@@ -349,7 +370,21 @@ final class LinkCandidates
 
         ksort($picked);
 
-        return array_values(array_map(fn (int $i) => $scored[$i][3]->digest(), array_keys($picked)));
+        // Every group at its cap and room left: the rest fill the tail, best first (listings still capped).
+        $tail = [];
+
+        foreach ($scored as $i => [, , , $row]) {
+            if (count($picked) + count($tail) >= $limit) {
+                break;
+            }
+
+            if (! isset($picked[$i]) && ! ($row->kind->isListing() && $listings >= self::LISTINGS)) {
+                $listings += $row->kind->isListing() ? 1 : 0;
+                $tail[] = $i;
+            }
+        }
+
+        return array_values(array_map(fn (int $i) => $scored[$i][3]->digest(), [...array_keys($picked), ...$tail]));
     }
 
     /**
@@ -451,11 +486,11 @@ final class LinkCandidates
     }
 
     /**
-     * A draft's stems for matching: the stems, as keys, and those of
-     * PREFIX letters or more by their first PREFIX letters.
+     * A draft's stems for matching: each with its weight (draftWeights()),
+     * and those of PREFIX letters or more by their first PREFIX letters.
      *
-     * @param  array<string, mixed>  $draft
-     * @return array{0: array<string, mixed>, 1: array<string, list<string>>}
+     * @param  array<string, int>  $draft
+     * @return array{0: array<string, int>, 1: array<string, list<string>>}
      */
     private static function lookup(array $draft): array
     {
@@ -473,31 +508,60 @@ final class LinkCandidates
     }
 
     /**
-     * A row's words against the draft's: 2 a stem the same, 1 one starting
-     * the other, times the part's weight.
+     * How rare each stem is among the rows, so a word most pages have
+     * ("garden" on a gardener's site) counts for less than one few have
+     * ("seedhead"): ln((rows + 1) / (rows with it + ½)), never 0.
      *
-     * @param  array{0: array<string, mixed>, 1: array<string, list<string>>}  $lookup
+     * @param  list<IndexRow>  $rows
+     * @return array<string, float>
      */
-    private static function words(IndexRow $row, array $lookup): int
+    private static function rarity(array $rows): array
+    {
+        $counts = [];
+
+        foreach ($rows as $row) {
+            foreach ($row->allStems() as $stem) {
+                $counts[$stem] = ($counts[$stem] ?? 0) + 1;
+            }
+        }
+
+        $total = count($rows) + 1;
+
+        return array_map(fn (int $count) => log($total / ($count + 0.5)), $counts);
+    }
+
+    /**
+     * A row's words against the draft's: 2 a stem the same, 1 one starting
+     * the other, times the part's weight, the draft stem's weight and how
+     * rare the stem is among the rows (1 when not known).
+     *
+     * @param  array{0: array<string, int>, 1: array<string, list<string>>}  $lookup
+     * @param  array<string, float>  $rarity
+     */
+    private static function words(IndexRow $row, array $lookup, array $rarity = []): int|float
     {
         [$exact, $buckets] = $lookup;
         $score = 0;
 
         foreach (['title' => self::TITLE, 'slug' => self::SLUG, 'summary' => self::SUMMARY] as $part => $weight) {
             foreach ($row->stemsOf($part) as $stem) {
+                $rare = $rarity[$stem] ?? 1;
+
                 if (isset($exact[$stem])) {
-                    $score += 2 * $weight;
+                    $score += 2 * $weight * $exact[$stem] * $rare;
 
                     continue;
                 }
 
+                $best = 0;
+
                 foreach (mb_strlen($stem) >= self::PREFIX ? ($buckets[mb_substr($stem, 0, self::PREFIX)] ?? []) : [] as $other) {
                     if (self::match($stem, $other) > 0) {
-                        $score += $weight;
-
-                        break;
+                        $best = max($best, $exact[$other]);
                     }
                 }
+
+                $score += $weight * $best * $rare;
             }
         }
 

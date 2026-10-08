@@ -164,7 +164,7 @@ final class LinkCandidatesTest extends TestCase
         $this->assertSame(['alike', 'plain'], $this->ids(LinkCandidates::rank($rows, "A draft\n\nWords.", 'journal', 'default', linked: ['https://example.test/contact'], locale: 'en')));
     }
 
-    public function test_at_most_five_from_a_group_two_listings_and_the_limit(): void
+    public function test_at_most_five_from_a_group_and_two_listings_before_the_tail_and_the_limit(): void
     {
         $rows = [];
 
@@ -177,7 +177,9 @@ final class LinkCandidatesTest extends TestCase
         $ranked = LinkCandidates::rank($rows, self::DRAFT, 'pages', 'default', locale: 'en');
         $groups = array_count_values(array_map(fn (DigestEntry $e) => $e->entry->group, $ranked));
 
-        $this->assertSame(['journal' => 5, 'tags' => 2, 'services' => 1], $groups);
+        $this->assertSame(['journal' => 7, 'tags' => 2, 'services' => 1], $groups, 'Listings stay capped.');
+        $this->assertSame(['journal' => 5, 'tags' => 2, 'services' => 1], array_count_values(array_map(fn (DigestEntry $e) => $e->entry->group, array_slice($ranked, 0, 8))), 'The caps decide the top of the list.');
+        $this->assertSame(['j6', 'j7'], array_map(fn (DigestEntry $e) => (string) $e->entry?->id, array_slice($ranked, 8)), 'The rest of the group fills the tail.');
         $this->assertCount(3, LinkCandidates::rank($rows, self::DRAFT, 'pages', 'default', limit: 3, locale: 'en'));
     }
 

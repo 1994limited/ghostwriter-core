@@ -4,6 +4,16 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
+### Changed (SEO layer: which pages a draft is offered to link to)
+
+- **A stemmer per language.** New **`Seo\Stemmer`**: Snowball's rules for English (Porter 2), German, French, Dutch and Spanish, framework-free (no ext-stemmer); other languages keep the first five letters. `LinkCandidates::stems()` and `draftStems()` stem with it ("pruning" → "prune", "Gärten" → "gart"), stop words as before.
+- **Words match by their start too.** `LinkCandidates::match()`: the same stem counts double, one starting the other (from `PREFIX`, 4 letters) once, so "seed" meets "seedheads" and "plant" "planting". Each stem also counts by how rare it is among the site's rows (a word most pages have counts for little), and the draft's title and headings count twice its body (`draftWeights()`, `TOPIC`).
+- **Related pages rank higher.** `IndexRow` keeps what a page is filed under (`$terms`: "tags::meadows", "category:12"; a term's own row has itself) and, for full rows, where it links (`$links`, as `linkKey()` reads them), with `withRelations()`. A page sharing a term with the page, or the term itself (+4), a page linking to it (+4), a page linking where the draft links (+2, twice at most) and the draft's own group (+2) rank higher; boosts, not filters.
+- **Key pages are always offered** (`KEY_PAGES`, 8, never more than a third of the list), whatever their words; listings aren't.
+- **A fuller list for the model.** No floor: every linkable page is scored and the list is filled to `LIMIT` (25), best first, at most `PER_GROUP` (now 5) from one group and `LISTINGS` (2) terms or categories at the top; when every group is at its cap the rest fill the tail. The exclusions are as before (the page itself, pages already linked, another site's, drafts, scheduled, expired, noindex, utility pages, the home page). `SeoRequest` shows the first `FULL_SUMMARIES` (10) candidates with their summary and the rest with `SHORT_SUMMARY` (80) characters, to keep the call small.
+- **Stored stems are versioned.** `IndexRow::STEMS` (2) is kept with the stems (`stems.v`, `stemsVersion()`); rows written before it keep their five-letter stems and are matched against the draft's words cut the same way until a full refresh writes them again. A big site's stem index is keyed by each stem's first four letters (`LinkCandidates::indexKeys()`), looked up by `lookupKeys()` (which also finds an older index's keys).
+- `MemoryEntryIndex` takes the site's locale. `PageLinks` logs the candidates it offered.
+
 ### Fixed (word counts)
 
 - **The conversation's "Draft written · N words" agrees with the draft pane.** `Session::answer()` counted the raw YAML (field names and block types too); it now counts with the new **`Draft::wordsIn()`**, as the pane does. **`Draft::wordCount()`** no longer counts the links chosen for fields the draft doesn't hold (`gw_links`) or where a link goes, so linking words (the SEO pass) leaves the count as it was.
