@@ -146,8 +146,8 @@ final class SeoLinksTest extends StudioTestCase
             ['unit' => 'u4', 'exact' => 'click here', 'prefix' => '', 'target' => 'e2', 'hint' => '', 'why' => 'Vague.'],
         ]], 1200, 300));
         $this->fake->respond('seo-verifier', self::json(['verdicts' => [
-            ['notes' => 'Right page.', 'id' => 'l1', 'verdict' => 'keep', 'reason' => 'Fits.'],
-            ['notes' => 'Right page.', 'id' => 'l2', 'verdict' => 'keep', 'reason' => 'Fits.'],
+            ['notes' => 'Right page.', 'id' => 'l1', 'verdict' => 'keep', 'anchor' => '', 'reason' => 'Fits.'],
+            ['notes' => 'Right page.', 'id' => 'l2', 'verdict' => 'keep', 'anchor' => '', 'reason' => 'Fits.'],
         ]], 600, 100));
         $this->fake->respondStructured('layout-planner', ['plans' => []]);
     }
@@ -183,7 +183,7 @@ final class SeoLinksTest extends StudioTestCase
 
         $request = $this->fake->prompted('seo-editor')[0];
         $this->assertStringContainsString('about 320 words', $request->prompt);
-        $this->assertStringContainsString('Add at most 2, and fewer', $request->prompt, 'About one per 250 words, and at least two.');
+        $this->assertStringContainsString('Add up to 2: aim for 2 where each helps a reader', $request->prompt, 'About one per 250 words, and at least two.');
         $this->assertStringContainsString('[u1] (text, no links here)', $request->prompt);
         $this->assertStringContainsString('[u6] (section, links allowed)', $request->prompt);
         $this->assertStringContainsString('e1. Planting plans (Garden services) · /garden-services/planting-plans', $request->prompt);
@@ -230,14 +230,29 @@ final class SeoLinksTest extends StudioTestCase
         $this->scriptLinks();
         $this->fake->reset('seo-verifier');
         $this->fake->respondStructured('seo-verifier', ['verdicts' => [
-            ['notes' => '…', 'id' => 'l1', 'verdict' => 'drop', 'reason' => 'Not about plans.'],
-            ['notes' => '…', 'id' => 'l2', 'verdict' => 'keep', 'reason' => 'Fits.'],
+            ['notes' => '…', 'id' => 'l1', 'verdict' => 'drop', 'anchor' => '', 'reason' => 'Not about plans.'],
+            ['notes' => '…', 'id' => 'l2', 'verdict' => 'keep', 'anchor' => '', 'reason' => 'Fits.'],
         ]]);
         [$session] = $this->firstDraft();
 
         $this->assertSame(['statamic://entry::contact'], array_column(SeoState::of($session)->links, 'href'));
         $this->assertStringNotContainsString('entry::plans', (string) $session->draft);
         $this->assertSame('seo.notice.links-one', SeoState::of($session)->notice['key'] ?? null);
+    }
+
+    public function test_a_first_draft_link_on_weak_words_is_written_on_the_verifiers_better_words(): void
+    {
+        $this->scriptLinks();
+        $this->fake->reset('seo-verifier');
+        $this->fake->respondStructured('seo-verifier', ['verdicts' => [
+            ['notes' => '…', 'id' => 'l1', 'verdict' => 'keep-with-anchor', 'anchor' => 'a planting plan', 'reason' => 'The right page; these words name it.'],
+            ['notes' => '…', 'id' => 'l2', 'verdict' => 'keep', 'anchor' => '', 'reason' => 'Fits.'],
+        ]]);
+        [$session] = $this->firstDraft();
+
+        $body = (string) Draft::parse((string) $session->draft)->data['body'];
+        $this->assertStringContainsString('If you have [a planting plan](statamic://entry::plans) we drew for you, we follow it', $body);
+        $this->assertSame(['a planting plan', 'tell us about your garden'], array_column(SeoState::of($session)->links, 'words'));
     }
 
     public function test_a_failed_verifier_keeps_what_passed_the_checks(): void
@@ -384,8 +399,8 @@ final class SeoLinksTest extends StudioTestCase
             ['marker' => 'm3', 'target' => 'e1', 'why' => 'A second answer for the same marker.'],
         ]], 1200, 300));
         $this->fake->respond('seo-verifier', self::json(['verdicts' => [
-            ['notes' => 'Right page.', 'id' => 'l1', 'verdict' => 'keep', 'reason' => 'Fits.'],
-            ['notes' => 'Right page.', 'id' => 'm3', 'verdict' => 'keep', 'reason' => 'Fits.'],
+            ['notes' => 'Right page.', 'id' => 'l1', 'verdict' => 'keep', 'anchor' => '', 'reason' => 'Fits.'],
+            ['notes' => 'Right page.', 'id' => 'm3', 'verdict' => 'keep', 'anchor' => '', 'reason' => 'Fits.'],
         ]], 600, 100));
         $this->fake->respondStructured('layout-planner', ['plans' => []]);
     }
@@ -402,7 +417,7 @@ final class SeoLinksTest extends StudioTestCase
         $this->assertStringContainsString('[planting plan we drew for you](statamic://entry::plans)', $body);
 
         $request = $this->fake->prompted('seo-editor')[0];
-        $this->assertStringContainsString('Links it has already: 1. Add at most 1, and fewer', $request->prompt, 'The kept link counts; the three markers don\'t (decision 23).');
+        $this->assertStringContainsString('Links it has already: 1. Add up to 1: aim for 1', $request->prompt, 'The kept link counts; the three markers don\'t (decision 23).');
         $this->assertStringContainsString("## Links the writer left for the editor to choose\n\nFor each, the site's page the editor most likely means, or none.\nm1. “Roses” in u4 (the writer's note: \"roses\")\nm2. “Tree ferns” in u5 (the writer's note: \"tree fern guide\")\nm3. “get in touch” in u6 (the writer's note: \"contact page\")", $request->prompt);
         $this->assertStringNotContainsString('What to do in the garden in October', $request->prompt, 'A page linked already isn\'t a candidate.');
         $markers = $request->schema?->schema['properties']['markers'];
@@ -453,8 +468,8 @@ final class SeoLinksTest extends StudioTestCase
         $this->scriptWriterLinks();
         $this->fake->reset('seo-verifier');
         $this->fake->respondStructured('seo-verifier', ['verdicts' => [
-            ['notes' => '…', 'id' => 'l1', 'verdict' => 'keep', 'reason' => 'Fits.'],
-            ['notes' => '…', 'id' => 'm3', 'verdict' => 'drop', 'reason' => 'Too vague.'],
+            ['notes' => '…', 'id' => 'l1', 'verdict' => 'keep', 'anchor' => '', 'reason' => 'Fits.'],
+            ['notes' => '…', 'id' => 'm3', 'verdict' => 'drop', 'anchor' => '', 'reason' => 'Too vague.'],
         ]]);
         [$session] = $this->firstDraft();
 
@@ -471,7 +486,7 @@ final class SeoLinksTest extends StudioTestCase
         );
         $this->fake->respond('writer', self::reply($links));
         $this->fake->respondStructured('seo-editor', ['notes' => 'Enough links.', 'links' => [], 'markers' => [['marker' => 'm1', 'target' => 'e1', 'why' => 'A call to get in touch.']]]);
-        $this->fake->respondStructured('seo-verifier', ['verdicts' => [['notes' => '…', 'id' => 'm1', 'verdict' => 'keep', 'reason' => 'Fits.']]]);
+        $this->fake->respondStructured('seo-verifier', ['verdicts' => [['notes' => '…', 'id' => 'm1', 'verdict' => 'keep', 'anchor' => '', 'reason' => 'Fits.']]]);
         $this->fake->respondStructured('layout-planner', ['plans' => []]);
         [$session] = $this->firstDraft();
 

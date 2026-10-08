@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/1994limited/ghostwriter-core/resources/schemas/seo-verifier-reply.json",
   "title": "Ghostwriter seo-verifier reply (structured output)",
-  "description": "One verdict for every link and suggestion shown. The id enum is filled for each call.",
+  "description": "One verdict for every link and suggestion shown: keep it, keep it with better words from the same sentence, or drop it. The id enum is filled for each call.",
   "type": "object",
   "required": ["verdicts"],
   "additionalProperties": false,
@@ -11,12 +11,13 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["notes", "id", "verdict", "reason"],
+        "required": ["notes", "id", "verdict", "anchor", "reason"],
         "additionalProperties": false,
         "properties": {
           "notes": {"type": "string", "maxLength": 200, "description": "First, a few words for yourself on what you checked. Never shown to the editor."},
           "id": {"type": "string", "enum": ["l1"], "description": "The link (l1, l2…) or the suggestion (m1, m2…)."},
-          "verdict": {"type": "string", "enum": ["keep", "drop"]},
+          "verdict": {"type": "string", "enum": ["keep", "keep-with-anchor", "drop"], "description": "keep: the page and the words are right. keep-with-anchor: the page is right, better words are in `anchor`. drop: the page is wrong or misleading there."},
+          "anchor": {"type": "string", "maxLength": 80, "description": "Only with keep-with-anchor: 2 to 8 words copied exactly from the same sentence, to become the link's words instead. Otherwise empty."},
           "reason": {"type": "string", "maxLength": 300, "description": "Why, briefly."}
         }
       }

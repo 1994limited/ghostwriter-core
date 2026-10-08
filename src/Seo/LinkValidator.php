@@ -10,6 +10,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Arrange\Unit;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\UnitKind;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Markers;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\InlineLinks;
+use NineteenNinetyFour\Ghostwriter\Core\Suggest\DigestEntry;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\Phrases;
 
 /**
@@ -33,6 +34,9 @@ use NineteenNinetyFour\Ghostwriter\Core\Suggest\Phrases;
  * - **Spread and limits:** one link a unit (a unit is a paragraph run or a
  *   top-level section), and no more than the room left (decision 8:
  *   about one per 250 words, 2–5, links already on the page counted).
+ *
+ * judged() then applies the `seo-verifier`'s verdicts, checking any
+ * better words it gives by the same rules.
  */
 final class LinkValidator
 {
@@ -74,7 +78,7 @@ final class LinkValidator
         $units = [];
         $markers = 0;
         $vague = self::vague($locale);
-        $stop = array_flip(Phrases::for($locale)->stopWords ?? []);
+        $stop = self::stopWords($locale);
         $title = self::normal($request->title);
 
         foreach ($picks as $pick) {
@@ -82,8 +86,6 @@ final class LinkValidator
             $target = null;
             $href = null;
             $unit = $linkable[$pick->unit] ?? null;
-            $words = NormalisedText::words($pick->exact);
-            $normal = self::normal($pick->exact);
 
             if ($unit === null || in_array($unit->kind, [UnitKind::Quote, UnitKind::Text, UnitKind::Media, UnitKind::Row, UnitKind::Set], true)) {
                 $rule = 'unit';
@@ -104,14 +106,7 @@ final class LinkValidator
             }
 
             if ($rule === null) {
-                $rule = match (true) {
-                    count($words) < self::MIN_WORDS || count($words) > self::MAX_WORDS || mb_strlen(trim($pick->exact)) > self::MAX_LENGTH => 'length',
-                    array_diff($words, array_keys($stop)) === [] => 'stop-words',
-                    self::isVague($normal, $vague) => 'vague',
-                    $title !== '' && $normal === $title => 'own-title',
-                    $target !== null && $normal === self::normal($target->title) && count(NormalisedText::words($target->title)) >= self::STUFFED_TITLE_WORDS => 'whole-title',
-                    default => null,
-                };
+                $rule = self::anchorRule($pick->exact, $target, $title, $vague, $stop);
             }
 
             $match = null;
@@ -138,6 +133,121 @@ final class LinkValidator
         }
 
         return new ValidatedLinks($kept, $dropped);
+    }
+
+    /**
+     * The verifier's verdicts applied (SEO layer §8.3): a dropped link
+     * goes; a link it kept with better words (`keep-with-anchor`) is moved
+     * onto them once they pass every check its first words passed (there,
+     * once in the unit, a good anchor, a safe place, not the first
+     * sentence) and lie in the same sentence. When they don't, the link
+     * keeps its first words: they passed those checks, and the verifier
+     * judged the page right. The unit and the page don't change, so the
+     * spread and the limits still hold. Ids are kept.
+     */
+    public function judged(ValidatedLinks $validated, LinkVerdicts $verdicts, SeoRequest $request, ?string $first = null, string $locale = 'en'): ValidatedLinks
+    {
+        $kept = [];
+        $dropped = $validated->dropped;
+        $anchored = $validated->anchored;
+
+        foreach ($validated->kept as $link) {
+            if ($verdicts->drops($link->id)) {
+                $dropped[] = ['pick' => $link->pick, 'rule' => 'verifier: '.$verdicts->drop[$link->id]];
+
+                continue;
+            }
+
+            $better = $verdicts->anchors[$link->id] ?? null;
+
+            if ($better === null || $link->target === null || self::normal($better['anchor']) === self::normal($link->words())) {
+                $kept[] = $link;
+
+                continue;
+            }
+
+            [$moved, $rule] = $this->reanchor($link, $better['anchor'], $request, $first, $locale);
+            $anchored[] = ['from' => $link->words(), 'to' => $better['anchor'], 'rule' => $rule, 'why' => $better['why']];
+            $kept[] = $moved ?? $link;
+        }
+
+        return new ValidatedLinks($kept, $dropped, $anchored);
+    }
+
+    /**
+     * The link moved onto other words of its unit, or the rule they break.
+     *
+     * @return array{0: PlacedLink|null, 1: string|null}
+     */
+    private function reanchor(PlacedLink $link, string $words, SeoRequest $request, ?string $first, string $locale): array
+    {
+        $pick = new LinkPick($link->pick->unit, $words, $link->pick->target, '', $link->pick->hint, $link->pick->why);
+        $rule = self::anchorRule($words, $link->target, self::normal($request->title), self::vague($locale), self::stopWords($locale));
+
+        if ($rule !== null) {
+            return [null, $rule];
+        }
+
+        [$match, $rule] = self::place($pick, $link->unit, $first);
+
+        if ($match === null) {
+            return [null, $rule ?? 'not-found'];
+        }
+
+        $sentence = self::sentenceAt($link->unit->markdown, $link->offset);
+
+        if ($sentence !== null && ($match[0] < $sentence[0] || $sentence[1] < $match[0] + $match[1])) {
+            return [null, 'other-sentence'];
+        }
+
+        return [new PlacedLink($pick, $link->unit, $match[0], $match[1], $link->href, $link->target, $link->id), null];
+    }
+
+    /**
+     * What's wrong with these words as a link's, if anything: their
+     * length, only stop words, vague, the page's own title, or a long
+     * target title pasted whole.
+     *
+     * @param  list<string>  $vague
+     * @param  array<string, int>  $stop
+     */
+    private static function anchorRule(string $exact, ?DigestEntry $target, string $title, array $vague, array $stop): ?string
+    {
+        $words = NormalisedText::words($exact);
+        $normal = self::normal($exact);
+
+        return match (true) {
+            count($words) < self::MIN_WORDS || count($words) > self::MAX_WORDS || mb_strlen(trim($exact)) > self::MAX_LENGTH => 'length',
+            array_diff($words, array_keys($stop)) === [] => 'stop-words',
+            self::isVague($normal, $vague) => 'vague',
+            $title !== '' && $normal === $title => 'own-title',
+            $target !== null && $normal === self::normal($target->title) && count(NormalisedText::words($target->title)) >= self::STUFFED_TITLE_WORDS => 'whole-title',
+            default => null,
+        };
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private static function stopWords(string $locale): array
+    {
+        return array_flip(Phrases::for($locale)->stopWords ?? []);
+    }
+
+    /**
+     * The sentence holding this offset, as [start, end] in characters.
+     *
+     * @return array{0: int, 1: int}|null
+     */
+    private static function sentenceAt(string $text, int $offset): ?array
+    {
+        foreach (Sentences::split($text) as [$at, $size]) {
+            if ($offset >= $at && $offset < $at + $size) {
+                return [$at, $at + $size];
+            }
+        }
+
+        return null;
     }
 
     /**

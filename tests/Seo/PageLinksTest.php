@@ -97,8 +97,8 @@ final class PageLinksTest extends StudioTestCase
             ['unit' => 'u4', 'exact' => 'click here', 'prefix' => '', 'target' => 'e2', 'hint' => '', 'why' => 'Vague.'],
         ], 'markers' => [], 'title' => '', 'description' => ''], 1200, 300));
         $this->fake->respond('seo-verifier', self::json(['verdicts' => [
-            ['notes' => 'Right page.', 'id' => 'l1', 'verdict' => 'keep', 'reason' => 'Fits.'],
-            ['notes' => 'Right page.', 'id' => 'l2', 'verdict' => 'keep', 'reason' => 'Fits.'],
+            ['notes' => 'Right page.', 'id' => 'l1', 'verdict' => 'keep', 'anchor' => '', 'reason' => 'Fits.'],
+            ['notes' => 'Right page.', 'id' => 'l2', 'verdict' => 'keep', 'anchor' => '', 'reason' => 'Fits.'],
         ]], 600, 100));
     }
 
@@ -138,7 +138,7 @@ final class PageLinksTest extends StudioTestCase
 
         $request = $this->fake->prompted('seo-editor')[0];
         $this->assertStringContainsString('The page: "Winter garden care" (Journal)', $request->prompt);
-        $this->assertStringContainsString('Links it has already: 0. Add at most 2, and fewer, or none, when nothing fits.', $request->prompt, 'About one per 250 words, 2 to 5.');
+        $this->assertStringContainsString('Links it has already: 0. Add up to 2: aim for 2 where each helps a reader, fewer, or none, when no more would.', $request->prompt, 'About one per 250 words, 2 to 5.');
         $this->assertStringContainsString('[u3] (section, links allowed)', $request->prompt);
         $this->assertStringContainsString('e3. Contact us (Pages) · /contact', $request->prompt, 'Key pages are candidates.');
         $this->assertStringNotContainsString('/journal/winter-garden-care', $request->prompt, 'Never the page itself.');
@@ -155,13 +155,39 @@ final class PageLinksTest extends StudioTestCase
         $this->script();
         $this->fake->reset('seo-verifier');
         $this->fake->respondStructured('seo-verifier', ['verdicts' => [
-            ['notes' => '…', 'id' => 'l1', 'verdict' => 'drop', 'reason' => 'Not about plans.'],
-            ['notes' => '…', 'id' => 'l2', 'verdict' => 'keep', 'reason' => 'Fits.'],
+            ['notes' => '…', 'id' => 'l1', 'verdict' => 'drop', 'anchor' => '', 'reason' => 'Not about plans.'],
+            ['notes' => '…', 'id' => 'l2', 'verdict' => 'keep', 'anchor' => '', 'reason' => 'Fits.'],
         ]]);
 
         $found = $this->pass()->suggestLinksFor(self::page(), self::links());
 
         $this->assertSame(['statamic://entry::contact'], array_map(fn (LinkProposal $link) => $link->href, $found->links));
+    }
+
+    public function test_a_link_on_weak_words_is_proposed_on_the_verifiers_better_words(): void
+    {
+        $this->script();
+        $this->fake->reset('seo-verifier');
+        $this->fake->respondStructured('seo-verifier', ['verdicts' => [
+            ['notes' => '…', 'id' => 'l1', 'verdict' => 'keep-with-anchor', 'anchor' => 'a planting plan', 'reason' => 'The right page; these words name it.'],
+            ['notes' => '…', 'id' => 'l2', 'verdict' => 'keep-with-anchor', 'anchor' => 'a first visit from our team', 'reason' => 'Not in this sentence.'],
+        ]]);
+
+        $found = $this->pass()->suggestLinksFor(self::page(), self::links());
+
+        $this->assertSame(['a planting plan', 'tell us about your garden'], array_map(fn (LinkProposal $link) => $link->words, $found->links), 'Better words are taken once they pass the checks; words from elsewhere aren\'t, and the link stays on its first words.');
+        $this->assertSame(['statamic://entry::plans', 'statamic://entry::contact'], array_map(fn (LinkProposal $link) => $link->href, $found->links), 'The same pages.');
+        $this->assertSame('a planting plan', $found->links[0]->quote->exact);
+        $this->assertStringEndsWith('If you have ', $found->links[0]->quote->prefix);
+        $this->assertSame('The sentence is about following a plan.', $found->links[0]->why);
+
+        $log = array_values(array_filter($this->logs, fn (array $log) => str_contains($log['message'], 'better words')));
+        $this->assertSame(['planting plan we drew for you → a planting plan' => 'taken', 'tell us about your garden → a first visit from our team' => 'not-found'], $log[0]['context']['anchors'] ?? null);
+
+        $verifier = $this->fake->prompted('seo-verifier')[0];
+        $verdict = $verifier->schema?->schema['properties']['verdicts']['items'] ?? [];
+        $this->assertSame(['keep', 'keep-with-anchor', 'drop'], $verdict['properties']['verdict']['enum'] ?? null);
+        $this->assertContains('anchor', $verdict['required'] ?? []);
     }
 
     public function test_a_failed_verifier_proposes_what_passed_the_checks_and_a_failed_editor_throws(): void

@@ -142,7 +142,7 @@ final class PageLinks
             try {
                 $verdicts = $this->studio->verifySeoLinks(new LinkCheck($title, $checked, $links->kind, $links->locale));
                 $this->spent = $this->spent->plus($verdicts->usage);
-                $validated = $validated->without($verdicts->value);
+                $validated = $this->validator->judged($validated, $verdicts->value, $request, $prose[0]->id ?? null, $links->locale);
             } catch (ProviderException $exception) {
                 $this->logger->warning("Ghostwriter: the link verifier failed, so Suggest links offers the links that passed the checks unverified: {$exception->getMessage()}", ['agent' => 'seo-verifier']);
             }
@@ -150,6 +150,10 @@ final class PageLinks
 
         if ($validated->dropped !== []) {
             $this->logger->info('Ghostwriter: Suggest links dropped '.count($validated->dropped).' of '.count($result->value->links).' proposed links.', ['agent' => 'seo-editor', 'dropped' => $validated->rules(), 'notes' => $result->value->notes]);
+        }
+
+        if ($validated->anchored !== []) {
+            $this->logger->info('Ghostwriter: the link verifier gave '.count($validated->anchored).' '.(count($validated->anchored) === 1 ? 'link' : 'links').' better words.', ['agent' => 'seo-verifier', 'anchors' => $validated->anchors()]);
         }
 
         $proposals = [];
