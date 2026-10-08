@@ -89,7 +89,7 @@ final class SeoRequest
         $lines = [
             "The page: \"{$this->title}\"{$kind}, about {$this->words} words.",
             match (true) {
-                $this->linkTarget > 0 && $this->candidates !== [] => "Links it has already: {$this->existing}. Add at most {$this->linkTarget}, and fewer, or none, when nothing fits.",
+                $this->linkTarget > 0 && $this->candidates !== [] => "Links it has already: {$this->existing}. Add up to {$this->linkTarget}: aim for {$this->linkTarget} where each helps a reader, fewer, or none, when no more would.",
                 $this->candidates === [] && $this->meta !== null => 'No links are wanted this time: give `"links": []` and `"markers": []`.',
                 default => "Links it has already: {$this->existing}. It has enough: add none, and give `\"links\": []`.",
             },

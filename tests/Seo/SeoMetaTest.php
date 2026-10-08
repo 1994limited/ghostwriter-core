@@ -176,7 +176,7 @@ final class SeoMetaTest extends StudioTestCase
         $this->fake->respond('seo-editor', self::json(self::editor(links: [
             ['unit' => 'u6', 'exact' => 'tell us about your garden', 'prefix' => '', 'target' => 'e3', 'hint' => '', 'why' => 'An invitation to get in touch.'],
         ]), 1200, 300));
-        $this->fake->respondStructured('seo-verifier', ['verdicts' => [['notes' => '…', 'id' => 'l1', 'verdict' => 'keep', 'reason' => 'Fits.']]]);
+        $this->fake->respondStructured('seo-verifier', ['verdicts' => [['notes' => '…', 'id' => 'l1', 'verdict' => 'keep', 'anchor' => '', 'reason' => 'Fits.']]]);
         $this->fake->respondStructured('layout-planner', ['plans' => []]);
     }
 

@@ -4,6 +4,12 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
+### Changed (SEO layer: the link calls' bar)
+
+- **`seo-editor` links what a reader would want next.** A related page a reader of the passage would plausibly go on to is enough; it needn't be on the page's topic. It aims for the number it's given (about one per 250 words, 2–5) where each link helps a reader, never forcing one, and prefers words that name what the target is about. `SeoRequest` asks "Add up to N: aim for N where each helps a reader, fewer, or none, when no more would."
+- **`seo-verifier` judges the page first.** It drops a link only when the target is wrong or misleading for that sentence. When the page is right but the words are weak, it answers **`keep-with-anchor`** with better words from the same sentence instead of dropping. Its reply schema gains `anchor` per verdict, and `verdict` is `keep`, `keep-with-anchor` or `drop`.
+- **`Studio::verifySeoLinks()` returns `Seo\LinkVerdicts`** (`drop`, `anchors`; `fromArray()`, `drops()`) instead of an id → why map. **`LinkValidator::judged()`** applies it: dropped links go; better words are checked by every anchor rule a pick passes (once in the unit, 2–8 words, not vague or stop words, not the page's title or a long target title, not in a heading, bold, a quotation or an existing link, one sentence, not the page's first) and must lie in the link's sentence; words that fail leave the link on its first words. The unit and the page don't change, so spread and limits hold. `ValidatedLinks::$anchored` (and `anchors()`, for the log) records each change; `ValidatedLinks::without()` is gone. First drafts, writer-marker suggestions and Suggest links all go through it.
+
 ### Changed (SEO layer: which pages a draft is offered to link to)
 
 - **A stemmer per language.** New **`Seo\Stemmer`**: Snowball's rules for English (Porter 2), German, French, Dutch and Spanish, framework-free (no ext-stemmer); other languages keep the first five letters. `LinkCandidates::stems()` and `draftStems()` stem with it ("pruning" → "prune", "Gärten" → "gart"), stop words as before.

@@ -4,11 +4,11 @@ You are shown the page, cut into units (`u1`, `u2`…), and the site's pages it 
 
 ## What makes a good link
 
-- **The target is what a reader expects.** Someone reading the words would expect to land on that page, and would be glad to. Link only where the page is genuinely about what the words say: a page about pruning roses for "pruning", not a page that mentions pruning once. If nothing on the list fits a passage, link nothing there.
-- **The words describe where it goes.** Two to eight words, copied exactly from the unit, that make sense on their own: "winter care visits", "tell us about your garden", "our guide to planting bulbs". Never "click here", "read more", "this page", "here" or "find out more", in any language.
+- **A page a reader would want next.** Link where a reader of the passage would plausibly want to go on to that page: a page on the same subject, and also a related one that takes the thought further, such as a post on why seedheads are left standing from a page about meadows, the services page from a passage about what the work involves, or the contact page from an invitation to get in touch. The page needn't be about the same topic as the whole page; it has to be worth a click from those words. Don't link a page that merely shares a word with them: a page about winter opening hours for "winter pruning".
+- **The words describe where it goes.** Two to eight words, copied exactly from the unit, that tell the reader what they'll find: "leave the seedheads standing", "the planting we do ourselves", "tell us about your garden". Prefer the words naming the thing the page is about over the words around it. Never "click here", "read more", "this page", "here" or "find out more", in any language, and never a fragment that only makes sense with the rest of the sentence.
 - **Natural, not stuffed.** Link words the writer already wrote, as they stand. Don't pick a long page title just because it appears; don't link the page's own title or a word or two of filler.
 - **Spread through the page.** At most one link in a unit, never two links to the same page, and none in the page's first sentence. A call to get in touch near the end often suits the contact page.
-- **Fewer is fine.** You are told how many links to add at most. That is a ceiling, not a quota: give fewer, or none, when nothing fits well. A wrong link costs the editor more than a missing one.
+- **Aim for the number you're given, never force it.** You are told how many links to add: about one for every 250 words, between two and five for a page. Aim for that many where each one helps a reader. Before giving fewer, go down the whole list again: a post on a neighbouring subject (when to cut back, what a planting does for wildlife, a project that used the same idea) is often what a reader most wants next. Give fewer, or none, only when no page left would interest someone reading that passage: a link a reader wouldn't want costs the editor more than a missing one.
 
 ## Where a link may go
 
@@ -41,10 +41,10 @@ What the page is meant to sound like, so you can tell natural words from forced 
 
 ## How you answer
 
-Start with `notes`: one or two sentences for yourself on what the page is about, who reads it, and which of the site's pages are genuinely related. Then the links, best first. For each: the `unit`, the words in `exact`, the `prefix` (usually empty), the `target` (`e3`), the `hint` (empty unless the target is), and in `why` one short sentence, in the language you are told, on why a reader would want that page there. Then `markers`: one item for each of the writer's links to choose, with the `marker` (`m1`), the `target` (`e7`, or empty) and a short `why`. Last, the `title` and the `description`, in the page's language, each `""` when it isn't wanted. {{ answer_intro }}
+Start with `notes`: one or two sentences for yourself on what the page is about, who reads it, and which of the site's pages its readers would want next. Then the links, best first. For each: the `unit`, the words in `exact`, the `prefix` (usually empty), the `target` (`e3`), the `hint` (empty unless the target is), and in `why` one short sentence, in the language you are told, on why a reader would want that page there. Then `markers`: one item for each of the writer's links to choose, with the `marker` (`m1`), the `target` (`e7`, or empty) and a short `why`. Last, the `title` and the `description`, in the page's language, each `""` when it isn't wanted. {{ answer_intro }}
 
 {{ answer_open }}
-{"notes": "A service page about winter visits, for owners of established gardens. e4 (Planting plans) and e7 (Contact us) are close; the journal posts are about other seasons.",
+{"notes": "A service page about winter visits, for owners of established gardens. Its readers would want e4 (Planting plans) and e7 (Contact us) next; the journal posts are about other seasons.",
  "links": [
   {"unit": "u3", "exact": "planting plan we drew for you", "prefix": "", "target": "e4", "hint": "", "why": "The sentence talks about following a planting plan; that page offers them."},
   {"unit": "u9", "exact": "tell us about your garden", "prefix": "", "target": "e7", "hint": "", "why": "An invitation to get in touch; the contact page is where that happens."}
@@ -56,4 +56,4 @@ Start with `notes`: one or two sentences for yourself on what the page is about,
  "description": "Monthly winter visits to cut back, divide and mulch established gardens across Northumberland, Durham and the Tyne Valley, from November to February."}
 {{ answer_close }}
 
-When nothing fits, give `"links": []` and say why in `notes`. When the writer left no links to choose, give `"markers": []`. When no links are wanted at all, give both empty and write only what is asked for.
+When no page would help a reader, give `"links": []` and say why in `notes`. When the writer left no links to choose, give `"markers": []`. When no links are wanted at all, give both empty and write only what is asked for.

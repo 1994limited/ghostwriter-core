@@ -5,17 +5,20 @@ namespace NineteenNinetyFour\Ghostwriter\Core\Seo;
 /**
  * LinkValidator's verdict on the `seo-editor` call's picks: the links that
  * can be made, in the model's order, and the ones dropped with the rule
- * each broke (for the log).
+ * each broke (for the log). After the verifier (LinkValidator::judged()),
+ * also the links it gave better words, and whether they were taken.
  */
 final class ValidatedLinks
 {
     /**
      * @param  list<PlacedLink>  $kept
      * @param  list<array{pick: LinkPick, rule: string}>  $dropped
+     * @param  list<array{from: string, to: string, rule: string|null, why: string}>  $anchored  The verifier's better words: rule null when taken, else the rule they broke (the first words kept).
      */
     public function __construct(
         public readonly array $kept = [],
         public readonly array $dropped = [],
+        public readonly array $anchored = [],
     ) {}
 
     /**
@@ -35,23 +38,19 @@ final class ValidatedLinks
     }
 
     /**
-     * Only the kept links whose id isn't in $drop (the verifier's verdicts).
+     * The verifier's better words, for the log: "from → to", and "taken"
+     * or the rule they broke.
      *
-     * @param  array<string, string>  $drop  Link id => why.
+     * @return array<string, string>
      */
-    public function without(array $drop): self
+    public function anchors(): array
     {
-        $kept = [];
-        $dropped = $this->dropped;
+        $out = [];
 
-        foreach ($this->kept as $link) {
-            if (isset($drop[$link->id])) {
-                $dropped[] = ['pick' => $link->pick, 'rule' => 'verifier: '.$drop[$link->id]];
-            } else {
-                $kept[] = $link;
-            }
+        foreach ($this->anchored as $change) {
+            $out["{$change['from']} → {$change['to']}"] = $change['rule'] ?? 'taken';
         }
 
-        return new self($kept, $dropped);
+        return $out;
     }
 }

@@ -7,7 +7,7 @@
   "required": ["notes", "links", "markers", "title", "description"],
   "additionalProperties": false,
   "properties": {
-    "notes": {"type": "string", "maxLength": 600, "description": "First: one or two sentences for yourself on what the page is about, who reads it, and which of the site's pages are genuinely related. Never shown to the editor."},
+    "notes": {"type": "string", "maxLength": 600, "description": "First: one or two sentences for yourself on what the page is about, who reads it, and which of the site's pages its readers would want next. Never shown to the editor."},
     "links": {
       "type": "array",
       "maxItems": 5,

@@ -29,6 +29,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Prompts\PromptLibrary;
 use NineteenNinetyFour\Ghostwriter\Core\Review\RevisionReply;
 use NineteenNinetyFour\Ghostwriter\Core\Review\RevisionRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Seo\LinkCheck;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\LinkVerdicts;
 use NineteenNinetyFour\Ghostwriter\Core\Seo\SeoReply;
 use NineteenNinetyFour\Ghostwriter\Core\Seo\SeoRequest;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\AnchorScope;
@@ -978,20 +979,23 @@ final class Studio
     /**
      * The SEO pass's `seo-verifier` call (SEO layer §8.3, decision 10):
      * each link LinkValidator kept, and each page suggested for one of the
-     * writer's links to choose (decision 24), in its paragraph, kept or
-     * dropped. It never rewrites. Returns what to drop, by id (l1…, m1…),
-     * with why; a
-     * link with no verdict is kept. A reply that can't be read drops
-     * nothing, with a warning: the links already passed every check in code.
+     * writer's links to choose (decision 24), in its paragraph. It judges
+     * the page first: a link is dropped only when the page is wrong or
+     * misleading there; when the page is right but the words are weak, it
+     * gives better words from the same sentence (`keep-with-anchor`),
+     * which LinkValidator::judged() checks again. It never rewrites the
+     * text. A link with no verdict is kept. A reply that can't be read
+     * drops nothing, with a warning: the links already passed every check
+     * in code.
      *
-     * @return Result<array<string, string>>
+     * @return Result<LinkVerdicts>
      *
      * @throws ProviderException
      */
     public function verifySeoLinks(LinkCheck $check): Result
     {
         if ($check->isEmpty()) {
-            return new Result([]);
+            return new Result(new LinkVerdicts);
         }
 
         $schema = $check->schema(self::schema('seo-verdicts', 'seo-verifier-reply.json'));
@@ -1004,24 +1008,10 @@ final class Studio
                 return [null, $response->structured !== null ? 'there was no "verdicts" list' : 'there was no <verdicts> with a "verdicts" list'];
             }
 
-            $drop = [];
-
-            foreach ($data['verdicts'] as $verdict) {
-                if (is_array($verdict) && is_string($verdict['id'] ?? null) && ($verdict['verdict'] ?? null) === 'drop') {
-                    $drop[$verdict['id']] = is_scalar($verdict['reason'] ?? null) ? trim((string) $verdict['reason']) : '';
-                }
-            }
-
-            return [$drop, null];
+            return [LinkVerdicts::fromArray($data['verdicts']), null];
         }, "the seo-verifier's reply couldn't be read", instructions: $this->seoVerifierInstructions($schema));
 
-        $drop = [];
-
-        foreach (is_array($verdicts) ? $verdicts : [] as $id => $why) {
-            $drop[(string) $id] = is_string($why) ? $why : '';
-        }
-
-        return new Result($drop, $response->usage);
+        return new Result($verdicts instanceof LinkVerdicts ? $verdicts : new LinkVerdicts, $response->usage);
     }
 
     /** The `seo-verifier` call's instructions: the same for every call. */

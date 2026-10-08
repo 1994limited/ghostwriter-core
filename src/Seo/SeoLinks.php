@@ -224,12 +224,12 @@ final class SeoLinks
             try {
                 $verdicts = $this->studio->verifySeoLinks(new LinkCheck($title, $checked, $context->kind, $context->locale, $suggestions));
                 $usage = $usage->plus($verdicts->usage);
-                $validated = $validated->without($verdicts->value);
-                $dropped = array_values(array_filter($suggestions, fn (MarkerSuggestion $suggestion) => isset($verdicts->value[$suggestion->id()])));
-                $suggestions = array_values(array_filter($suggestions, fn (MarkerSuggestion $suggestion) => ! isset($verdicts->value[$suggestion->id()])));
+                $validated = $this->validator->judged($validated, $verdicts->value, $request, $first, $context->locale);
+                $dropped = array_values(array_filter($suggestions, fn (MarkerSuggestion $suggestion) => $verdicts->value->drops($suggestion->id())));
+                $suggestions = array_values(array_filter($suggestions, fn (MarkerSuggestion $suggestion) => ! $verdicts->value->drops($suggestion->id())));
 
                 if ($dropped !== []) {
-                    $this->logger->info('Ghostwriter: the link verifier dropped '.count($dropped).' of the pages suggested for the writer\'s links to choose.', ['dropped' => array_map(fn (MarkerSuggestion $suggestion) => "{$suggestion->marker->words} → {$suggestion->target->title}: ".$verdicts->value[$suggestion->id()], $dropped)]);
+                    $this->logger->info('Ghostwriter: the link verifier dropped '.count($dropped).' of the pages suggested for the writer\'s links to choose.', ['dropped' => array_map(fn (MarkerSuggestion $suggestion) => "{$suggestion->marker->words} → {$suggestion->target->title}: ".$verdicts->value->drop[$suggestion->id()], $dropped)]);
                 }
             } catch (ProviderException $exception) {
                 $this->logger->warning("Ghostwriter: the link verifier failed, so the links that passed the checks are kept unverified: {$exception->getMessage()}", ['agent' => 'seo-verifier']);
@@ -238,6 +238,10 @@ final class SeoLinks
 
         if ($validated->dropped !== []) {
             $this->logger->info('Ghostwriter: '.count($validated->dropped).' of '.count($reply->links).' proposed links were dropped.', ['agent' => 'seo-editor', 'dropped' => $validated->rules(), 'notes' => $reply->notes]);
+        }
+
+        if ($validated->anchored !== []) {
+            $this->logger->info('Ghostwriter: the link verifier gave '.count($validated->anchored).' '.(count($validated->anchored) === 1 ? 'link' : 'links').' better words.', ['agent' => 'seo-verifier', 'anchors' => $validated->anchors()]);
         }
 
         $data = $draft->data;

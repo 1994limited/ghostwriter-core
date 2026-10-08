@@ -9,7 +9,9 @@ use NineteenNinetyFour\Ghostwriter\Core\Layout\Links\NoLinks;
 use NineteenNinetyFour\Ghostwriter\Core\Layout\Links\StatamicLinks;
 use NineteenNinetyFour\Ghostwriter\Core\Seo\LinkPick;
 use NineteenNinetyFour\Ghostwriter\Core\Seo\LinkValidator;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\LinkVerdicts;
 use NineteenNinetyFour\Ghostwriter\Core\Seo\SeoRequest;
+use NineteenNinetyFour\Ghostwriter\Core\Seo\ValidatedLinks;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\DigestEntry;
 use NineteenNinetyFour\Ghostwriter\Core\Suggest\EntryRef;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -179,5 +181,112 @@ final class LinkValidatorTest extends TestCase
     public function test_no_dialect_no_links(): void
     {
         $this->assertSame('not-linkable', (new LinkValidator)->validate([new LinkPick('u3', 'planting plan we drew for you', 'e1')], self::request(), self::units(), new NoLinks)->dropped[0]['rule']);
+    }
+
+    public function test_the_verdicts_are_read_as_keep_keep_with_anchor_or_drop(): void
+    {
+        $verdicts = LinkVerdicts::fromArray([
+            ['notes' => '…', 'id' => 'l1', 'verdict' => 'keep', 'anchor' => '', 'reason' => 'Fits.'],
+            ['notes' => '…', 'id' => 'l2', 'verdict' => 'keep-with-anchor', 'anchor' => ' our planting plans ', 'reason' => 'Better words.'],
+            ['notes' => '…', 'id' => 'l3', 'verdict' => 'drop', 'anchor' => '', 'reason' => 'Wrong page.'],
+            ['notes' => '…', 'id' => 'l4', 'verdict' => 'keep-with-anchor', 'anchor' => '', 'reason' => 'No words given.'],
+            ['notes' => '…', 'id' => 'l5', 'verdict' => 'keep', 'anchor' => 'ignored words', 'reason' => 'Fits.'],
+            ['id' => 'l6', 'verdict' => 'drop'],
+            'not a verdict',
+            ['verdict' => 'drop', 'reason' => 'No id.'],
+        ]);
+
+        $this->assertSame(['l3' => 'Wrong page.', 'l6' => ''], $verdicts->drop);
+        $this->assertSame(['l2' => ['anchor' => 'our planting plans', 'why' => 'Better words.']], $verdicts->anchors, 'Only keep-with-anchor with words moves a link.');
+        $this->assertTrue($verdicts->drops('l3'));
+        $this->assertFalse($verdicts->drops('l1'));
+    }
+
+    private static function kept(): ValidatedLinks
+    {
+        return (new LinkValidator)->validate([
+            new LinkPick('u3', 'we drew for you', 'e1', why: 'Follows a plan.'),
+            new LinkPick('u4', 'tell us about your garden', 'e2'),
+        ], self::request(), self::units(), new StatamicLinks, 'u2');
+    }
+
+    public function test_the_verifier_drops_only_what_it_drops_and_keeps_the_rest_as_they_were(): void
+    {
+        $judged = (new LinkValidator)->judged(self::kept(), new LinkVerdicts(['l2' => 'Not the contact page.']), self::request(), 'u2');
+
+        $this->assertSame(['l1'], array_map(fn ($link) => $link->id, $judged->kept));
+        $this->assertSame('we drew for you', $judged->kept[0]->words());
+        $this->assertSame(['u4: tell us about your garden' => 'verifier: Not the contact page.'], $judged->rules());
+        $this->assertSame([], $judged->anchored);
+    }
+
+    public function test_better_words_from_the_same_sentence_move_the_link_to_the_same_page(): void
+    {
+        $verdicts = new LinkVerdicts(anchors: ['l1' => ['anchor' => 'a planting plan', 'why' => 'Names the page.']]);
+        $judged = (new LinkValidator)->judged(self::kept(), $verdicts, self::request(), 'u2');
+
+        $this->assertCount(2, $judged->kept, 'Nothing is dropped for its words.');
+        $link = $judged->kept[0];
+        $this->assertSame(['l1', 'a planting plan', 'statamic://entry::plans', 'Planting plans'], [$link->id, $link->words(), $link->href, $link->target?->title]);
+        $this->assertSame('a planting plan', $link->pick->exact);
+        $this->assertSame('Follows a plan.', $link->pick->why);
+        $this->assertStringContainsString('If you have [a planting plan](statamic://entry::plans) we drew for you, we follow it.', $link->linked());
+        $this->assertSame(['we drew for you → a planting plan' => 'taken'], $judged->anchors());
+    }
+
+    /**
+     * @return array<string, array{0: string, 1: string}>
+     */
+    public static function badAnchors(): array
+    {
+        return [
+            'not in the unit' => ['a planting scheme', 'not-found'],
+            'twice in the unit' => ['garden plan', 'ambiguous'],
+            'another sentence of the unit' => ['We cut back only', 'other-sentence'],
+            'vague' => ['click here', 'vague'],
+            'one word' => ['plan', 'length'],
+            'only stop words' => ['if you have', 'stop-words'],
+            'bold' => ['Seed heads stay standing', 'unsafe-place'],
+            'a heading' => ['Cutting back', 'unsafe-place'],
+            'an existing link' => ['our design page', 'not-found'],
+            'across two sentences' => ['the birds. A garden', 'crosses-sentence'],
+        ];
+    }
+
+    #[DataProvider('badAnchors')]
+    public function test_better_words_that_break_a_rule_leave_the_link_on_its_first_words(string $anchor, string $rule): void
+    {
+        $verdicts = new LinkVerdicts(anchors: ['l1' => ['anchor' => $anchor, 'why' => '…']]);
+        $judged = (new LinkValidator)->judged(self::kept(), $verdicts, self::request(), 'u2');
+
+        $this->assertCount(2, $judged->kept, 'The page was judged right, and the first words passed every check.');
+        $this->assertSame('we drew for you', $judged->kept[0]->words());
+        $this->assertSame(["we drew for you → {$anchor}" => $rule], $judged->anchors());
+    }
+
+    public function test_better_words_in_the_first_sentence_or_the_same_words_change_nothing(): void
+    {
+        $units = self::units();
+        $kept = (new LinkValidator)->validate([new LinkPick('u2', 'A planting plan helps', 'e1')], self::request(), $units, new StatamicLinks, 'u2');
+        $this->assertCount(1, $kept->kept);
+
+        $first = (new LinkValidator)->judged($kept, new LinkVerdicts(anchors: ['l1' => ['anchor' => 'a garden is set up', 'why' => '…']]), self::request(), 'u2');
+        $this->assertSame('A planting plan helps', $first->kept[0]->words());
+        $this->assertSame('first-sentence', $first->anchored[0]['rule'], 'The page\'s first sentence takes no link.');
+
+        $same = (new LinkValidator)->judged($kept, new LinkVerdicts(anchors: ['l1' => ['anchor' => 'a planting plan helps', 'why' => '…']]), self::request(), 'u2');
+        $this->assertSame([], $same->anchored);
+    }
+
+    public function test_the_page_title_as_better_words_is_refused(): void
+    {
+        $units = ['u4' => new Unit('u4', UnitKind::Section, FieldPath::of('body'), '## More
+
+Read about winter garden care with our team in the north.', part: 2)];
+        $kept = (new LinkValidator)->validate([new LinkPick('u4', 'with our team in the north', 'e2')], self::request(), $units, new StatamicLinks);
+
+        $judged = (new LinkValidator)->judged($kept, new LinkVerdicts(anchors: ['l1' => ['anchor' => 'winter garden care', 'why' => '…']]), self::request());
+        $this->assertSame('with our team in the north', $judged->kept[0]->words());
+        $this->assertSame('own-title', $judged->anchored[0]['rule']);
     }
 }
