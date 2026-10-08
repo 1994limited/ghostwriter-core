@@ -24,6 +24,22 @@ class DraftTest extends TestCase
         $this->assertSame(12, $draft->wordCount());
     }
 
+    public function test_the_words_in_a_draft_are_counted_as_the_pane_counts_them(): void
+    {
+        $raw = "title: Winter garden care\nbody: Four visits.\ngw_links:\n  hero.button: { url: /contact, title: Contact us }\n";
+
+        // The writing only: no field names, no links chosen for fields the draft doesn't hold.
+        $this->assertSame(5, Draft::parse($raw)->wordCount());
+        $this->assertSame(5, Draft::wordsIn($raw));
+
+        // Where a link goes isn't writing: linking words leaves the count as it was.
+        $linked = "title: Winter garden care\nbody: Ask [our team](statamic://entry::7) or [see plans]({entry:7@1:url||/garden-services/planting-plans} \"Plans\").\n";
+        $this->assertSame(Draft::wordsIn("title: Winter garden care\nbody: Ask our team or see plans.\n"), Draft::wordsIn($linked));
+
+        // A draft that doesn't parse is counted as text.
+        $this->assertSame(3, Draft::wordsIn('not a draft'));
+    }
+
     public function test_it_unwraps_a_draft_the_model_put_in_a_code_fence(): void
     {
         $this->assertSame('Fenced', Draft::parse("```yaml\ntitle: Fenced\n```")->title());

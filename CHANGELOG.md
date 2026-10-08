@@ -4,6 +4,10 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
+### Fixed (word counts)
+
+- **The conversation's "Draft written · N words" agrees with the draft pane.** `Session::answer()` counted the raw YAML (field names and block types too); it now counts with the new **`Draft::wordsIn()`**, as the pane does. **`Draft::wordCount()`** no longer counts the links chosen for fields the draft doesn't hold (`gw_links`) or where a link goes, so linking words (the SEO pass) leaves the count as it was.
+
 ### Added (SEO layer: Suggest links in Finish this page)
 
 - **`SeoPass::suggestLinksFor(GapContext, LinkContext, ?title)`** and **`Seo\PageLinks`**: Finish's **Suggest links** on an existing page with no link to the site. One `seo-editor` call (links only) and one `seo-verifier` call on the page's current text, by a first draft's rules (one per 250 words, 2–5, descriptive anchors, not in headings, one a unit), candidates from `LinkIndex::related()` without the page itself or pages it links to. Returns **`Seo\LinkProposals`** of **`Seo\LinkProposal`** (field, `TextQuote`, words, href via `inlineHref()`, target, why); nothing is written.

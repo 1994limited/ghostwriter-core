@@ -3,6 +3,7 @@
 namespace NineteenNinetyFour\Ghostwriter\Core\Text;
 
 use InvalidArgumentException;
+use NineteenNinetyFour\Ghostwriter\Core\Gaps\MarkerResolver;
 use NineteenNinetyFour\Ghostwriter\Core\Preview\PreviewMarkers;
 use Symfony\Component\Yaml\Exception\ParseException;
 
@@ -52,6 +53,20 @@ class Draft
         return new self($data, $raw);
     }
 
+    /**
+     * The words of writing in a draft's text, counted as the draft pane
+     * counts them (wordCount()), so the conversation's "Draft written · N
+     * words" agrees with it. A draft that doesn't parse is counted as text.
+     */
+    public static function wordsIn(string $raw): int
+    {
+        try {
+            return self::parse($raw)->wordCount();
+        } catch (InvalidArgumentException) {
+            return str_word_count($raw);
+        }
+    }
+
     public function title(): string
     {
         $title = $this->data['title'] ?? '';
@@ -60,16 +75,21 @@ class Draft
     }
 
     /**
-     * Words of actual writing, not counting field names and block types.
+     * Words of actual writing, not counting field names and block types,
+     * nor the links chosen for fields the draft doesn't hold (`gw_links`),
+     * nor where a link goes: `[our services](statamic://entry::7)` is two
+     * words, so linking words (the SEO pass does, after the draft is
+     * written) doesn't change the count.
      */
     public function wordCount(): int
     {
         $words = 0;
         $data = $this->data;
+        unset($data[MarkerResolver::CHOSEN_LINKS]);
 
         array_walk_recursive($data, function ($value, $key) use (&$words): void {
             if (is_string($value) && $key !== 'type') {
-                $words += str_word_count($value);
+                $words += str_word_count(Pcre::replace('/\]\((?:[^()\s]|\([^()\s]*\))*(?:\s+"[^"]*")?\)/', ']', $value));
             }
         });
 
