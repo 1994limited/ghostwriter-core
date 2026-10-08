@@ -18,7 +18,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * LinkValidator: one case per rule of SEO layer §7.3 (and §7.2's spread
+ * LinkValidator: one case per rule of SEO layer §7.3 (and §7.2's spread,
+ * one link a paragraph and two a section,
  * and limits), each dropped with its rule, and the good ones kept.
  */
 final class LinkValidatorTest extends TestCase
@@ -130,6 +131,71 @@ final class LinkValidatorTest extends TestCase
         $this->assertStringContainsString('A garden plan, then a [garden plan](statamic://entry::plans) again.', $validated->kept[0]->linked());
     }
 
+    private const MEADOW = "## Meadows\n\nA meadow is cut once a year, in late summer. We leave the seedheads standing for the birds.\n\nOur meadow services cover sowing and the first cut.\n\n- Sow wildflower seed in autumn.\n- Rake off the cuttings each year.\n\nTell us about your meadow and we will visit.";
+
+    private const LINKED = "## Care\n\nSee our [design page](statamic://entry::design) for the planting we do ourselves.\n\nWe follow the planting plan we drew for you.\n\nTell us about your garden today.";
+
+    /**
+     * @param  list<LinkPick>  $picks
+     * @return array{kept: list<string>, dropped: array<string, string>}
+     */
+    private static function spread(array $picks, string $markdown = self::MEADOW): array
+    {
+        $units = ['u6' => new Unit('u6', UnitKind::Section, FieldPath::of('body'), $markdown, part: 4)];
+        $validated = (new LinkValidator)->validate($picks, self::request(), $units, new StatamicLinks, 'u2');
+
+        return ['kept' => array_map(fn ($link) => $link->words(), $validated->kept), 'dropped' => $validated->rules()];
+    }
+
+    public function test_never_two_links_in_one_paragraph(): void
+    {
+        $this->assertSame(['kept' => ['leave the seedheads standing'], 'dropped' => ['u6: meadow is cut once a year' => 'paragraph']], self::spread([
+            new LinkPick('u6', 'leave the seedheads standing', 'e3'),
+            new LinkPick('u6', 'meadow is cut once a year', 'e1'),
+        ]));
+    }
+
+    public function test_two_links_in_a_section_in_different_paragraphs_and_never_a_third(): void
+    {
+        $this->assertSame(['kept' => ['leave the seedheads standing', 'Our meadow services'], 'dropped' => ['u6: Tell us about your meadow' => 'spread']], self::spread([
+            new LinkPick('u6', 'leave the seedheads standing', 'e3'),
+            new LinkPick('u6', 'Our meadow services', 'e1'),
+            new LinkPick('u6', 'Tell us about your meadow', 'e2'),
+        ]));
+    }
+
+    public function test_each_list_item_is_its_own_paragraph(): void
+    {
+        $this->assertSame(['kept' => ['Sow wildflower seed', 'Rake off the cuttings'], 'dropped' => []], self::spread([
+            new LinkPick('u6', 'Sow wildflower seed', 'e3'),
+            new LinkPick('u6', 'Rake off the cuttings', 'e1'),
+        ]));
+    }
+
+    public function test_each_item_of_a_list_value_is_its_own_paragraph(): void
+    {
+        $units = ['u7' => new Unit('u7', UnitKind::List, FieldPath::of('steps'), "Sow wildflower seed in autumn\nRake off the cuttings each year")];
+        $validated = (new LinkValidator)->validate([
+            new LinkPick('u7', 'Sow wildflower seed', 'e3'),
+            new LinkPick('u7', 'Rake off the cuttings', 'e1'),
+        ], self::request(), $units, new StatamicLinks, 'u2');
+
+        $this->assertSame([], $validated->rules());
+        $this->assertCount(2, $validated->kept);
+    }
+
+    public function test_links_already_there_count_towards_the_spread(): void
+    {
+        $this->assertSame(['kept' => ['planting plan we drew for you'], 'dropped' => [
+            'u6: the planting we do ourselves' => 'paragraph',
+            'u6: Tell us about your garden' => 'spread',
+        ]], self::spread([
+            new LinkPick('u6', 'the planting we do ourselves', 'e1'),
+            new LinkPick('u6', 'planting plan we drew for you', 'e1'),
+            new LinkPick('u6', 'Tell us about your garden', 'e2'),
+        ], self::LINKED));
+    }
+
     public function test_spread_duplicates_markers_and_the_limit(): void
     {
         $this->assertSame([
@@ -139,7 +205,7 @@ final class LinkValidatorTest extends TestCase
             new LinkPick('u3', 'planting plan we drew for you', 'e1'),
             new LinkPick('u3', 'we cut back only', 'e3'),
             new LinkPick('u4', 'first walk round', 'e1'),
-        ]));
+        ]), 'u3 has a link already: one more makes two.');
 
         $validated = (new LinkValidator)->validate([
             new LinkPick('u4', 'tell us about your garden', '', hint: 'booking page'),

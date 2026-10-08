@@ -380,8 +380,9 @@ final class SeoLinksTest extends StudioTestCase
     private static function writerWithLinks(): string
     {
         return str_replace(
-            ['Seed heads of sedum, teasel and grasses stay standing', 'Tree ferns get', 'tell us about your garden and we will', 'Roses get a handful'],
-            ['[Seed heads of sedum](statamic://entry::october), teasel and grasses stay standing', '[Tree ferns](#gw-link:tree-fern-guide) get', '[get in touch](#gw-link:contact-page) and we will', '[Roses](statamic://entry::gone) get a handful'],
+            // The plan gets a paragraph of its own: the writer's link to October takes the first (one link a paragraph).
+            ['Seed heads of sedum, teasel and grasses stay standing', 'frosty morning. If you have', 'Tree ferns get', 'tell us about your garden and we will', 'Roses get a handful'],
+            ['[Seed heads of sedum](statamic://entry::october), teasel and grasses stay standing', "frosty morning.\n\n  If you have", '[Tree ferns](#gw-link:tree-fern-guide) get', '[get in touch](#gw-link:contact-page) and we will', '[Roses](statamic://entry::gone) get a handful'],
             self::WRITER,
         );
     }

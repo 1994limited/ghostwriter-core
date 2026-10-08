@@ -38,8 +38,9 @@ use Psr\Log\NullLogger;
  * 3. One `seo-editor` call (links only: no title or description) picks the
  *    words and the pages; LinkValidator checks each pick (descriptive
  *    words, not in a heading, bold or a quotation, within one sentence,
- *    one a unit, no page twice); one `seo-verifier` call keeps or drops
- *    each in its paragraph. A failed verifier keeps what passed the checks.
+ *    one a paragraph and two a section, no page twice); one `seo-verifier`
+ *    call keeps or drops each in its paragraph. A failed verifier keeps
+ *    what passed the checks.
  * 4. Each kept link becomes a LinkProposal: the field, the words as a
  *    quote of the field's text, the page and its href. Nothing is written:
  *    the editor links each one from its step (Link it), or skips it.

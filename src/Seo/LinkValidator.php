@@ -6,6 +6,7 @@ use NineteenNinetyFour\Ghostwriter\Core\Anchor\NormalisedText;
 use NineteenNinetyFour\Ghostwriter\Core\Anchor\QuoteFinder;
 use NineteenNinetyFour\Ghostwriter\Core\Anchor\Sentences;
 use NineteenNinetyFour\Ghostwriter\Core\Anchor\TextQuote;
+use NineteenNinetyFour\Ghostwriter\Core\Arrange\MarkdownSections;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\Unit;
 use NineteenNinetyFour\Ghostwriter\Core\Arrange\UnitKind;
 use NineteenNinetyFour\Ghostwriter\Core\Gaps\Markers;
@@ -31,9 +32,13 @@ use NineteenNinetyFour\Ghostwriter\Core\Suggest\Phrases;
  *   list, in a field whose editor has links); not in a heading, bold text,
  *   a quotation, an existing link, a marker, code or an address; within one
  *   sentence; not in the page's first sentence.
- * - **Spread and limits:** one link a unit (a unit is a paragraph run or a
- *   top-level section), and no more than the room left (decision 8:
- *   about one per 250 words, 2–5, links already on the page counted).
+ * - **Spread and limits:** never two links in one paragraph, and at most
+ *   two in a section (decision 27), links already there counted, and no
+ *   more than the room left (decision 8: about one per 250 words, 2–5,
+ *   links already on the page counted). A section is a unit: a top-level
+ *   section of rich text, the prose before it, or a block's text field in
+ *   a page builder. A paragraph is one of its pieces (MarkdownSections):
+ *   a paragraph of Bard, CKEditor or TipTap, and each list item its own.
  *
  * judged() then applies the `seo-verifier`'s verdicts, checking any
  * better words it gives by the same rules.
@@ -48,6 +53,9 @@ final class LinkValidator
 
     /** A target title this long, pasted whole as the words, reads as stuffing. */
     public const STUFFED_TITLE_WORDS = 5;
+
+    /** The most links a section (a unit) takes, its existing ones counted. A paragraph takes one. */
+    public const PER_SECTION = 2;
 
     /** Vague words in every language, whatever the page's. */
     private const VAGUE = ['click here', 'click', 'here', 'read more', 'more', 'this page', 'this link', 'link', 'learn more', 'find out more', 'more info', 'see more', 'go'];
@@ -75,7 +83,7 @@ final class LinkValidator
         $kept = [];
         $dropped = [];
         $targets = [];
-        $units = [];
+        $taken = [];
         $markers = 0;
         $vague = self::vague($locale);
         $stop = self::stopWords($locale);
@@ -91,7 +99,7 @@ final class LinkValidator
                 $rule = 'unit';
             } elseif (count($kept) >= $request->linkTarget) {
                 $rule = 'limit';
-            } elseif (isset($units[$pick->unit])) {
+            } elseif (($taken[$pick->unit] ??= self::taken($unit))['links'] >= self::PER_SECTION) {
                 $rule = 'spread';
             } elseif ($pick->isMarker()) {
                 $hint = Markers::slug($pick->hint !== '' ? $pick->hint : $pick->exact);
@@ -115,13 +123,23 @@ final class LinkValidator
                 [$match, $rule] = self::place($pick, $unit, $first);
             }
 
+            $paragraph = $match === null ? null : self::paragraphAt($taken[$pick->unit]['paragraphs'] ?? [], $match[0]);
+
+            if ($rule === null && $paragraph !== null && ($taken[$pick->unit]['counts'][$paragraph] ?? 0) > 0) {
+                $rule = 'paragraph';
+            }
+
             if ($rule !== null || $match === null || $unit === null || $href === null) {
                 $dropped[] = ['pick' => $pick, 'rule' => $rule ?? 'unit'];
 
                 continue;
             }
 
-            $units[$pick->unit] = true;
+            $taken[$pick->unit]['links']++;
+
+            if ($paragraph !== null) {
+                $taken[$pick->unit]['counts'][$paragraph]++;
+            }
 
             if ($pick->isMarker()) {
                 $markers++;
@@ -142,8 +160,9 @@ final class LinkValidator
      * once in the unit, a good anchor, a safe place, not the first
      * sentence) and lie in the same sentence. When they don't, the link
      * keeps its first words: they passed those checks, and the verifier
-     * judged the page right. The unit and the page don't change, so the
-     * spread and the limits still hold. Ids are kept.
+     * judged the page right. The sentence, so the paragraph, the unit and
+     * the page don't change, so the spread and the limits still hold. Ids
+     * are kept.
      */
     public function judged(ValidatedLinks $validated, LinkVerdicts $verdicts, SeoRequest $request, ?string $first = null, string $locale = 'en'): ValidatedLinks
     {
@@ -293,6 +312,55 @@ final class LinkValidator
         }
 
         return [[$offset, $length], null];
+    }
+
+    /**
+     * A unit's paragraphs (its pieces: a paragraph, a list item, a heading…)
+     * as [start, end] in characters, the links in each, and in all: those
+     * it has already, a writer's `#gw-link:` among them, are counted. A
+     * list value's items are lines with no bullet: each is a paragraph.
+     *
+     * @return array{paragraphs: list<array{0: int, 1: int}>, counts: list<int>, links: int}
+     */
+    private static function taken(Unit $unit): array
+    {
+        $text = $unit->markdown;
+        $split = preg_split('/\r\n|\r|\n/', $text, -1, PREG_SPLIT_OFFSET_CAPTURE) ?: [];
+        $lines = array_map(fn (array $line) => $line[0], $split);
+        $starts = array_map(fn (array $line) => mb_strlen(substr($text, 0, $line[1])), $split);
+        $at = mb_strlen($text);
+        $blocks = $unit->kind === UnitKind::List && preg_grep('/^\s*(?:[-*+]|\d+[.)])\s+/', $lines) === []
+            ? array_map(fn (int $i) => ['start' => $i, 'end' => $i + 1], array_keys(array_filter($lines, fn (string $line) => trim($line) !== '')))
+            : MarkdownSections::blocks($lines);
+
+        $paragraphs = [];
+        $counts = [];
+
+        foreach ($blocks as $block) {
+            $start = $starts[$block['start']];
+            $end = $block['end'] < count($starts) ? $starts[$block['end']] : $at;
+            $count = preg_match_all('/(?<!!)\[[^\[\]\n]*\]\([^)\n]*\)/u', mb_substr($text, $start, $end - $start));
+            $paragraphs[] = [$start, $end];
+            $counts[] = (int) $count;
+        }
+
+        return ['paragraphs' => $paragraphs, 'counts' => $counts, 'links' => array_sum($counts)];
+    }
+
+    /**
+     * Which of the paragraphs holds this offset.
+     *
+     * @param  list<array{0: int, 1: int}>  $paragraphs
+     */
+    private static function paragraphAt(array $paragraphs, int $offset): ?int
+    {
+        foreach ($paragraphs as $i => [$start, $end]) {
+            if ($offset >= $start && $offset < $end) {
+                return $i;
+            }
+        }
+
+        return null;
     }
 
     /**

@@ -4,6 +4,10 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 ## Unreleased
 
+### Changed (SEO layer: two links a section)
+
+- **Links spread by paragraph, two a section** (decision 27). `LinkValidator` drops a pick in a paragraph that has a link already (`paragraph`) and one in a unit that has two (`spread`), instead of one link a unit. Links already in the text count, a writer's `#gw-link:` marker among them. A paragraph is one of the unit's pieces as `Arrange\MarkdownSections::blocks()` cuts them, so each list item is its own; a section is a unit (a top-level section of rich text, the prose before it, or a block's text field). New `LinkValidator::PER_SECTION` (2). The overall caps are unchanged (about one per 250 words, 2–5, never forced). First drafts, writer-marker suggestions, Suggest links and the verifier's `keep-with-anchor` (which stays in its sentence, so its paragraph) all go through it. The `seo-editor` prompt says so: never two in one paragraph, at most two in a unit, both given when two good links fall in one.
+
 ### Changed (SEO layer: the link calls' bar)
 
 - **`seo-editor` links what a reader would want next.** A related page a reader of the passage would plausibly go on to is enough; it needn't be on the page's topic. It aims for the number it's given (about one per 250 words, 2–5) where each link helps a reader, never forcing one, and prefers words that name what the target is about. `SeoRequest` asks "Add up to N: aim for N where each helps a reader, fewer, or none, when no more would."
