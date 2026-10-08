@@ -98,6 +98,30 @@ final class PlanRepairTest extends TestCase
         $this->assertSame(['missing: u7#3 is not placed.', 'words: the arranged words are not the draft\'s.', 'markers: an [[ask: …]], a [[check: …]] or a #gw-link: link was lost or doubled.'], $violations);
     }
 
+    public function test_a_heading_rewritten_in_place_keeps_its_place_in_the_layout(): void
+    {
+        $schema = Northfold::blocks();
+        $before = Units::fromDraft(Northfold::blocksDraft(), $schema);
+        $draft = Northfold::blocksDraft();
+        $draft['page_builder'][0]['heading'] = 'Keep the borders tidy until spring';
+        $after = (new UnitMatcher)->carry($before, Units::fromDraft($draft, $schema));
+        $was = Plans::fromDraft(Northfold::blocksDraft(), $before, $schema);
+        $plan = ArrangerTest::plan(self::SCANNABLE, $schema);
+
+        $this->assertNotContains('u3', $after->ids(), 'too different to keep its id');
+
+        // Without the writer's layout from before, it opens a hero of its own, and the old one has no heading.
+        $split = (new PlanRepair)->repair($plan, $after, Northfold::extras(), Plans::fromDraft($draft, $after, $schema));
+        $this->assertSame(['hero', 'hero', 'text', 'section', 'text', 'quote', 'stats', 'cta'], $split->sequences()['page_builder']);
+
+        // With it, the new heading takes the old one's place in the hero.
+        $repaired = (new PlanRepair)->repair($plan, $after, Northfold::extras(), Plans::fromDraft($draft, $after, $schema), $was);
+
+        $this->assertSame(['hero', 'text', 'section', 'text', 'quote', 'stats', 'cta'], $repaired->sequences()['page_builder']);
+        $this->assertSame([$after->all()[2]->id], $repaired->fields['page_builder'][0]->placement('heading')?->from);
+        $this->assertSame([], array_map('strval', (new PlanValidator)->check($repaired, $after, Northfold::extras(), $draft, $schema)));
+    }
+
     public function test_a_layout_that_still_fails_is_reported_for_marking_stale(): void
     {
         $draft = Northfold::blocksDraft();

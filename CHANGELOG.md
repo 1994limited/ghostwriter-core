@@ -8,6 +8,10 @@ All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 i
 
 - **The conversation's "Draft written · N words" agrees with the draft pane.** `Session::answer()` counted the raw YAML (field names and block types too); it now counts with the new **`Draft::wordsIn()`**, as the pane does. **`Draft::wordCount()`** no longer counts the links chosen for fields the draft doesn't hold (`gw_links`) or where a link goes, so linking words (the SEO pass) leaves the count as it was.
 
+### Fixed (layouts after a change)
+
+- **A unit rewritten in place keeps its place in the other layouts.** A heading reworded past what `UnitMatcher` carries got a new id, so `PlanRepair` opened a block of its own for it: a hero split in two, which passed on a site whose hero heading is optional (Statamic's test site: "Hero split into 2 blocks") and was marked "Needs refreshing" where it's required (Craft's). `PlanRepair::repair()` takes the writer's layout from before the edit (new optional `$was`; `SessionLayouts` passes it): when a block of it has a field that went from only removed units to only new ones, the new ones go where the old ones were in every layout.
+
 ### Added (SEO layer: Suggest links in Finish this page)
 
 - **`SeoPass::suggestLinksFor(GapContext, LinkContext, ?title)`** and **`Seo\PageLinks`**: Finish's **Suggest links** on an existing page with no link to the site. One `seo-editor` call (links only) and one `seo-verifier` call on the page's current text, by a first draft's rules (one per 250 words, 2–5, descriptive anchors, not in headings, one a unit), candidates from `LinkIndex::related()` without the page itself or pages it links to. Returns **`Seo\LinkProposals`** of **`Seo\LinkProposal`** (field, `TextQuote`, words, href via `inlineHref()`, target, why); nothing is written.

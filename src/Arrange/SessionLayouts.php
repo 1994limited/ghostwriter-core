@@ -373,13 +373,14 @@ final class SessionLayouts
         $validator = new PlanValidator($this->layouts->builder(), $this->logger);
         $repair = new PlanRepair;
         $plans = [$writer];
+        $was = $this->plans($session)->writer();
 
         foreach ($this->plans($session)->all() as $plan) {
             if ($plan->origin === PlanOrigin::Writer) {
                 continue;
             }
 
-            $repaired = $repair->repair($plan, $units, $extras, $writer);
+            $repaired = $repair->repair($plan, $units, $extras, $writer, $was);
             $violations = $validator->check($repaired, $units, $extras, $draft, $site->schema, $site->pattern, $plans);
 
             if ($violations !== []) {
