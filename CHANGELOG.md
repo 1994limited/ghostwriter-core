@@ -2,300 +2,90 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 it follows semantic versioning: a minor or patch release doesn't break the public API.
 
-## Unreleased
+## 1.10.0 - TBD
 
-### Changed (SEO layer: two links a section)
+The shared engine for Ghostwriter 1.3 (Statamic and Craft) and Ghostwriter for Filament 1.2: Suggest edits and Content to revisit; the SEO layer (links to the site's own pages, search titles and descriptions, headings that fit the template); comments as conversation messages; Connections; and structured output from every provider.
 
-- **Links spread by paragraph, two a section** (decision 27). `LinkValidator` drops a pick in a paragraph that has a link already (`paragraph`) and one in a unit that has two (`spread`), instead of one link a unit. Links already in the text count, a writer's `#gw-link:` marker among them. A paragraph is one of the unit's pieces as `Arrange\MarkdownSections::blocks()` cuts them, so each list item is its own; a section is a unit (a top-level section of rich text, the prose before it, or a block's text field). New `LinkValidator::PER_SECTION` (2). The overall caps are unchanged (about one per 250 words, 2–5, never forced). First drafts, writer-marker suggestions, Suggest links and the verifier's `keep-with-anchor` (which stays in its sentence, so its paragraph) all go through it. The `seo-editor` prompt says so: never two in one paragraph, at most two in a unit, both given when two good links fall in one.
+### Added
 
-### Changed (SEO layer: the link calls' bar)
-
-- **`seo-editor` links what a reader would want next.** A related page a reader of the passage would plausibly go on to is enough; it needn't be on the page's topic. It aims for the number it's given (about one per 250 words, 2–5) where each link helps a reader, never forcing one, and prefers words that name what the target is about. `SeoRequest` asks "Add up to N: aim for N where each helps a reader, fewer, or none, when no more would."
-- **`seo-verifier` judges the page first.** It drops a link only when the target is wrong or misleading for that sentence. When the page is right but the words are weak, it answers **`keep-with-anchor`** with better words from the same sentence instead of dropping. Its reply schema gains `anchor` per verdict, and `verdict` is `keep`, `keep-with-anchor` or `drop`.
-- **`Studio::verifySeoLinks()` returns `Seo\LinkVerdicts`** (`drop`, `anchors`; `fromArray()`, `drops()`) instead of an id → why map. **`LinkValidator::judged()`** applies it: dropped links go; better words are checked by every anchor rule a pick passes (once in the unit, 2–8 words, not vague or stop words, not the page's title or a long target title, not in a heading, bold, a quotation or an existing link, one sentence, not the page's first) and must lie in the link's sentence; words that fail leave the link on its first words. The unit and the page don't change, so spread and limits hold. `ValidatedLinks::$anchored` (and `anchors()`, for the log) records each change; `ValidatedLinks::without()` is gone. First drafts, writer-marker suggestions and Suggest links all go through it.
-
-### Changed (SEO layer: which pages a draft is offered to link to)
-
-- **A stemmer per language.** New **`Seo\Stemmer`**: Snowball's rules for English (Porter 2), German, French, Dutch and Spanish, framework-free (no ext-stemmer); other languages keep the first five letters. `LinkCandidates::stems()` and `draftStems()` stem with it ("pruning" → "prune", "Gärten" → "gart"), stop words as before.
-- **Words match by their start too.** `LinkCandidates::match()`: the same stem counts double, one starting the other (from `PREFIX`, 4 letters) once, so "seed" meets "seedheads" and "plant" "planting". Each stem also counts by how rare it is among the site's rows (a word most pages have counts for little), and the draft's title and headings count twice its body (`draftWeights()`, `TOPIC`).
-- **Related pages rank higher.** `IndexRow` keeps what a page is filed under (`$terms`: "tags::meadows", "category:12"; a term's own row has itself) and, for full rows, where it links (`$links`, as `linkKey()` reads them), with `withRelations()`. A page sharing a term with the page, or the term itself (+4), a page linking to it (+4), a page linking where the draft links (+2, twice at most) and the draft's own group (+2) rank higher; boosts, not filters.
-- **Key pages are always offered** (`KEY_PAGES`, 8, never more than a third of the list), whatever their words; listings aren't.
-- **A fuller list for the model.** No floor: every linkable page is scored and the list is filled to `LIMIT` (25), best first, at most `PER_GROUP` (now 5) from one group and `LISTINGS` (2) terms or categories at the top; when every group is at its cap the rest fill the tail. The exclusions are as before (the page itself, pages already linked, another site's, drafts, scheduled, expired, noindex, utility pages, the home page). `SeoRequest` shows the first `FULL_SUMMARIES` (10) candidates with their summary and the rest with `SHORT_SUMMARY` (80) characters, to keep the call small.
-- **Stored stems are versioned.** `IndexRow::STEMS` (2) is kept with the stems (`stems.v`, `stemsVersion()`); rows written before it keep their five-letter stems and are matched against the draft's words cut the same way until a full refresh writes them again. A big site's stem index is keyed by each stem's first four letters (`LinkCandidates::indexKeys()`), looked up by `lookupKeys()` (which also finds an older index's keys).
-- `MemoryEntryIndex` takes the site's locale. `PageLinks` logs the candidates it offered.
-
-### Fixed (word counts)
-
-- **The conversation's "Draft written · N words" agrees with the draft pane.** `Session::answer()` counted the raw YAML (field names and block types too); it now counts with the new **`Draft::wordsIn()`**, as the pane does. **`Draft::wordCount()`** no longer counts the links chosen for fields the draft doesn't hold (`gw_links`) or where a link goes, so linking words (the SEO pass) leaves the count as it was.
-
-### Fixed (layouts after a change)
-
-- **A unit rewritten in place keeps its place in the other layouts.** A heading reworded past what `UnitMatcher` carries got a new id, so `PlanRepair` opened a block of its own for it: a hero split in two, which passed on a site whose hero heading is optional (Statamic's test site: "Hero split into 2 blocks") and was marked "Needs refreshing" where it's required (Craft's). `PlanRepair::repair()` takes the writer's layout from before the edit (new optional `$was`; `SessionLayouts` passes it): when a block of it has a field that went from only removed units to only new ones, the new ones go where the old ones were in every layout.
-
-### Added (SEO layer: Suggest links in Finish this page)
-
-- **`SeoPass::suggestLinksFor(GapContext, LinkContext, ?title)`** and **`Seo\PageLinks`**: Finish's **Suggest links** on an existing page with no link to the site. One `seo-editor` call (links only) and one `seo-verifier` call on the page's current text, by a first draft's rules (one per 250 words, 2–5, descriptive anchors, not in headings, one a unit), candidates from `LinkIndex::related()` without the page itself or pages it links to. Returns **`Seo\LinkProposals`** of **`Seo\LinkProposal`** (field, `TextQuote`, words, href via `inlineHref()`, target, why); nothing is written.
-- **`GapKind::LinkProposed`** (`link-proposed`) and **`Detectors\ProposedLinks`**: one suggestion step per proposal still to make, **Link it** (`FixAction::Link` with the href) · **Skip**. `GapContext::$proposals` carries what Suggest links found.
-- **`FixAction::SuggestLinks`** (`suggest-links`, model): the `few-links` step's primary button, before Add a link and Skip; `meta.running` names its running label. With proposals to make, `few-links` isn't shown; with none found it reads `gaps.few-links.none` ("No pages close enough to link to…") with Add a link · Skip.
-- **`Tests\Contracts\ProposedLinksContract`** for the addons' Finish contexts.
-- Strings, in English, German, French, Dutch and Spanish: `gaps.few-links.none`, `gaps.link-proposed`, `gaps.speech.link-proposed`, `gaps.step.link-proposed`, `gaps.fix.suggest-links`, `gaps.fix.link-it`, `gaps.fix.suggesting-links`. `Gap::message()` passes `why` from the meta.
-
-### Added (Settings → Connections)
-
+#### Connections
 - **`Connections\Connections`**, one resolver for every outside service's key (`Ai\Ports\Credentials`, `Connections\KeySources`): the environment or config first, which always wins, then what was set up on the Connections page, kept encrypted through the new **`Connections\CredentialStore`** port. `status()` (`Status`: connected with the masked ending, not set, set in .env or config, key stopped working, no key needed), `save()`, `forget()`, `adopt()` (for moving older stored keys), `markBroken()`, `markWorking()`.
-- **`Connections\Services`**: every service as the page shows it, in Writing, Images and Stock photos (Anthropic, OpenAI, Gemini, OpenRouter; Unsplash, Pexels, Pixabay, Openverse; Shutterstock), with its key page, fields and environment variables. `withTestServices()` for the end-to-end tests.
-- **`Connections\KeyCheck`** ("Check & save", the `ChecksKeys` port): one cheap live call per service, tried once, with plain reasons (`CheckResult`). `Testing\FakeKeyCheck` for tests.
+- **`Connections\Services`**: every service as the page shows it, in Writing, Images and Stock photos (Anthropic, OpenAI, Gemini, OpenRouter; Unsplash, Pexels, Pixabay, Openverse; Shutterstock), with its key page, fields and environment variables. `withTestServices()` for end-to-end tests.
+- **`Connections\KeyCheck`** ("Check & save", the `ChecksKeys` port): one small live call per service, tried once, with plain reasons (`CheckResult`). `Testing\FakeKeyCheck`.
 - **`Connections\KeyWatch`**: the site's `HttpClients`, watched, so a key a service starts refusing shows as "Key stopped working".
-- `StoredProviderKeys` (Connect with OpenRouter keeps its key on the same card) and `StoredLibraryTokens` (paid libraries' account tokens in the same store). `Mask::ending()`, `Mask::fingerprint()`. `Testing\InMemoryCredentialStore`.
-- **`Tests\Contracts\CredentialStoreContract`** for the addons' stores, including that nothing is kept as plain text.
-- The page's words in English, German, French, Dutch and Spanish: `resources/lang/{en,de,fr,nl,es}/connections.php`, read with `Connections\Strings`.
-- `docs/connections.md`.
+- `StoredProviderKeys` (Connect with OpenRouter keeps its key on the same card) and `StoredLibraryTokens` (paid libraries' account tokens in the same store). `Mask::ending()`, `Mask::fingerprint()`, `Testing\InMemoryCredentialStore`.
+- The page's words in English, German, French, Dutch and Spanish (`resources/lang/{en,de,fr,nl,es}/connections.php`, read with `Connections\Strings`), and `docs/connections.md`.
 
-### Changed (Settings → Connections)
+#### Suggest edits
+- **Free checks** (`Suggest\Findings::standard()->report(CheckContext)`, no model, no request): a past year written as current (`PastYears`), "this year" on an old page (`RelativeTime`), closing dates (`ClosingDates`), counts and claims to recheck (`StatedCounts`), long sentences (a hint), empty link text, overlaps with other entries (5-word shingles), and, for search, an empty or short SEO description, a heading over 70 characters and a long page with no links (`seo-missing`, `heading-long`, `few-links`). Phrase lists and date reading in English, German, French, Dutch and Spanish (`Phrases::for()`, `Dates`). Decisions that stick (`Quiet`, `Quieted`): "It's still right" and Dismiss last 12 months, or until the passage is edited.
+- **The review call** (`Studio::suggestEdits()`): every free finding is a candidate the `reviewer` keeps or drops in context, with its paragraph, its heading and the page's title, kind and date; it adds its own voice and clarity suggestions. A long page is split into several calls (`ReviewInput::calls()`). A page with no links is shown up to 10 pages it could link to (`SiteDigest::RELATED`) and the reviewer proposes the links. `SuggestionValidator` never lets a made-up fact through: each suggestion is anchored (`QuoteFinder`), checked (`ScopedEditCheck`, `SourceCheck`, `Anchor\SentenceFit` for whole sentences) or dropped.
+- **The verifier**, a second call per part that kept anything (`Studio::verifyEdits()`, prompt `verifier.md`): keep, fix (checked again) or drop. What either call judged fine is remembered (`Quiet::CHECKED`) and isn't a candidate again until its passage changes.
+- **Write another** (`Studio::reword()`, prompt `reworder.md`) and `SuggestionValidator::acceptsVersion()`.
+- Ports and contracts: `Suggest\EntryIndex` (`MemoryEntryIndex`, `EntryIndexContract`), `Gaps\AssetAlt` and `Gaps\SeoFields` (`AssetAltContract`, `SeoFieldsContract`).
+- Strings in `resources/lang/*/suggest.php`.
 
+#### Content to revisit
+- **A list ranked by free checks** (`Revisit\*`): `RevisitScanner`, `RevisitIndex` (`refreshOne()` on save, `deleted()` checks again the pages that linked to it, `refresh()` daily, a full pass weekly), `RevisitRow` (`snooze()`, `priority()`), `RevisitReason`, `ReasonKind` (including `SeoMissing`, `FewLinks`, `HeadingLevels`; all search reasons together count at most 25, `Priority::SEO_CAP`), `Priority`, `Revisit\AgePolicy` (age counts a quarter in dated groups, with a switch per group).
+- Ports `RevisitStore` and `EntrySource`, with `InMemoryRevisitStore`, `MemoryEntrySource`, `RevisitStoreContract` and `EntrySourceContract`.
+- **The opt-in weekly check of links to other sites** (`ExternalLinkCheck`, off by default, `RevisitOptions::$externalLinks`): each address once a week, one request a second per host, 10 s timeout, at most 500 a run; broken only after two failed checks in a row. Port `LinkProbe`, with `HttpLinkProbe` (HEAD, then a one-byte GET) and `LinkProbeContract`.
+- Strings in `resources/lang/*/revisit.php`.
+
+#### The SEO layer
+- **Links to the site's own pages on every first draft** (`Seo\SeoLinks`, run by `SeoPass::afterWriter()` before the layout planner, so every layout carries them): one `seo-editor` call picks words and pages from the link index, `Seo\LinkValidator` checks every pick in code, and one `seo-verifier` call judges each in its sentence. About one link per 250 words, 2 to 5, existing links counted, never forced; never two in one paragraph, at most two in a section (`LinkValidator::PER_SECTION`). The verifier drops a link only when the page is wrong for the sentence; when the words are weak it answers `keep-with-anchor` with better words from the same sentence (`Seo\LinkVerdicts`, `LinkValidator::judged()`).
+- **The link index** (`Suggest\LinkIndex::related()`, its own port): every routable page of a site can be a link target. `Suggest\IndexRow`, `IndexScope`, `RowKind`; `Seo\LinkCandidates` ranks them by word stems (`Seo\Stemmer`: Snowball's rules for English, German, French, Dutch and Spanish), rarer words counting for more, title and headings counting double, and related pages (sharing a term, linking to the page or where the draft links) ranking higher; key pages are always offered; up to 25, at most 5 from one group. `Seo\Linkable` says why a page isn't a target (unpublished, scheduled, expired, no address, noindex, the home page, a utility page). `Seo\LinkPlan` decides what a daily pass writes (caps: 5,000 rows a group, 20,000 a site). `LinkIndexContract`.
+- **The writer's own links**: a link the writer makes to a real page of the site is kept (`Suggest\LinkLookup::linkRow()`); anything else becomes a link to choose (`Seo\LinkGuard`). For each link to choose, the SEO pass suggests the page it most likely means (`Seo\MarkerSuggestion`, checked by the verifier), and Finish this page offers it first.
+- **Suggest links** for an existing page (`SeoPass::suggestLinksFor()`, `Seo\PageLinks`): returns `Seo\LinkProposals`; nothing is written. `GapKind::LinkProposed`, `Detectors\ProposedLinks`, `FixAction::SuggestLinks`, `ProposedLinksContract`.
+- **Search title and description** (`Seo\MetaContext`, `MetaRequest`): written by the first draft's `seo-editor` call, only from what the page says (`Seo\SeoMetaCheck`, `MetaRange`), never over a person's text (`Seo\MetaPolicy`, `SeoProvenance`); the SEO title only when the page title is too long. `Seo\SeoWriter` port, `PlainSeoWriter`, `SearchFields::apply()` for "Use this draft", the Search section (`SearchSection::of()`, `SeoPass::retryMeta()`, `editMeta()`, `useMeta()`), `SeoWriterContract`.
+- **Addresses and file names**: `Seo\SlugRules` (the whole phrase, unless the title is over 60 characters) and `Seo\FilenameRules` (photos named from their alt text, without stop words or library noise).
+- **Headings that fit the template** (`Seo\HeadingFixer`, no model): the body starts one level below the template's H1, levels never skip, and a heading deeper than the field allows becomes a bold lead-in. `Schema\HeadingLevels`, `Seo\RenderProfile` and the `RenderProfiles` port (what prints a group's H1, read from the preview), `HeadingLevelsContract`, `RenderProfileContract`.
+- **Inherited SEO values**: `Gaps\SeoSource` (custom, another field, a default, a template, switched off), `SeoFields::noindex()` and `titleFormat()` (`Gaps\TitleFormat`), `EntryData::$group` and `$site`.
+- `Layout\InlineLinks::inlineHref()` for each CMS's stored link form, and `Layout\Links\FilamentLinks`. `Seo\SeoState` on `Session::$seo`.
+- German, French, Dutch and Spanish for every SEO string.
+
+#### Finish this page
+- New steps, all suggestions (never counted, never blocking): **Shorten a heading** (`GapKind::HeadingLong`, `Detectors\LongHeadings`, **Write it for me** through `GapRequest::shortenHeading()`), **Link to your other pages** (`GapKind::FewLinks`, `Detectors\FewLinks`), **Add a description for search** (`GapKind::SeoMissing`, **Use this**), **Check links Ghostwriter added** (`GapKind::LinksAdded`, `Detectors\AddedLinks`), missing alt text (`MissingAlt`) and SEO text over its limit (`SeoLength`).
+- **An empty image the page looks like it needs is a prompt** (`Severity::Prompt`): required, the template's prominent image, or one at least 70% of the newest published siblings fill. Counted, brings the guide out, never blocks. `Layout\FillRates`, `GapContext::$group`, `$profile`, `$hosts`, `engaged()`.
+
+#### Comments
+- **Comments are conversation messages** (`Review\Comments`): Apply sends the editor's pins as one message, and one `reviser` call (prompt `reviser.md`) revises only the commented blocks, ending in one message from Ghostwriter with a result per comment (Changed, Replied, Not applied, Skipped). `RevisionValidator` refuses a change outside a comment's scope or one that makes up a fact; `RevisionApplier` skips a block someone changed meanwhile. `Comment`, `CommentResult`, `CommentStatus`, `Text\DraftEditor`, `SessionGuard::begin()`. See `docs/comments.md`.
+
+#### Writing
+- **Questions before a draft, structured**: the writer sends at most four short questions (`Studio\Asks`, `AskedQuestion`), kept on its message; `SessionGuard::answerQuestions()` sends the answers as one message. A question answered "skipped" is never asked again.
+- **The brief chooses what to model it on**: with nothing ticked, the brief filler chooses up to six published records closest to the new piece (`BriefRequest::withCandidates()`). The person's ticks always win, then the kind's own examples.
+- **What a layout changes** (`SessionLayouts::changes()`, `LayoutDiff::summary()`, `places()`): one to three plain phrases ("Quote moved up") and where on the page.
+- `Draft::wordsIn()`.
+
+#### Structured output
+- **Provider-native structured output**: a `TextRequest` may carry an `OutputSchema`, and each provider holds the model to it where it can (Anthropic `output_config.format`, or a `reply` tool on older Claude models; OpenAI and OpenRouter strict `response_format`; Gemini `responseJsonSchema`), falling back to prompt-and-parse elsewhere and when a provider refuses the format. `Ai\Structured\Schemas`, `JsonReply::decode()`, `TextResponse::$structured`, `Models::structuredOutput()`, `FakeProvider::respondStructured()`.
+- The layout planner (`Arrange\PlanSchema`, sized to the site's fields), the kind finder, the planner, the brief writer and filler, the reworder, the gap filler, the reviewer and the verifier all use it. Each asks once more when a reply can't be read, with the problem quoted.
+- Prompt caching for `reviewer`, `verifier` and `reworder` on Anthropic, and Claude through OpenRouter.
+
+### Changed
 - Messages about a missing or refused key point to Connections first: "Set it up in Ghostwriter's Connections (or set ANTHROPIC_API_KEY in .env)."
-- `Providers` knows a stored OpenRouter key from any `KeySources` (`ConnectedCredentials` is one now).
-
-### Added (SEO layer: Finish, Suggest edits and Content to revisit, row 6)
-
-- **Finish this page:** `GapKind::HeadingLong` and **`Detectors\LongHeadings`** ("Shorten a heading": a heading over 70 characters; **Write it for me**, one `gap-filler` call with the new task `shorten-heading` through `GapRequest::shortenHeading()`, or I'll write it), and `GapKind::FewLinks` and **`Detectors\FewLinks`** ("Link to your other pages": 300 words or more and no link to the site; Add a link · Skip). Both in `GapFinder::standard()`; suggestions, never counted, never blocking. `GapContext::$hosts` (the site's own hosts) and `Revisit\Links::of(GapContext)`.
-- **Suggest edits:** `seo-missing`, `heading-long` and `few-links` findings (`Suggest\Findings`). A page with no links is shown up to 10 pages it could link to (`SiteDigest::RELATED`, `LinkIndex::related()`), and the reviewer proposes the links; the reviewer prompt has "Search: headings" and "Search: links" sections and candidate lines for the three.
-- **Content to revisit:** `ReasonKind::SeoMissing` (6), `FewLinks` (5), `HeadingLevels` (3, `Seo\HeadingLevelCheck`), and `Competing` (10) and `Readability` (2) for phase 2; `ReasonKind::isSeo()` and `Priority::SEO_CAP` (25 for all SEO reasons together). `FindingReport::emptyFields($except)`.
-- **German, French, Dutch and Spanish** for every SEO string (decision 18): `resources/lang/{de,fr,nl,es}/{seo,gaps,suggest,revisit}.php`, `Message::translations()`, `Message::TRANSLATED`.
-- Strings: `gaps.heading-long`, `gaps.few-links`, their speech labels and steps, `gaps.fix.add-links`, `gaps.fix.skip`, `suggest.finding.seo-missing*`, `suggest.finding.heading-long`, `suggest.finding.few-links`, `revisit.reason.{seo-missing,few-links,heading-levels,competing,readability}`, `seo.search.description-source-empty`.
-
-### Changed (SEO layer, row 6)
-
-- **The reviewer is told plainly to propose the links** for a page with none ("Search: links"): which pages to look for, the shape of a link suggestion (with an example in the answer format), and to drop the candidate rather than keep it without a link of its own. A real review of a Journal post had kept it and proposed none.
-
-- **An inherited SEO description that's too short is short, not empty**: Suggest edits' `seo-missing` finding reads emptiness from what the page prints (the gap's `length`), so a Journal post whose description comes from a short excerpt says "only 48 characters", not "comes from Excerpt, which is empty", and isn't Content to revisit's "No SEO description".
-
-- **Addresses keep the whole phrase** (decision 13, revised): "What to do in the garden in March" is `what-to-do-in-the-garden-in-march`. Only a title over 60 characters or an address over 75 loses its stop words, and is then cut to six words and 60 characters; filler (the new `slug_filler` phrase list in five languages, `Phrases::$slugFiller`) comes off both ends either way. `SlugRules::withoutFiller()`.
-- **A description inherited from an empty field is written** (decision 11): `MetaPolicy` gives **Write**, not Suggest, when the field a description inherits from is empty or missing, as the page prints nothing. The Search section says "It came from Excerpt, which is empty, so this page gets its own." instead of "Your SEO description stays".
-- The validator lets a new SEO description replace an inherited one that's too short. A missing SEO description is Content to revisit's `seo-missing` reason, no longer an empty field. `suggest.speech.seo` is "For search".
-
-### Added (SEO layer: search title, description, address and file names, row 5)
-
-- **The search title and description** (§9): where the addon gives `LayoutContext` the new **`Seo\MetaContext`** (its `SeoFields`, the full schema, the entry's values, new or not, `SeoProvenance`, a `SlugContext`), the first draft's `seo-editor` call also writes them: `SeoRequest::$meta` (a **`Seo\MetaRequest`**), and `title` and `description` in the reply (`SeoReply`, `seo-editor-reply.json`, the `seo-editor` prompt). With no links to look for, the call runs for them alone; with nothing to write, no call. A writer's turn that changed the title or a quarter of the words writes them again (`SeoPass::changed()`), unless an editor wrote them.
-- **`Seo\SeoMetaCheck`**: in range (`Seo\MetaRange`: title 30 to `limit − 8`, or less the site name from `TitleFormat`; description 120 to `limit − 5`), nothing the page doesn't say (`SourceCheck`), no marker or figure only inside an unresolved `[[check:]]`/`[[ask:]]`, plain text, a title that isn't the page title. A failing reply is asked for once more with the problem quoted; still failing, it's cut at a word (only too long) or dropped.
-- **`Seo\MetaPolicy`** (`MetaAction`: Write, Suggest, Leave) and **`Seo\SeoProvenance`** (hashes of what Ghostwriter wrote, by role): a person's SEO text is never replaced without asking; inherited text that fits is left (decision 11); the SEO title only when the page title is too long (decision 12).
-- **`Seo\SeoWriter`**, a new port beside `SeoFields` (`write($values, $field, $text)`), **`Seo\PlainSeoWriter`**, and **`Seo\SearchFields::apply()`** for "Use this draft" (`SearchApplied`: values, what was written, actions, suggestions).
-- **`Seo\SearchMeta`** on `SeoState::$meta` (title, description, slug, edited, use, dropped, checked) and `SeoState::$written`; `withMeta()`, `withWritten()`.
-- **The Search section**: `Seo\SearchSection::of()` (title, description and address rows with counts, ranges, actions and `seo.search.*` notes); `SeoPass::retryMeta()` (Try again), `editMeta()`, `useMeta()`.
-- **`Seo\SlugRules`** (decision 13) and **`Seo\FilenameRules`**, with `filename_noise` in the five phrase lists (`Phrases::$filenameNoise`).
-- **`GapKind::SeoMissing`** and the **`SeoMissing`** detector ("Add a description for search": empty or too short; **Use this** with the draft's description, `FixAction::UseText`, or I'll write it), `SessionGaps::$meta`. A suggestion: never blocking.
-- **`Tests\Contracts\SeoWriterContract`** for the addons.
-- Strings: `seo.search.*`, `gaps.seo-missing*`, `gaps.speech.seo-missing`, `gaps.step.seo-missing`, `gaps.fix.use-text`. `Gap::message()` passes `text`, `length`, `limit` and `field` from the meta.
-
-### Changed (SEO layer, row 5)
-
-- **Stock and library photos are named from their alt text** (§11): `Photo::filenameBase($fallback, $max, $alt, $language)` takes the alt text first, then the library's description, title and tags, through `FilenameRules` (no "stock photo", no stop words, six words and 50 characters at most). `brown-rocks-during-golden-hour` is now `brown-rocks-golden-hour`.
-- `SessionLayouts::afterWriter()` reports `SeoPass::CHECKING` where the addon gives a `MetaContext` too.
-- **"Give it its own" for a title that inherits the page title**: the Search section's title row is editable wherever the SEO field takes a custom value (`MetaPolicy::ownable()`: writable, not switched off), also when the title fits and is left inheriting (SEO Pro's `@seo:title`). Text the editor wrote there is written on "Use this draft" (`SeoMeta::action(..., $edited)`); decision 12 governs only what Ghostwriter writes unasked.
-
-### Changed (SEO layer: the writer's own links)
-
-- **The writer's links to real pages are kept** (decision 22). `Seo\LinkGuard::guard()` takes the draft's `LinkContext` (passed by `SeoPass`): where its index is a new **`Suggest\LinkLookup`** (`linkRow($href, $site)`, its own port, so an addon without it still loads), an href that points at a row of the draft's site that `Linkable` allows and that isn't the page itself stays a link, written as `InlineLinks::inlineHref()` gives it. Anything else still becomes a `#gw-link:` marker. `guard()` returns the kept links as a third value. **`LinkCandidates::rowFor()`** matches by `linkKey()`, and an absolute address only on the row's own host. `MemoryEntryIndex` implements `LinkLookup`, and `LinkIndexContract` checks it where an index does.
-- **The writer's `#gw-link:` markers don't count towards the link budget** (decision 23): `SeoLinks::links()` leaves them out, so a draft whose markers met its target is still sent for links. Its kept links to real pages count.
-- **A suggested page for each of the writer's markers** (decision 24). The `seo-editor` call also returns `markers`: for each marker (`Seo\WriterMarker`, m1…, an enum in the schema), the candidate it most likely means, or none. Each is checked in code (`Seo\MarkerPick`, `Seo\MarkerSuggestion`), then by the `seo-verifier` call beside the links (`LinkCheck::$suggestions`, ids m1…), and kept on the session (`SeoState::$suggested`, `SeoState::suggestion()`). With markers and no room for links, the call runs for the markers alone. The marker is never resolved.
-- **Finish this page offers the suggestion first.** `SessionGaps` carries `$suggested` (`suggestion()`), and `LinkMarkers` puts a primary "Link to Contact us" fix (value: the href the pass writes) before the title matches, which no longer repeat the same page; `meta.suggested` is `{id, title, href, url, type, why}` and `meta.candidates` starts with it. With no `LinkTargets` (Filament), "Add the address" follows it, no longer primary.
-- Prompts `seo-editor` (the writer's links to choose, `markers`) and `seo-verifier` (suggestions), schemas `seo-editor-reply.json` (`markers`) and `seo-verifier-reply.json`.
-
-### Added (SEO layer: internal links, row 4)
-
-- **Links on a first draft** (`Seo\SeoLinks`, run by `SeoPass::afterWriter()` before units and the layout planner, so every layout carries them): where `LayoutContext::$links` (a new `Seo\LinkContext`: the link index, an `InlineLinks` dialect, group, site, page, kind, voice, locale) is given, one **`seo-editor`** call picks words and pages from the index's candidates (`Studio::seoEdit(SeoRequest)`, structured output with the units and targets as enums), **`Seo\LinkValidator`** checks every pick in code, and one **`seo-verifier`** call keeps or drops each link in its paragraph (`Studio::verifySeoLinks(LinkCheck)`). About one link per 250 words, 2 to 5, existing links counted, never forced. Both agents are on the writing tier, high effort, with cached instructions (`Agents`: 6,000 and 4,000 tokens).
-- **`Layout\InlineLinks::inlineHref()`** (a new interface beside `LinkDialect`): `StatamicLinks` `statamic://entry::id`, `CraftLinks` `{entry:12@1:url||/address}`, `NoLinks` none, and the new **`Layout\Links\FilamentLinks`** (the public address).
-- **`Seo\SeoState`** on the new **`Session::$seo`** (stored like `units`; Filament needs a JSON column): the links added, those removed, the notice, when links were looked for.
-- **`Seo\LinkGuard`**: after every writer turn (with a `LinkContext`), an address the writer wasn't given becomes a `#gw-link:` marker; a removed link stays removed.
-- **`SessionLayouts::afterWriter(…, $progress)`** says what is under way (`SeoPass::CHECKING`, `SessionLayouts::PLANNING`) and returns the SEO calls' tokens with the planner's; **`SessionLayouts::removeLink()`** and `SeoPass::removeLink()` for the Text tab's Remove link.
-- **`GapKind::LinksAdded`** and the **`AddedLinks`** detector (in `GapFinder::standard()`): "Check 3 links Ghostwriter added", one suggestion a link still in the form, Keep it · Remove the link; `SessionGaps::$links`. `Gap::message()` passes `title`, `url` and `count` from the meta.
-- Prompts `seo-editor` and `seo-verifier`, schemas `seo-editor-reply.json` and `seo-verifier-reply.json`, strings `resources/lang/en/seo.php` and the `links-added` gap strings.
-- **`LinkInsertContract`** for the addons.
+- **Plain required fields left empty are no longer gaps**: the CMS's own validation reports them on save. `Detectors\RequiredFields` is gone from `GapFinder::standard()`.
+- **Only noticeably different layouts are offered** (`Arrange\LayoutGate`), and the layout planner proposes up to two, fewer or none when there is little to rearrange.
+- The writer's links to choose don't count towards a draft's links.
+- `Photo::filenameBase()` takes the alt text first, so stock and library photos are named from it.
+- `reviewer` and `reworder` run on the writing tier.
+- `SeoFields::in()` reports a switched-off value as `SeoSource::Disabled`. Suggest edits and Content to revisit leave an inherited SEO description that fits alone; an inherited one that's too short is short, not empty.
+- `EmptyImages`' name rule applies only where the group's published entries were looked at.
 
 ### Fixed
-
-- **Notes to the writer aren't shown as the person's message.** When an existing entry becomes the draft, the addons tell the writer so in the person's turn ("This entry already exists on the site…"), which the conversation showed as "You: …". `Session::addNote()` adds such a note (`Session::NOTE`, no `by`), and `BriefThread::visible()` leaves out every note (`Session::isNote()`), including those stored before: a person's turn followed by Ghostwriter's reply flagged `editing`. The writer still reads them.
-- **Key pages are link candidates whatever the draft is about** (`LinkCandidates::rank()`): Contact, Services, About (a navigation tree's pages, the top of a structure) below the floor are offered after every page that shares words with the draft, outside their group's cap of four, so "tell us about your garden" can link to Contact. Listings aren't.
-- **`HtmlDialect::fromMarkdown()` keeps Craft reference tags in links** (`{entry:12@1:url||…}`), which CommonMark percent-encoded so Craft didn't resolve them. `LinkCandidates::linkKey()` reads CKEditor's in-editor form of one (`…#entry:12@1:url`).
-
-### Added (SEO layer: the link index, row 3)
-
-- **Link rows** (decision 9): the entry index can hold every routable page of a site, not only Ghostwriter's own groups. `Suggest\IndexRow` (title, address, summary, type, kind, live dates, noindex, key page, link reference, stems, published, updated, indexed; `make()`, `toArray()`, `fromArray()`, `digest()`), `Suggest\IndexScope` (`Full`, `Link`) and `Suggest\RowKind` (`Entry`, `Term`, `Category`, `Record`).
-- **`Suggest\LinkIndex::related()`**: the published pages a draft could link to, best first. It's its own port (the SEO layer's `EntryIndex::related()`), so an addon without it still loads with this core.
-- **`Seo\LinkCandidates`**: the shared ranking: stems (five letters, the language's stop words), title 3 / slug 2 / summary 1, the floor, tie-breaks (key page, the draft's group, terms and categories last, newer first), at most 25, 4 a group and 2 listings; `linkKey()` for the forms a link is stored in. The caps (5,000 rows a group, 20,000 a site, a stem index above 5,000 rows, 500 a chunk, 5,000 a run) are its constants.
-- **`Seo\Linkable`**: why a page isn't a link target: unpublished, scheduled, expired, no address, noindex, the home page, a utility page in any of the five languages.
-- **`Seo\LinkPlan`**: what a daily pass writes and forgets of a site's link rows (key pages, then the newest; the caps; groups over them for the developer note).
-- **`DigestEntry::$type`** (default `''`): the digest shows "Contact us (Pages)".
-- `Phrases::$stopWords` and `::$utilitySlugs`, with `stop_words` and `utility_slugs` lists in English, German, French, Dutch and Spanish.
-- `MemoryEntryIndex` implements `LinkIndex` (`put()` takes an `IndexRow`); `sharing()` and `nearest()` read full rows only.
-- **`LinkIndexContract`** for the addons.
-
-### Changed (a hero-like name needs the group looked at)
-
-- **`EmptyImages`' name rule applies only where the group's published entries were looked at** (`GapContext::$pattern` given) and are too few to go by. A context without a pattern, such as Suggest edits' checks, no longer prompts for an optional image on its name alone.
-
-### Added (SEO layer: inherited SEO values, noindex and the site name)
-
-- **`Gaps\SeoSource`, `SeoField::$source`:** where the text a page prints comes from: `Custom`, `Field` (another field's text), `Default` (a section's or site's fixed text), `Template` (Antlers or Twig core can't evaluate) or `Disabled`. `SeoField::inherited()`, `isEmpty()` and `checkable()`. The constructor's new last argument defaults from the others, so existing calls are unchanged.
-- **`SeoFields::noindex()`** (the robots setting, never the rendered tag) and **`SeoFields::titleFormat()`**, a `Gaps\TitleFormat` (site name, separator, position; `compose()`, `added()`). `PlainSeoFields` reads a `noindex`/`no_index`/`seo_noindex` toggle and has no site name. Every implementation adds both.
-- **`EntryData::$group` and `::$site`**, and `withValues()`: which section's and site's defaults an SEO addon applies to the entry.
-
-### Changed (SEO layer: inherited SEO values)
-
-- `SeoFields::in()` reports a switched-off value as `SeoSource::Disabled` (no text, not writable) instead of leaving it out; `SeoFieldsContract` allows either, and gains the `section` and `noindex` states and `seoTitle()`.
-- **Suggest edits and Content to revisit leave an inherited SEO description that fits alone** (decision 11): an "expected" gap on an SEO field the page fills all the same (a fallback field, a section's default, a template, switched off) is neither an `seo-empty` finding nor an empty field in the revisit list, and the validator drops a new SEO value over an inherited one that fits (`inherited`). An empty or over-long inherited value is still found; `seo-length` and `seo-empty` findings carry `source`.
-
-### Changed (which empty fields Finish this page raises)
-
-- **Plain required fields left empty are no longer gaps.** The CMS's own validation reports them on save. `Detectors\RequiredFields` is gone from `GapFinder::standard()`; its `blank()` and `writeFixes()` are on `ExpectedFields`. A link field that is only required isn't a `link-empty` gap either. Ghostwriter's own markers always are gaps.
-- **An empty image the page looks like it needs is a prompt** (`Severity::Prompt`, the default for `GapKind::ImageEmpty`). It is counted, brings the guide out (`Gap::prompts()`, `GapReport::prompting()`, `toArray()['prompting']`) and never blocks. It looks needed when it is required, when it is the template's prominent image (the render profile's `h1` block, or a hero-like name when there are too few published entries to go by), or when at least 70% of the newest published siblings fill it (`EmptyImages::SHARE`, over at least `SIBLINGS_KNOWN` entries). `meta.why` and the messages `gaps.image-empty.{required,prominent,siblings}` say why. An optional image few siblings use is no gap.
-- **A new, untouched entry isn't prompted** (`GapContext::engaged()`): only after a draft is applied or once it has words outside its title.
-
-### Added (which empty fields Finish this page raises)
-
-- **`Layout\FillRates`**: fill rates alone over a group's newest 20 published entries (`FillRates::pattern()`), for addons to keep per group and refresh on save. `PatternFinder` uses it.
-- **`GapContext::$group`** (what editors call the group) and **`GapContext::$profile`** (the group's render profile).
-
-### Added (SEO layer: headings)
-
-- **Every draft's headings fit the page template and the field's editor.** `Seo\SeoPass` runs on the writer's draft before units are cut (①, in `SessionLayouts::afterWriter()` and `afterEdit()`) and on every plan when it is built (②, in `SessionLayouts::draftData()`). `Seo\HeadingFixer`: the body starts one level below the template's H1, levels never skip, empty headings go, bold lines posing as headings become headings, and a heading deeper than the editor can show becomes a bold lead-in. Words never change; it is idempotent. No model call. See docs/seo.md.
-- **`Schema\HeadingLevels::allowed()`** reads the levels an addon's reader recorded under `headings` in the field spec.
-- **`Seo\RenderProfile`**, `Outline`, `H1Source` and the `RenderProfiles` port: what prints a group's H1, read from the preview (`locator.js` `outline()`), stored per group, changed only when two renders agree; `SeoPass::observe()` for the addons' outline endpoints. Without a render: the title is the H1, corrected by the site's own entries.
-- **`LayoutContext::$profile`**, and `Layout::fromSchema(…, $profile)`, `SchemaDescriber::describe(…, $profile)`, `LayoutBrief(…, render:)`: the writer and the layout planner are told each rich-text field's real heading levels.
-- **`PlanValidator` rule `no-headings-here`.**
-- **Contracts** `HeadingLevelsContract` and `RenderProfileContract`.
-
-### Changed (SEO layer: headings)
-
-- The writer prompt says to use the heading levels each field lists, and never to use bold text on its own line as a heading; the layout planner's, to use only the levels a field lists.
-- `LayoutDiff` and `LayoutGate` compare rich text with its headings fitted, so a layout that only moves heading levels is not offered.
-### Fixed (links to choose with a space in the hint)
-
-- **A link to choose whose hint has a space is a gap again.** `[Winter structure](#gw-link:Winter structure)`, as Bard and TipTap store the href and the writer sometimes drafts it, and the angle-bracket form `(<#gw-link:Winter structure>)`, were not matched by `Markers::LINK_PATTERN`, so "Finish this page" never listed them; `SENTINEL_PATTERN` (and `MarkerResolver`'s) stopped at the space too. Every reader now takes the hint raw, bracketed or percent-encoded (`Winter%20structure`) and decodes it the same way (`Markers::linkHintFrom()`). `resources/gaps/patterns.json` and `markers.js` have the new patterns. What the writer drafts is stored with a safe hint (`#gw-link:Winter-structure`, `Markers::normaliseLinks()` in `EntryBuilder`), keeping its words and case.
-
-### Added (what a layout changes)
-
-- **`SessionLayouts::changes($session, $schema)`** says, for each layout on offer, what it changes against "As written": `summary`, one to three plain phrases built from the structural diff ("Closing line as a quote", "Lists as paragraphs", "Lead-ins as subheadings", "Quote moved up", "Call to action added"); `places`, where on the page it changed, as the preview's block map counts blocks and sections, for the panel to scroll to and outline when the person switches layout; and `units`. No model; works on stored layouts. `LayoutDiff::summary()` and `places()` give the same for any two plans. See docs/layouts.md.
-- The diff now compares words without markdown or punctuation, so a lead-in's heading is matched to its paragraph.
-
-### Changed (only noticeably different layouts are offered)
-
-- **A layout that looks like the writer's, or like another on offer, is not offered.** A journal post's alternatives that set one closing line as a quote, or turned two lists into paragraphs, looked the same as "As written" to the person choosing. After `PlanValidator`, `SessionLayouts` now runs `Arrange\LayoutGate` on the planner's plans, which compares each with the writer's and with the ones already kept (`Arrange\LayoutDiff`, a structural diff of what a reader sees) and keeps it only when a page builder's blocks changed, a quarter of the page changed, or three or more places changed adding up to 15%. Of two near-copies the Suggested one stays. When none is left, the piece simply has the writer's layout. Dropped plans are logged at info level, with numbers and no page text. See docs/layouts.md#only-noticeably-different-layouts-layoutgate.
-- **The layout planner proposes up to two layouts**, each clearly different in structure at a glance, and fewer or none when the fields give little to rearrange. An empty list is read as an answer: no second call, no warning.
-
-### Added (structured questions before the draft)
-
-- **The writer's questions come back structured.** When it must ask before drafting, the writer now sends at most four short questions in a `<questions>` YAML block beside a one-sentence `<reply>`, in the same call. Each item is `{id, question, hint?, kind: text|choice, options?, optional?}`. See docs/studio.md#questions-before-the-draft-17.
-  - `TaggedResponse::$questions` holds the block.
-  - `Studio\Asks` and `Studio\AskedQuestion` read it: `read()`, `fromMessage()`, `toArray()`, `text()`, `reply()`, `present()` and `isAnswers()`.
-- **`Session::answer(..., questions:)`** keeps them on the writer's message under `asked`, with the intro and a numbered list as its `content`. A block that can't be read is added to the reply as it came.
-- **`SessionGuard::answerQuestions()`** sends the person's answers as one message: "question → answer" pairs, "skipped" for one left empty, then "Also: …". The answers are kept under `answers` and `more`.
-- **The writer prompt** asks for short, plain questions:
-  - one per item;
-  - no compound questions;
-  - a hint that never holds an invented fact;
-  - a one-sentence intro.
-
-  A question answered "skipped" is never asked again: the writer writes around it or marks it `[[ask: …]]`. The never-invent rules are unchanged.
-- A hint describes the answer wanted and is never a sample answer: no names, figures or dates. A first real call had written "For example "Years 3 and 4, about sixty"". One question never asks for two things.
-- Older messages, without `asked`, are plain text as before.
-### Added (the brief chooses what to model it on)
-
-- **With nothing ticked, the brief filler chooses the records to model the piece on.** A piece of a kind that wasn't taught (`any:journal`) opened with nothing under "Model it on", though the brief itself pointed at existing entries ("Match 'What to do in the garden in October'…"). Now:
-  - `BriefRequest::withCandidates($candidates)` gives the filler the published records it may choose from, by ID and title (`['id' => …, 'title' => …]` each, or `id => title`). `BriefThread::request($session, $kind, $titles, $candidates, $kindExamples)` takes them, and the kind's own examples.
-  - The person's ticks always win. With none, the kind's own examples are used; with none of those, the filler chooses up to `Brief::MAX_EXAMPLES`, closest in purpose and shape, best first, preferring any its brief names. `BriefRequest::choosesExamples()` says when.
-  - "Try again" keeps the card's ticks. A card the person unticked completely stays empty (`BriefRequest::$examplesKept`).
-  - The prompt lists each candidate's title with ` [id: …]`, and guidance under "What to model it on" (`{{# examples }}` in `brief-filler.md`) whenever there are candidates, so the instructions don't change between requests. Whether to choose is said in the message.
-  - `Studio::briefSchema($kind, $title, $candidateIds)` adds `examples`: an array of up to six, items an enum of the candidate IDs as text. Without structured output, the IDs come in an `<examples>` block after the brief. IDs that aren't candidates are dropped; each comes back as the candidate gave it.
-  - Addons: pass the candidates, and tick "Model it on" from `Brief::$examples`. See docs/studio.md#what-to-model-it-on.
-
-### Changed (structured output for the layout planner)
-
-- **The layout planner uses structured output.** `Arrange\PlanSchema::for($schema, $count)` describes the plans for one site's fields. The shape is generic, so it stays small however many blocks the site has:
-  - each plan is `{notes, name, description, follows, fields: [{field, blocks, constructs, refs}]}`, with a short `notes` first;
-  - a block is `{type, place: [{field, refs}], rows: [{field, cells: [{column, ref}]}], transform, level, children}`;
-  - every property is required, with `""`, `0` and `[]` for nothing, so there are no optional properties or unions for Claude's limits (24 and 16);
-  - only what the site's fields need is in it: `rows` where a block has a rows field, `constructs` where there is rich text, `refs` where there is a plain field, and `children` only as deep as the site's builders nest, at most three, because a schema can't recurse;
-  - why: Claude refused a three-deep schema for a flat page builder ("The compiled grammar is too large"). Sized to the site, the gw-test-statamic pages schema is 1.9 KB and the nested Northfold fixture 3.8 KB, and Claude compiles both. A transform is for a whole block; the YAML's per-ref transforms aren't offered (and are still read if sent);
-  - block types, construct types, transforms and field handles are enums of the site's own.
-- **How the reply is read.** `PlanSchema::toRaw()` turns each structured plan back into the mapping `PlanReader` reads from YAML (`PlanReader::readList()`), so `PlanValidator`, the arranger and extras are unchanged.
-  - A structured reply that was cut off keeps the plans that closed.
-  - A model without structured output is asked for `<plans>` YAML, as before (prompt markers `{{# tagged }}` and `{{# structured }}`).
-- **Asking again.** A planner reply that can't be read (no plans block, YAML or JSON that doesn't parse) is asked for once more; one that was read but holds no usable plan is not, as before. `PlanReader::UNREADABLE` lists the problems that count as unreadable.
-- **A reply asked for again without its format is still read as JSON.** When a provider refuses the format and the request goes again without it, the model still writes the JSON the structured prompt asked for. It is decoded and read as structured, bare or in the prompt's tag (`JsonReply::decode()` now takes `<plans>{…}</plans>`).
-- `FakeProvider` decodes a queued `TextResponse` onto `structured` for a request with a schema, as a provider would.
-
-### Changed (structured output for more Studio calls)
-
-- **The kind finder, the planner, the brief writer and filler, the reworder and the gap filler use structured output.** Each call carries its reply's schema; where the model is held to it (docs/providers.md#structured-output) the reply is read from `TextResponse::$structured`, and elsewhere from the tags and YAML as before. See docs/studio.md#structured-output.
-  - `kind-finder`: `Studio::kindsSchema()`: `{kinds: [{why, title, description, examples}]}`, the evidence first, `examples` an enum of the sample IDs shown. An empty list is nothing to add.
-  - `planner`: `Studio::ideasSchema()`: `{ideas: [{why, title, <group key>, type, notes}]}`, the group key the vocabulary's (`collection`, `section`, `resource`) with an enum of the groups' handles; an empty `type` is none.
-  - `brief-writer` and `brief-filler`: `Studio::briefSchema()`, built per kind: `{title?, answers: {<key>: string}}` with every answer required (an empty string for nothing), so a long brief stays within Claude's 24 optional fields; a question with options is an enum of them plus `""`. `Studio::briefKeys()` turns each handle into a safe property name (`what-to-avoid` is `what_to_avoid`), which the structured prompt lists, and maps the answers back.
-  - `reworder`: `resources/schemas/reworder-reply.json`, `{versions: [string, string]}`.
-  - `gap-filler`: `resources/schemas/gap-filler-reply.json`, `{result}`.
-- **Every one of them asks once more when a reply can't be read** (and wasn't cut off), with the problem quoted after the same prompt, as the reviewer and verifier do. The log says "…could not be read (…); asking again once." and, still unreadable, "…could not be read again (…).". A reworder reply with no version counts as unreadable.
-- **Prompts choose their reply format.** `{{# tagged }}…{{/ tagged }}` and `{{# structured }}…{{/ structured }}` mark the parts for a model only asked for tags and YAML, and for one held to a schema. `Studio::prompt($name, $structured = false)` and `Studio::replyFormat($text, $structured)` keep one; the tagged rendering is each addon's prompt exactly, as before. An override without the markers is used as it is.
-
-### Added (structured output)
-
-- **Provider-native structured output.** A `TextRequest` may carry an `OutputSchema` (`new TextRequest(..., schema: $schema)`, `withSchema()`): the JSON Schema its reply must match. Each provider holds the model to it where it can, and keeps today's prompt-and-parse path where it can't. See docs/providers.md#structured-output.
-  - Anthropic: `output_config.format` (`json_schema`) merged with `output_config.effort`, on Opus, Sonnet and Fable 4.5 and later, Mythos and Haiku 4.5; older Claude models answer through a `reply` tool chosen for them (`tool_choice: auto` plus a line in the prompt on models that refuse a forced choice). The refusal retry on a recommended model keeps the format.
-  - OpenAI: strict `response_format` (`json_schema`, `strict: true`) on GPT-4o, GPT-4.1, GPT-5 and later and the o-series.
-  - Gemini: `responseMimeType: application/json` and `responseJsonSchema` on 2.0 and later.
-  - OpenRouter: strict `response_format` for the `anthropic/`, `openai/` and `google/` ids of those models; Claude keeps optional properties optional.
-  - A 400 refusing the format sends the request once more without it, with a warning.
-  - `Ai\Structured\Schemas` (`anthropic()`, `strict()`, `gemini()`): the schema rewritten per provider: objects closed, strict mode's every-property-required with nullable optionals, unsupported constraints folded into the description. `Ai\Structured\JsonReply::decode()`.
-  - `TextResponse::$structured` (the decoded object) and `$structuredBy` (`TextResponse::JSON_SCHEMA`, `TextResponse::TOOL` or null), `withUsage()`. `TextRequest::withPrompt()`.
-  - `Models::structuredOutput()`, `Models::refusesForcedTools()`; Mythos models now count in `takesEffort()`.
-  - `Ai\TakesSchemas`, implemented by every provider and `FakeProvider`; `Studio::takesSchema()`.
-  - "A model call finished." logs `structured` and `parsed`, and for Claude `cache_read_tokens` and `cache_write_tokens`.
-  - `FakeProvider::respondStructured()`, `respondFromSchema()` (`Testing\SchemaFaker`) and `withoutStructuredOutput()`. The fake stands for a model with structured output by default.
-  - `Studio::ask()` takes a `schema`.
-
-### Changed (Suggest edits)
-
-- **The reviewer and the verifier use structured output.** Their calls carry `Studio::reviewerSchema()` (`resources/schemas/reviewer-reply.json`) and `Studio::verifierSchema()` (`verifier-reply.json`). Every item starts with a short `notes` field (what the model checked in context; never shown). Where the model is held to the schema the instructions ask for bare JSON; elsewhere for the same JSON in `<suggestions>` or `<verdicts>`, as before (new placeholders `{{ answer_intro }}`, `{{ answer_open }}`, `{{ answer_close }}`). `SuggestionValidator` is unchanged: a schema guarantees shape, not truth.
-- **An unreadable reviewer or verifier reply is asked for once more**, with the problem quoted after the same prompt; the second reply stands. Both calls' usage counts. The log says "…couldn't be read (…); asking again once." and, if it is still unreadable, "…couldn't be read again (…)."
-- `SuggestionReader` reads a null key as left out (strict modes send every key). `suggestions.schema.json` knows `notes`.
-
-### Changed (breaking for comments, which no addon has shipped)
-
-- **Comments are conversation messages.** The separate review store is gone. Pins not sent yet are the editor's own, in their panel; **Apply** sends them as one message from the editor (`comments.items`: each comment's number, scope, words, author and the hashes of what it may change), claiming the piece as Send does, and the job's one `reviser` call ends in one message from Ghostwriter (`comments.answers` naming the editor's message, `comments.results`: Changed with its before and after, Replied, Refused or Skipped, each with a reply in plain words). Put back and Resolve are noted on that answer. Shared conversations (E7) need nothing more: one run at a time through the session's claim, with no version to compare. See docs/comments.md.
-  - `Review\Comments` replaces `SessionReview`: `apply()`, `revise()`, `fail()`, `resolve()` (and reopen), `putBack()`, `pins()` (every sent comment with its status worked out from the conversation, the blocks holding it in a layout, and whether its words have gone), `where()`, `unanswered()`, `nextNumber()`, `itemsOf()`, `resultsOf()`, `blocksOf()`.
-  - `Comment`, `CommentResult`, `CommentOutcome`, `CommentStatus` (Revising, Changed, Replied, Not applied, Skipped, Resolved, Detached).
-  - `RevisionRequest`, `RevisionValidator::check()`, `Verdict` and `RevisionApplier::apply()` take `Comment`s; `Change::$version` is the index of the editor's message.
-  - `ReviewRules` keeps `mayComment()` and `mayApply()`.
+- The conversation's "Draft written · N words" agrees with the draft pane (`Draft::wordCount()` no longer counts field names, link targets or the links chosen for fields the draft doesn't hold).
+- A unit rewritten in place keeps its place in the other layouts, instead of opening a block of its own (`PlanRepair::repair()` takes the layout from before the edit).
+- Notes to the writer aren't shown as the person's message (`Session::addNote()`).
+- A link to choose whose hint has a space is found, bracketed or percent-encoded (`Markers::linkHintFrom()`); new drafts store a safe hint.
+- `HtmlDialect::fromMarkdown()` keeps Craft reference tags in links instead of percent-encoding them.
+- Suggest edits' `Reconciler` no longer marks a suggestion done when its new words were in the old ones already, and does mark an out-of-date rewrite done when it is the old sentence less its dated words.
 
 ### Removed
+- `Session::$review` and the separate comments model (`Review`, `Thread`, `Note`, `NoteKind`, `ThreadStatus`, `SessionReview`), replaced by comments as messages. No addon had shipped them.
+- `ValidatedLinks::without()`.
 
-- `Session::$review` (and its `review` key), `Review`, `Thread`, `Note`, `NoteKind`, `ThreadStatus`, `SessionReview` and its add, edit, delete, reply, repin and version checks, `beforeData()`, and the re-anchoring in `SessionLayouts::afterEdit()` (a pin follows its unit ids, which `UnitMatcher` carries; one whose words are gone shows Detached).
-
-### Changed (Suggest edits)
-
-- **Suggest edits: no suggestion reaches the editor without the model judging it in context.** See docs/suggest-edits.md.
-  - **Every free finding is a candidate.** `ReviewInput::numbered()` now numbers every finding (the long-sentence hint and a link field to a deleted page included). The prompt's `<findings>` is now `<candidates>`: each line has its unit, the heading it sits under, its quote, the check's message, the dated words for an Out of date one, and what to write if it is kept.
-  - **Keep or drop.** The reviewer answers every candidate: a kept suggestion (`"finding": "f3"` and the fix) or `{"finding": "f3", "drop": "<reason>"}`. Any category may be dropped. `SuggestionReader` reads the older `decline` key as `drop`. The schema has `drop` in place of `decline`, and `category` is no longer required (a drop has none).
-  - **No free fallback in a review.** A candidate the model didn't answer is not shown (`unanswered`); one it dropped is not shown and is stored as checked. When the review call fails, the review is Failed with no suggestions. `Finding::toSuggestion()` stays for `EditReviews::preview()`, which is unchanged. Free checks only find and explain; they never write replacement text.
-  - **Out of date findings are anchored on their sentence** (`PastYears`, `RelativeTime`): the quote is the whole sentence (a heading line is its own), one finding a sentence, with the dated words in `meta['phrase']` (as written) and `meta['phraseOffset']` (where they start in the quote). The message's `:quote` is the phrase, and so is the revisit chip. Finding ids for these change accordingly. Closing dates and stated counts stay on the phrase.
-  - Out of date fixes rewrite the whole sentence, with alternatives that are meaningfully different, one of them the sentence without the dated words ("Winter care visits", never "Every year: winter care visits").
-  - `EditReview::decide(Confirmed)` ("It's still right") is allowed for Out of date as well as Fact to check.
-  - **The `reviewer` runs on the writing tier at effort `high`** (16000 tokens). `reworder` moves from the quick tier to the writing tier, at effort `medium` (4000 tokens).
-
-### Added (Suggest edits)
-
-- **The verifier: a second pass.** After validation, `Studio::verifyEdits(ReviewInput, list<Suggestion>): Result<SuggestionReply>` makes one `verifier` call per part that kept anything (new prompt `resources/prompts/verifier.md`, writing tier, effort `high`, 12000 tokens; `Suggest\VerifyPrompt`). Each kept suggestion is shown with its whole paragraph, its heading, why it was made and the site entry it cites; the reply is `<verdicts>` with `{"id": "s1", "verdict": "keep" | "fix" | "drop", "reason", "replacement"?, "alternatives"?}`. `SuggestionValidator::verify()` applies it: a fix passes every check again; a drop goes into `checked` (`by: 'verifier'`). If the verifier fails, the validated suggestions stand and a warning is logged. `Studio::verifierInstructions()`. `EditReviews::run()` does reviewer, validation, then verifier.
-- `ReviewInput::modelCalls()`: the most model calls a review makes (a reviewer and a verifier call per part). `calls()` is still the number of parts, for the confirm. `EditReview::$calls` and `$usage` count both agents.
-- **Checked candidates.** `ValidatedReview::$checked` and `EditReview::$checked`: `list<{id, passage, reason, by}>`, what the reviewer (`by: 'reviewer'`) or the verifier (`by: 'verifier'`) dropped in context, logged at debug level with the reason only. `EditReviews::quieted()` turns each into a `Quiet` of the new state `Quiet::CHECKED`, for 12 months or until its passage changes, so the same words aren't a candidate next time; the prompt's `<dismissed>` lists them as "checked fine". `ValidatedReview::$verified` and `EditReview::$verified` (suggestion id ⇒ `keep` or `fix`), and `EditReview::$verifyError`.
-- **`Anchor\SentenceFit`**: a deterministic check that a replacement leaves whole sentences (a capital where a sentence starts, the same end punctuation, no word doubled at a join, nothing empty mid-sentence except a Duplicate). The validator runs it on every replacement and alternative, after the model, and in `acceptsVersion()`.
-- `SuggestionValidator::DROPS` gains `unanswered`, `fit` and `verifier`.
-- `CheckText::sentenceRange()`, `sentenceAnchor()` and `headingBefore()`. `ReviewInput::batchFor(Anchor)`. `SuggestionReader` takes the list's name (`new SuggestionReader('verdicts')`).
-- **Prompt caching** for `reviewer`, `verifier` and `reworder` (`Agents::CACHED`, `Agents::cachesInstructions()`): Anthropic gets their instructions as a system block with `cache_control` (ephemeral), and so does Claude through OpenRouter.
-- A kept candidate with nothing to write stays as a suggestion with no replacement only for a link field, a broken link (the link is the fix) and an image whose picture wasn't attached ("Describe the image yourself").
-
-
-### Fixed
-- Suggest edits' `Reconciler` no longer marks a suggestion Done when its new words were in the old ones already ("Winter care visits" in "New for 2024: winter care visits", or a fact's version without, "team", in "team of 6"): such words count only once the old words have gone, unless they hold them.
-- Suggest edits' `Reconciler` marks an Out of date rewrite Done when it is the old sentence less its dated words ("Two open days a year at the studio garden…" for "New for 2023: two open days a year…"): the new sentence was found as the old quote by a fuzzy match, so the old words never seemed gone. A fuzzy match holding the new words no longer counts as the old words.
+### Upgrading
+- Addons: implement the new ports where you want the feature (`CredentialStore`, `EntryIndex` and `LinkIndex`, `RevisitStore`, `EntrySource`, `LinkProbe`, `SeoFields`, `SeoWriter`, `AssetAlt`, `RenderProfiles`), and run the matching contract tests. Each is optional: without it, the feature finds nothing and the rest works as before.
+- Stored stems are versioned (`IndexRow::STEMS`): rows written before still match by their first five letters until a full refresh writes them again.
+- Filament stores `Session::$seo` in a JSON column; its migration adds it.
 
 ## 1.9.0 - 2026-10-04
 
