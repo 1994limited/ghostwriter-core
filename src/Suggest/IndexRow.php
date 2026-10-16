@@ -263,11 +263,12 @@ final class IndexRow
             return self::make($row->entry, $row->scope, $row->title, $row->url, $row->summary, $row->type, $row->kind, $row->liveFrom, $row->liveUntil, $row->noindex, $row->key, $row->link, $row->updated, $row->published, $row->indexed, $locale, $list('terms'), $list('links'));
         }
 
-        $parts = is_int($stems['v'] ?? null) ? ['v' => $stems['v']] : [];
-
-        foreach (['title', 'slug', 'summary'] as $part) {
-            $parts[$part] = is_array($stems[$part] ?? null) ? array_values(array_filter($stems[$part], 'is_string')) : [];
-        }
+        $title = self::stringList($stems['title'] ?? null);
+        $slug = self::stringList($stems['slug'] ?? null);
+        $summary = self::stringList($stems['summary'] ?? null);
+        $parts = is_int($stems['v'] ?? null)
+            ? ['v' => $stems['v'], 'title' => $title, 'slug' => $slug, 'summary' => $summary]
+            : ['title' => $title, 'slug' => $slug, 'summary' => $summary];
 
         return new self($row->entry, $row->scope, $row->title, $row->url, $row->summary, $row->type, $row->kind, $row->liveFrom, $row->liveUntil, $row->noindex, $row->key, $row->link, $parts, $row->updated, $row->published, $row->indexed, $list('terms'), $list('links'));
     }
@@ -335,5 +336,27 @@ final class IndexRow
         $segments = explode('/', trim($path, '/'));
 
         return rawurldecode((string) end($segments));
+    }
+
+    /**
+     * The strings in a stored list, in order; anything else is left out.
+     *
+     * @return list<string>
+     */
+    private static function stringList(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $strings = [];
+
+        foreach ($value as $item) {
+            if (is_string($item)) {
+                $strings[] = $item;
+            }
+        }
+
+        return $strings;
     }
 }
