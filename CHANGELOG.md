@@ -2,7 +2,7 @@
 
 All notable changes to `1994/ghostwriter-core` are documented here. From 1.0.0 it follows semantic versioning: a minor or patch release doesn't break the public API.
 
-## 1.10.0 - TBD
+## 1.10.0 - 2026-10-16
 
 The shared engine for Ghostwriter 1.3 (Statamic and Craft) and Ghostwriter for Filament 1.2: Suggest edits and Content to revisit; the SEO layer (links to the site's own pages, search titles and descriptions, headings that fit the template); comments as conversation messages; Connections; and structured output from every provider.
 
